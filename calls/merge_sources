@@ -1,0 +1,105 @@
+#!/usr/bin/perl
+
+#Препроцессинг без использования исходников ядра
+
+use warnings;
+use strict;
+use diagnostics;
+
+use File::Find;
+use File::Slurp qw(read_file write_file);
+use Env qw(PARSEC_SOURCES_PATH);
+use List::MoreUtils qw(uniq);
+
+use feature qw(say);
+
+die("Can't find parsec sources.\n") if !defined $PARSEC_SOURCES_PATH;
+
+
+my $debug = 1;
+
+sub add_files ($$) {
+	my @files;
+	my $source = '';
+	my ($path, $mask) = @_;
+
+	find(sub { push @files, $File::Find::name if m/\Q${mask}\E$/ }, $path);
+
+   @files = sort @files;
+
+	foreach (@files) {
+		say $_ if $debug;
+		$source .= read_file($_);
+	}
+	return \$source;
+}
+
+my $source = ${ add_files $PARSEC_SOURCES_PATH, '.h' };
+$source .= ${ add_files $PARSEC_SOURCES_PATH, '.c' };
+
+
+#remove includes
+$source =~ s/^\s*#\s*include\s*["<][\w\/\.-]+[">]//gm;
+
+#collect ifdef macro
+pos($source) = 0;
+my @ifdefs = $source =~ m/\#[ \t]*ifn?def[ \t]+(\w+)/g;
+#@ifdefs = sort uniq(@ifdefs);
+@ifdefs = uniq(@ifdefs);
+@ifdefs = sort @ifdefs;
+
+@ifdefs = grep { !m/^_/ } @ifdefs;
+@ifdefs = grep { m/TRACE|DEBUG|CONFIG|VERBOSE/ } @ifdefs;
+
+say "IFDEFS: \n" . join("\n", @ifdefs) . "\n" if $debug;
+
+#pos($source) = 0;
+#my @ifs = $source =~ m/\#[ \t]*if[ \t]+(.++)/g;
+
+#@ifs = uniq(@ifs);
+#@ifs = sort @ifs;
+#say "IFS: \n" . join("\n", @ifs) . "\n" if $debug;
+
+$source = '/*CONFIGURATION END*/' . "\n\n\n" . $source;
+
+foreach (@ifdefs) {
+	chomp;
+	pos($source) = 0;
+
+	$source =~ s/\#[ \t]*define[ \t]+\Q$_\E
+					      (?<mbody>
+         					.*(?=\\\n)
+         					\\\n
+         					(?&mbody)?
+      					)?
+      					.*
+      					$
+					//gmx;
+
+	pos($source) = 0;
+
+   $source =~ s/\#[ \t]*undef[ \t]+\Q$_\E//g;
+
+	if ($_ ne 'CONFIG_SECURITY_PARSEC_MAC') {
+		$source = '#undef ' . $_ . "\n" . $source;
+		
+		if ($debug) {
+			pos($source) = 0;
+			say STDERR "ERROR $_" if $source =~ m/\#[ \t]*define[ \t]+\Q$_\E/;
+		}
+	} else {
+		$source = "\n" . '#define ' . $_ . " 1\n\n" . $source;
+	}
+
+}
+$source = '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))' . "\n\n" . $source;
+$source = '#define LINUX_VERSION_CODE '  . ((3 << 16) + (11 << 8) + 7) . ' /*3.11.7*/' . "\n" . $source;
+$source = '#define RESTRICTED 0' . "\n" . $source;
+
+$source = '/*CONFIGURATION BEGIN*/' . "\n" . $source;
+
+write_file('parsec-merged.c', $source);
+
+#preprocess
+qx(gcc -nostdinc -E parsec-merged.c -o parsec-merged.E);
+

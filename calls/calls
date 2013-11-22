@@ -1,0 +1,654 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use 5.10.0;
+use feature qw(say state);
+use utf8;
+
+#use diagnostics -verbose;
+
+use File::Slurp qw(read_file read_dir);
+use Getopt::Long qw(:config gnu_getopt);
+use File::Find;
+use Env qw(PATH_TO_LINUX_KERNEL_STABLE_SOURCES);
+use File::Basename qw(dirname);
+use List::MoreUtils qw(uniq);
+use Cwd qw(abs_path);
+use Term::ProgressBar 2.00;
+use Text::ANSITable;
+
+use open ':std', ':encoding(UTF-8)';
+
+#TODO:
+#check simultaniosly for macro and function; kernel! module?
+#parallel processing
+#simple preprocessing
+#grep query results sorting? different priorities for different paths
+
+my $kdir = '';
+my $moduledir = '.';
+my $preprocessed;
+
+my $kernel_sw = 1;
+my $modules_sw = 1;
+my $unknown_sw = 0;
+
+my $show_macro = 0;
+
+my $only_names = 0;
+#my $full-path = 0;
+
+my $modulename;
+
+my $progressbar = 0;
+
+my $specs;
+
+my $columns = 'ifcmts';
+
+GetOptions(
+   'ksources|s=s'    =>  sub { if ( -f "$_[1]/Kbuild" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: '$_[1]'\n)) } },
+   'directory|d=s'   =>  \$moduledir,
+   'preprocessed|p:s' => \$preprocessed,
+   'kernel|k!'       =>  \$kernel_sw,
+   'modules|m!'      =>  \$modules_sw,
+   'unknown|u!'      =>  \$unknown_sw,
+   'show-macro|s!'   =>  \$show_macro,
+   'only-names|o!'   =>  \$only_names,
+   'modulename|n=s'  =>  \$modulename,
+   'progressbar|b!'  =>  \$progressbar,
+   'columns|c=s'     =>  \$columns,
+   'status=s'        =>  \$specs,
+#   'full-path|f!'    =>  \$full_path;
+   '1' => sub { $kernel_sw = 1; $modules_sw = 0; $unknown_sw = 0; },
+   '2' => sub { $kernel_sw = 0; $modules_sw = 1; $unknown_sw = 0; },
+   '3' => sub { $kernel_sw = 0; $modules_sw = 0; $unknown_sw = 1; }
+) or die "Incorrect usage!\n";
+
+exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
+
+if (!$kdir) {
+   if ( -f "./Kbuild") {
+      $kdir = ".";
+   } elsif ( defined($PATH_TO_LINUX_KERNEL_STABLE_SOURCES) && -f "$PATH_TO_LINUX_KERNEL_STABLE_SOURCES/Kbuild" ) {
+      $kdir = "$PATH_TO_LINUX_KERNEL_STABLE_SOURCES";
+   }
+}
+
+
+my $mdir_subdir_kdir = 0;
+if (index(abs_path($moduledir), abs_path($kdir)) != -1) {
+   $mdir_subdir_kdir = 1;
+   print STDERR "Warning: '$moduledir' is a part of a kernel sources '$kdir'.\n"
+}
+
+if (!defined $modulename) {
+   abs_path($moduledir) =~ m!/((?:[^/]+|\\/)+)/?$!;
+   $modulename = $1;
+}
+
+sub get_list_of_kernel_functions {
+   if ( -r "$kdir/System.map" ) {
+      my @map = read_file("$kdir/System.map");
+
+      @map = grep { m/^[0-9a-fA-F]+\s+[tT]/ } @map;
+      return sort map { chomp; m/(\S+)\s*$/; $_ = $1; } @map;
+   } else {
+      print STDERR "Can't find '$kdir/System.map'\n";
+      return ();
+   }
+}
+
+sub find_modules {
+   my @modules;
+   find(sub { push @modules, $File::Find::name if m/\.ko$/ }, $moduledir);
+
+   if (!@modules) {
+
+      sub parse_makefile {
+         my (@dirs,@modules);
+         my $rootdir = dirname($_[0]);
+         my $make = read_file($_[0]);
+
+         while ( $make =~ m/
+                        (?:obj-|subdir-)(?:(?:\$\(\w+\))|[ynm]?)
+                        \s*
+                        [:+]?=
+                        \s*
+                        (?<modules>
+                            (?<body>
+                               [^\\\n]*
+                              \\\n
+                              (?&body)?
+                           )?
+                           .+
+                        )
+                        $
+                        /gmx ) {
+            my $list = $+{modules};
+
+            $list =~ s!\b([[:alnum:]_-]+\.o)\b!if ( -f "$rootdir/$1") {push @modules, "$rootdir/$1"} else {print STDERR "Can't find '$rootdir/$1'.\n"};''!ge;
+
+            $list =~ s!\b(\S+)\b!if ( -d "$rootdir/$1") {push @dirs, "$rootdir/$1";''} else {$1}!ge;
+
+            if ($list !~ m/^[\s\/]*$/m) {
+               print STDERR "'$_[0]' parse error: '$list'\n";
+            }
+         }
+         return (\@dirs,\@modules);
+      }
+
+      my @dirs = ($moduledir);
+
+      while (@dirs) {
+         my $root = shift @dirs;
+         my $makefile;
+
+         if ( -r "$root/Makefile" ) {
+            $makefile =  "$root/Makefile";
+         } elsif ( -r "$root/Kbuild" ) {
+            $makefile =  "$root/Kbuild";
+         } else {
+            print STDERR "Files '$root/Makefile' and '$root/Kbuild' doesn't exist.\n";
+            next;
+         }
+
+         my ($ret_dirs, $ret_modules) = parse_makefile($makefile, $root);
+         push @dirs, @$ret_dirs;
+         push @modules, @$ret_modules;
+
+         @dirs = uniq(@dirs);
+      }
+   }
+
+   return \@modules;
+}
+
+sub get_list_of_module_functions {
+   my @ret = ();
+   if (-r $_[0]) {
+      @ret = sort map { chomp; m/(\S+)\s*$/; $_ = $1; } grep { m/^[0-9a-fA-F]+\s+[tT]/ } `nm $_[0]`;
+   } else {
+      print STDERR "File '$_[0]' is not readable.";
+   }
+   return \@ret;
+}
+
+sub get_list_of_modules_functions {
+   my @modules = @{ find_modules() };
+
+   if (@modules) {
+      my %mf;
+
+      foreach (@modules) {
+         m!/([^/]+)\.k?o!;
+         my $key = $1;
+         $mf{$key}{'path'} = $_;
+         $mf{$key}{'funcs'} = get_list_of_module_functions($_);
+      }
+      return %mf;
+   } else {
+      print STDERR "Can't find kernel modules in '$moduledir'.\n";
+      return ();
+   }
+}
+
+
+
+sub remove_comments {
+   $_[0] =~ s#/\*[^*]*\*+([^/*][^*]*\*+)*/|//([^\\]|[^\n][\n]?)*?\n|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^/"'\\]*)#defined $3 ? $3 : ""#gse;
+}
+
+sub remove_strings {
+   #$_[0] =~ s/(?<!\\)"[^"]*"//g;
+   $_[0] =~ s/(?<!\\|')"(?:[^\\"]+|\\.)*"/""/mg;
+   #while ($_[0] =~ m/(?<!\\|')"(?:[^\\"]+|\\.)*"/mg ) {
+   #   say $&;
+   #}
+   #exit;
+}
+
+sub collect_macro {
+   my ($file, $name) = @_;
+   my @ret;
+   #FIXME: Maybe only match
+   if (!defined $name) {
+      $file =~
+            s/
+               \#[ \t]*define
+               [ \t]+
+               (?<mdecl>
+                  (?<mname>\w+)
+                  \([\w\s,\.]*\)      # arguments. non-argument macros are possible
+               )
+            /push @ret, $+{mname};''/megx;
+      return \@ret;
+   } else {
+      if ($file =~
+            m/
+               \#[ \t]*define
+               [ \t]+
+               $name
+               \([\w\s,\.]*\)      # arguments. non-argument macros are possible
+            /mgx) {
+         return 1;
+      }
+
+      return 0;
+   }
+}
+
+sub collect_extern {
+   my @ret;
+   pos($_[0]) = 0;
+   $_[0] =~ s/extern\s+(?!inline)(?:(?<extern>[^;]+);)/push @ret, $+{extern};''/meg;
+   pos($_[0]) = 0;
+   push @ret, $+{extern} for $_[0] =~ m/extern\s+(?=inline)(?<extern>[^\(]+(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))+\)))/mg;
+
+   return \@ret;
+}
+
+sub remove_macro {
+
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      \#
+      [ \t]*
+      (?:error|warning)
+      [ \t]*
+      \"
+         (
+            (?>[^"\\\n]+)
+            |
+            \\"
+            |
+            \\\n
+         )*
+      \"
+      [ \t]*$
+   //gmx;
+
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      \#
+      [ \t]*
+      (?:
+         e(?:lse|ndif)
+         |
+         line
+         |
+         include
+         |
+         undef
+      )
+      .*
+      $
+   //gmx;
+
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      \#
+      [ \t]*
+      (?:
+         define
+         |
+         elif
+         |
+         ifn?(?:def)?
+      )
+      [ \t]+
+      (?<mbody>
+         .*(?=\\\n)
+         \\\n
+         (?&mbody)?
+      )?
+      .+
+      $
+   //gmx;
+
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      (?!if|for|return|while)
+      \w+
+      [ \t]*
+      (?<margs>
+         \(
+            (?:
+               (?>[^\(\)\n\{\;\}]+)
+               |
+               (?&margs)
+            )+
+         \)
+         [ \t]*
+         \n
+      )(?!\s*[\{\\;])
+   //gmx;
+}
+
+sub read_sources {
+   my $source;
+
+   if (!defined $preprocessed) {
+      my @files;
+      find(sub { push @files, $File::Find::name if m/\.[ch]$/ }, $moduledir);
+
+      die("Can't find *.[ch] files.\n") if !@files;
+
+      foreach my $path (@files) {
+         $source .= read_file($path);
+      }
+   } else {
+      $source = read_file( $preprocessed ne '' ? $preprocessed : "$moduledir/sources.PREPROCESSED");
+   }
+
+   return $source;
+}
+
+sub get_list_of_calls
+{
+   my @calls;
+
+   while (
+      $_[0] =~
+         m/
+            \b(?<fname>\w+)
+            \s*
+            (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
+            (?!\s*(?:\{|\()) # исключает функции которые ни разу не вызываются
+         /gmx
+   ) {
+      # Просматриваем ещё раз аргументы вызова прошлой функции.
+      # Там могут быть ещё вызовы.
+      # -1 - первая скобка после имени не учитывается.
+      my $offset = pos($_[0]) - (length($+{fargs}) - 1);
+
+      my $call = $+{fname};
+      #$call = $+{fname} . $+{fargs} if length $+{fname} <= 1;
+      $call =~ s/\n/ /mg;
+      $call =~ s/\s+/ /g;
+      $call =~ s/^\s+//g;
+      $call =~ s/\s+$//g;
+      push @calls, $call;
+
+      pos($_[0]) = $offset;
+   }
+
+   #filter
+   @calls = grep { ! m/^(
+                        (for)|
+                        (if)|
+                        (while)|
+                        (sizeof)|
+                        (return)|
+                        (typeof)|
+                        (case)|
+                        (else)|
+                        (defined)|
+                        (__attribute__)|
+                        (__typeof__)|
+                        (volatile)|
+                        (asm)|
+                        (__builtin_.+)|
+                        (__section__)|
+                        (section)|
+                        (alias)|
+                        (aligned))$/x } @calls;
+
+   return @calls;
+}
+
+
+sub check_module_function {
+   pos($_[0]) = 0;
+   if ($_[0] =~
+      m/
+      (?<fdecl>
+         (?<decl>
+            [\w \t\s\\\*\(\)\,]+
+         )
+         (?>
+            \b$_[1]        # function name
+            \s*                  # spaces between name and arguments
+            (?<fargs>
+               \(
+                (?:
+                   (?>[^\(\)]+)
+                   |
+                   (?&fargs)
+                )+
+               \)
+            )
+         )
+      )
+      \s*                  # spaces between arguments and function body
+      (?:
+         (?:
+            (?:__(?:acquires|releases|attribute__)\s*(?<margs>\((?:(?>[^\(\)]+)|(?&margs))+\)))
+            |
+            __attribute_const__
+            |
+            CONSTF
+            |
+            \\
+         )\s*
+      )*
+      (?>
+         (?<fbody>                    # function body group
+            \{                # begin of function body
+            (?:               # recursive pattern
+               (?>[^\{\}]+)
+               |
+               (?&fbody)
+            )*
+            \}                # end of function body
+         )
+      )
+      /gmx
+   ) {
+         return 1;
+   }
+
+   return 0;
+}
+
+sub get_grep_cmdline {
+   state @cmdline;
+
+   if (!@cmdline) {
+      $cmdline[0] = q(grep);
+      $cmdline[1] = qq(--include='$_[0]');
+      push @cmdline, q(--exclude-dir=') . "$kdir/$_" . q(') for ('Documentation', 'samples', 'scripts', 'tools');
+      push @cmdline, q(--exclude-dir=') . "$_" . q(') for grep { -d "$kdir/arch/$_" && ($_ ne 'x86' && $_ ne 'x86_64') } read_dir("$kdir/arch");
+      push @cmdline, q(--exclude-dir=') . abs_path($moduledir) . q(') if $mdir_subdir_kdir;
+      push @cmdline, q(-lrPe);
+      push @cmdline, qq('$_[1]');
+      push @cmdline, $kdir;
+   } else {
+      $cmdline[1] = qq(--include='$_[0]');
+      $cmdline[$#cmdline - 1] = qq('$_[1]');
+   }
+
+   return join(' ', @cmdline);
+}
+
+sub check_kernel_macro {
+   my ($kdir, $name) = @_;
+
+   my $cmd = get_grep_cmdline('*.h', 'define[ \t]+' . $name . '\(');
+   my @defn_files = qx($cmd);
+
+   foreach (@defn_files) {
+      chomp;
+      my $file_cnt = read_file($_);
+      remove_comments($file_cnt);
+      return 1 if collect_macro($file_cnt, $name);
+   }
+
+   return 0;
+}
+
+sub check_kernel_function {
+   my ($kdir, $name, $check_export) = @_;
+
+   #FIXME maybe sort?
+   if ($check_export) {
+      my $cmd = get_grep_cmdline('*.c', q!(?m)EXPORT_SYMBOL(?:_GPL(?:_FUTURE)?)?\s*\(\s*! . $name . q!\s*\)\s*;!);
+      my @defn_files = qx($cmd);
+      return 1 if @defn_files;
+   }
+   my $cmd = get_grep_cmdline('*.h', $name);
+   my @defn_files = qx($cmd);
+
+   foreach (@defn_files) {
+      chomp;
+      my $file_cnt = read_file($_);
+      remove_comments($file_cnt);
+      remove_macro($file_cnt);
+      return 1 if check_module_function($file_cnt, $name);
+   }
+
+   return 0;
+}
+
+
+my $source = read_sources();
+remove_comments($source);
+remove_strings($source);
+my @macro = @{ collect_macro($source) }, remove_macro($source) if !defined $preprocessed;
+#my @extern = @{ collect_extern($source) };
+my $extern = join(";\n", @{ collect_extern($source) });
+
+my @calls = get_list_of_calls($source);
+
+
+#stat
+my %status;
+@calls = grep { ! $status{$_}[0]++ } @calls;
+
+my @kernel_functions = get_list_of_kernel_functions();
+my %modules_functions = get_list_of_modules_functions();
+
+my $max = keys %status;
+my $progress = Term::ProgressBar->new({name => 'Status', count => $max, remove => 1, silent => !$progressbar});
+$progress->minor(0);
+my $next_update = 0;
+my $i = 0;
+
+foreach my $fname (keys %status) {
+   my $own = 'UNKNOWN';
+   my $type = '';
+
+   #binary
+   if ($fname ~~ @kernel_functions) {
+      $own = 'kernel';
+      $type = 'kF';
+   }
+   foreach my $mname (keys %modules_functions) {
+      if ($fname ~~ $modules_functions{$mname}{'funcs'}) {
+         $type = $own eq 'kernel' ? 'kmF' : 'mF';
+         $own = $only_names ? $mname : substr $modules_functions{$mname}{'path'}, length $moduledir, -2;
+         last;
+      }
+   }
+
+   #source based check
+   if ($own eq 'UNKNOWN') {
+      #module check
+      #say "$fname";
+      if (!defined $preprocessed && $fname ~~ @macro) {
+            $own = $modulename;
+            $type = 'mM';
+      #} elsif ($extern =~ m/\b$fname\s*\(/ || check_module_function($source, $fname)) {
+      } elsif (check_module_function($source, $fname)) {
+         $own = $modulename;
+         $type = 'mF';
+      } else {
+         #kernel check
+         if (check_kernel_macro($kdir, $fname)) {
+            $own = 'kernel';
+            $type = 'kM';
+         } elsif (check_kernel_function($kdir, $fname, !@kernel_functions)) {
+            $own = 'kernel';
+            $type = 'kF';
+         }
+      }
+   }
+
+   $status{$fname}[1] = $own;
+   $status{$fname}[2] = $type;
+
+   $next_update = $progress->update($i) if defined $next_update && $i > $next_update;
+   ++$i;
+}
+
+$progress->update($max) if defined $next_update && $max >= $next_update;
+
+#filtration
+#We can do filtration by means of ANSITable.
+#But it is more preferable to do it here.
+foreach (keys %status) {
+   my ($num, $own, $type) = @{ $status{$_} };
+
+   if ($own eq 'UNKNOWN') {
+      delete $status{$_} if !$unknown_sw;
+   } elsif ($own eq 'kernel') {
+      delete $status{$_} if !$kernel_sw;
+   } else {
+      delete $status{$_} if !$modules_sw;
+   }
+
+   if ($type eq 'kM' or $type eq 'mM') {
+      delete $status{$_} if !$show_macro;
+   }
+#   delete $status{$_} if ($type ne 'kM' and $type ne 'mM');
+}
+
+my $counter = 1;
+
+my $t = Text::ANSITable->new;
+$t->border_style('Default::bold');
+$t->color_theme('Default::default_gradation') if -t STDOUT;
+$t->columns(['Idx', 'Function', 'Calls', 'Module', 'Type', 'Status']);
+$t->set_column_style('Idx',         pad  => 0);
+$t->set_column_style('Function', align  => 'left');
+$t->set_column_style('Calls',    align  => 'right', pad  => 0);
+$t->set_column_style('Module',   align  => 'middle');
+$t->set_column_style('Type',     align  => 'middle', pad  => 0);
+$t->set_column_style('Status',   align  => 'middle');
+
+if (defined $specs) {
+   if (-r $specs) {
+      $t->set_column_style('Status', align  => 'middle');
+      my @lines = read_file($specs);
+      my %specs_status;
+      foreach (@lines) {
+         if ( $_ =~ m/^\s*(?<func>\w+)\s+(?<status>\S+)\s*$/ ) {
+            $specs_status{$+{func}} = $+{status};
+         }
+      }
+
+      foreach (keys %status) {
+         if (defined $specs_status{$_}) {
+            $status{$_} =  [@{ $status{$_} }, $specs_status{$_}];
+         } else {
+            $status{$_} =  [@{ $status{$_} }, ''];
+         }
+      }
+   } else {
+      print STDERR "Can't open '$specs' file. Status column omitted.\n";
+   }
+} 
+
+$t->column_filter(sub { if ($_[0] ne 'Status') { index($columns, lc substr($_[0], 0, 1)) != -1 } else { index($columns, 's') && defined $specs && -r $specs } });
+
+$t->add_row([$counter++, $_, @{ $status{$_} }])
+   for (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; if (!$cmp) { return $a cmp $b; } else { return $cmp; } } keys %status);
+
+print $t->draw;
+
+#say join("\n", sort keys %status);
