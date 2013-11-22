@@ -1,0 +1,211 @@
+#!/usr/bin/env perl
+
+use utf8;
+use 5.10.1;
+
+use feature qw(say);
+
+use strict;
+use warnings;
+use diagnostics;
+
+
+use Env qw(PATH_TO_LINUX_KERNEL_SOURCES PARSEC_SOURCES_PATH);
+use File::Slurp qw(read_file);
+use Getopt::Long qw(:config gnu_getopt);
+use Text::ANSITable;
+
+use Data::Dumper;
+
+use open ':std', ':encoding(UTF-8)';
+
+sub remove_comments
+{
+   $_[0] =~ s#/\*[^*]*\*+([^/*][^*]*\*+)*/|//([^\\]|[^\n][\n]?)*?\n|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^/"'\\]*)#defined $3 ? $3 : ""#gse;
+}
+
+##############################################################
+
+my $kfile = 'include/linux/security.h';
+my $pfile = 'sec-hooks.c';
+
+my $kdir = '';
+my $pdir = '';
+
+GetOptions(
+   'kdir|k=s' => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$kfile" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'parsec|p=s' => sub { if ( -d $_[1] && -r "$_[1]/$pfile" ) { $pdir = $_[1] } else { die(qq(Incorrect path to parsec: "$_[1]"\n)) } },
+) or die "Incorrect usage!\n";
+
+if (!$kdir) {
+   if ( -r "./$kfile") {
+      $kdir = "."; 
+   } elsif ( -r "$PATH_TO_LINUX_KERNEL_SOURCES/$kfile" ) {
+      $kdir = "$PATH_TO_LINUX_KERNEL_SOURCES"; 
+   }
+}
+
+die "Can't find path to linux kernel sources directory.\n" if (!$kdir);
+
+if (!$pdir) {
+   if ( -r "./$pfile") {
+      $pdir = "."; 
+   } elsif ( -r "$PARSEC_SOURCES_PATH/$pfile" ) {
+      $pdir = "$PARSEC_SOURCES_PATH"; 
+   }
+}
+
+die "Can't find path to parsec sources directory.\n" if (!$pdir);
+
+
+my $sec_file = read_file("$kdir/$kfile");
+my $hooks_file = read_file("$pdir/$pfile");
+
+remove_comments($sec_file);
+remove_comments($hooks_file);
+
+sub argname {
+   $_[0] =~ m/(\w+)$/;
+   return $1 ne 'void' ? $1 : '';
+}
+
+sub argtype {
+   $_[0] =~ m/^(.*?)(?=\s*\w+$)/;
+   return $1 eq '' ? 'void' : $1;
+}
+
+sub remove_spaces {
+   my $str = $_[0];
+   $str =~ s/\s+/ /g;
+   $str =~ s/^\s+//;
+   $str =~ s/\s+$//;
+   return $str;
+}
+
+sub parse_structure_defition_ops_fields {
+   my $conf = $_[1];
+   map { remove_spaces($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
+}
+
+sub parse_structure_declaration_ops_fields {
+   my $conf = $_[1];
+   my @fields = map { remove_spaces($_) } split /;/, $_[0];
+
+   # filter non-functions
+   @fields = grep { m/\(\*\w+\)\s*\(/ } @fields;
+
+   map { m/\(\*(\w+)\)\s*(\(.*?\))$/;  $1 => +{ args => $2, conf => $conf } } @fields;
+}
+
+sub parse_security_operations_structure {
+   my $handler = $_[1];
+   my %structure;
+
+   if ($_[0] =~ m/struct\s+security_operations(?:\s+\w+\s*=)?\s*(?<br>\{(?:(?>[^\{\}]+)|(?&br))+\})/m) {
+      my @lines = split /\n/, $1;
+      my $buf = '';
+      my @ifdefs;
+      my %preprocessed;
+
+      foreach (@lines) {
+         next if $_ =~ m/^\s*\n$/;
+         if ($_ =~ m/^\s*\#\s*if\s+(?<cond>.+)$/) {
+            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            $buf = '';
+            push @ifdefs, remove_spaces($+{cond});
+            next;
+         }
+         if ($_ =~ m/^\s*\#\s*ifdef\s+(?<cond>\w+)\s*$/) {
+            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            $buf = '';
+            push @ifdefs, remove_spaces($+{cond});
+            next;
+         }
+         if ($_ =~ m/^\s*\#\s*ifndef\s+(?<cond>\w+)\s*$/) {
+            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            $buf = '';
+            push @ifdefs, '! ' . remove_spaces($+{cond});
+            next;
+         }
+         if ($_ =~ m/^\s*\#\s*else/) {
+            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            $buf = '';
+            push @ifdefs, '! ' . pop(@ifdefs);
+            next;
+         }
+         if ($_ =~ m/^\s*\#\s*endif/) {
+            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            $buf = '';
+            pop @ifdefs;
+            next;
+         }
+         $buf .= $_ . "\n";
+      }
+      die("Preprocessing error @ifdefs.") if scalar @ifdefs ne 0;
+   } else {
+      die("Can't find security_operations definition/declaration.\n");
+   }
+
+   return %structure;
+}
+
+my %str_kernel = parse_security_operations_structure $sec_file, \&parse_structure_declaration_ops_fields;
+my %str_parsec = parse_security_operations_structure $hooks_file, \&parse_structure_defition_ops_fields;
+
+
+foreach (keys %str_kernel) {
+   if (defined $str_parsec{$_}) {
+      $str_kernel{$_}{parsec} = $str_parsec{$_};
+      delete $str_parsec{$_};
+   }
+}
+
+my $t1 = Text::ANSITable->new;
+$t1->border_style('Default::bold');
+$t1->color_theme('Default::default_gradation') if -t STDOUT;
+$t1->columns(['Idx', 'Указатель на функцию', 'Аргументы', 'Функция parsec', 'Конфигурация ядра', 'Конфигурация parsec']);
+
+$t1->set_column_style('Idx',                  pad  => 0);
+$t1->set_column_style('Указатель на функцию', align  => 'left');
+$t1->set_column_style('Аргументы',            align  => 'middle');
+$t1->set_column_style('Функция parsec',       align  => 'middle');
+$t1->set_column_style('Конфигурация ядра',    align  => 'middle');
+$t1->set_column_style('Конфигурация parsec',  align  => 'middle');
+
+my $counter = 1;
+
+#$t1->column_filter(sub { $_ ne'Аргументы' });
+
+foreach (reverse sort {defined $str_kernel{$a}{parsec} <=> defined $str_kernel{$b}{parsec}} keys %str_kernel) {
+   my $init  = defined $str_kernel{$_}{parsec} ? $str_kernel{$_}{parsec}{init} : undef;
+   my $args  = $str_kernel{$_}{args};
+   my $kconf = $str_kernel{$_}{conf};
+   my $pconf = defined $str_kernel{$_}{parsec} ? $str_kernel{$_}{parsec}{conf} : undef;
+   $t1->add_row([$counter++, $_, $args, $init, $kconf, $pconf]);
+   $t1->add_row_separator();
+}
+
+print $t1->draw;
+
+#TODO: добавить аргументы
+my $t2 = Text::ANSITable->new;
+$t2->border_style('Default::bold');
+$t2->color_theme('Default::default_gradation') if -t STDOUT;
+$t2->columns(['Idx', 'Указатель на функцию', 'Функция parsec', 'Конфигурация parsec']);
+
+$t2->set_column_style('Idx',                  pad  => 0);
+$t2->set_column_style('Указатель на функцию', align  => 'left');
+$t2->set_column_style('Функция parsec',       align  => 'middle');
+$t2->set_column_style('Конфигурация parsec',  align  => 'middle');
+
+$counter = 1;
+
+foreach (keys %str_parsec) {
+   my $init  = $str_parsec{$_}{init};
+   my $pconf = $str_parsec{$_}{conf};
+   $t2->add_row([$counter++, $_, $init, $pconf]);
+   $t2->add_row_separator();
+}
+
+print $t2->draw;
+
