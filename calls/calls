@@ -8,7 +8,7 @@ use utf8;
 
 #use diagnostics -verbose;
 
-use File::Slurp qw(read_file read_dir);
+use File::Slurp qw(read_file read_dir write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use File::Find;
 use Env qw(PATH_TO_LINUX_KERNEL_STABLE_SOURCES);
@@ -17,6 +17,8 @@ use List::MoreUtils qw(uniq);
 use Cwd qw(abs_path);
 use Term::ProgressBar 2.00;
 use Text::ANSITable;
+
+use Class::CSV;
 
 use open ':std', ':encoding(UTF-8)';
 
@@ -47,6 +49,9 @@ my $specs;
 
 my $columns = 'ifcmts';
 
+my $output = '';
+my $csvout = 0;
+
 GetOptions(
    'ksources|s=s'    =>  sub { if ( -f "$_[1]/Kbuild" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: '$_[1]'\n)) } },
    'directory|d=s'   =>  \$moduledir,
@@ -55,11 +60,13 @@ GetOptions(
    'modules|m!'      =>  \$modules_sw,
    'unknown|u!'      =>  \$unknown_sw,
    'show-macro|s!'   =>  \$show_macro,
-   'only-names|o!'   =>  \$only_names,
+   'only-names!'     =>  \$only_names,
    'modulename|n=s'  =>  \$modulename,
    'progressbar|b!'  =>  \$progressbar,
    'columns|c=s'     =>  \$columns,
    'status=s'        =>  \$specs,
+   'output|o=s'      =>  \$output,
+   'csv-output|v!'   =>  \$csvout,
 #   'full-path|f!'    =>  \$full_path;
    '1' => sub { $kernel_sw = 1; $modules_sw = 0; $unknown_sw = 0; },
    '2' => sub { $kernel_sw = 0; $modules_sw = 1; $unknown_sw = 0; },
@@ -608,22 +615,11 @@ foreach (keys %status) {
 #   delete $status{$_} if ($type ne 'kM' and $type ne 'mM');
 }
 
-my $counter = 1;
-
-my $t = Text::ANSITable->new;
-$t->border_style('Default::bold');
-$t->color_theme('Default::default_gradation') if -t STDOUT;
-$t->columns(['Idx', 'Function', 'Calls', 'Module', 'Type', 'Status']);
-$t->set_column_style('Idx',         pad  => 0);
-$t->set_column_style('Function', align  => 'left');
-$t->set_column_style('Calls',    align  => 'right', pad  => 0);
-$t->set_column_style('Module',   align  => 'middle');
-$t->set_column_style('Type',     align  => 'middle', pad  => 0);
-$t->set_column_style('Status',   align  => 'middle');
+my $specs_column = 0;
 
 if (defined $specs) {
    if (-r $specs) {
-      $t->set_column_style('Status', align  => 'middle');
+      $specs_column = 1;
       my @lines = read_file($specs);
       my %specs_status;
       foreach (@lines) {
@@ -644,11 +640,66 @@ if (defined $specs) {
    }
 } 
 
-$t->column_filter(sub { if ($_[0] ne 'Status') { index($columns, lc substr($_[0], 0, 1)) != -1 } else { index($columns, 's') && defined $specs && -r $specs } });
 
-$t->add_row([$counter++, $_, @{ $status{$_} }])
-   for (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; if (!$cmp) { return $a cmp $b; } else { return $cmp; } } keys %status);
+my $column_names = ['Idx', 'Function', 'Calls', 'Module', 'Type', 'Status'];
+my $obj;
+my $addfunc;
+my $retfunc;
 
-print $t->draw;
+if (!$csvout) {
+   my $t = Text::ANSITable->new;
+   $t->border_style('Default::bold');
+   if ( -t STDOUT && !$output ) {
+      $t->color_theme('Default::default_gradation');
+   } else {
+      $t->color_theme('Default::no_color');
+   }
 
-#say join("\n", sort keys %status);
+   $t->columns($column_names);
+   $t->set_column_style('Idx',        pad  => 0);
+   $t->set_column_style('Function', align  => 'left');
+   $t->set_column_style('Calls',    align  => 'right', pad  => 0);
+   $t->set_column_style('Module',   align  => 'middle');
+   $t->set_column_style('Type',     align  => 'middle', pad  => 0);
+   $t->set_column_style('Status',   align  => 'middle');
+
+   $t->column_filter(sub { if ($_[0] ne 'Status') { index($columns, lc substr($_[0], 0, 1)) != -1 } else { (index($columns, 's') != -1) && $specs_column } });
+
+   $obj = \$t;
+   $addfunc = \&Text::ANSITable::add_row;
+   $retfunc = \&Text::ANSITable::draw;
+} else {
+
+   my @ind;
+   foreach (0 .. scalar @$column_names - 1) {
+      if (@{ $column_names }[$_] ne 'Status') {
+         push @ind, $_ if index($columns, lc substr(@{ $column_names }[$_], 0, 1)) != -1;
+      } else {
+         push @ind, $_ if (index($columns, 's') != -1) && $specs_column;
+      }
+   }
+
+   my $csv = Class::CSV->new(
+      fields         => [ @{ $column_names }[@ind] ],
+      line_separator => "\r\n",
+   );
+
+   $obj = \$csv;
+   $addfunc = sub {
+                  Class::CSV::add_line($_[0], [ @{$_[1]}[@ind] ]);
+              };
+   $retfunc = sub { join(',', map { '"' . $_ . '"' } @{ $column_names }[@ind]) . "\r\n" . Class::CSV::string($_[0]); };
+}
+
+my $counter = 1;
+foreach (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; if (!$cmp) { return $a cmp $b; } else { return $cmp; } } keys %status) {
+   $addfunc->($$obj, [$counter++, $_, @{ $status{$_} }]);
+}
+
+my $str = $retfunc->($$obj);
+if ($output) {
+   write_file($output, { binmode => ':utf8' }, $str);
+} else {
+   print $str;
+}
+
