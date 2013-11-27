@@ -36,8 +36,6 @@ my $kernel_sw = 1;
 my $modules_sw = 1;
 my $unknown_sw = 0;
 
-my $show_macro = 0;
-
 my $only_names = 0;
 #my $full-path = 0;
 
@@ -52,21 +50,25 @@ my $columns = 'ifcmts';
 my $output = '';
 my $csvout = 0;
 
+my $only_functions = 0;
+my $only_macro = 0;
+
 GetOptions(
-   'ksources|s=s'    =>  sub { if ( -f "$_[1]/Kbuild" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: '$_[1]'\n)) } },
-   'directory|d=s'   =>  \$moduledir,
-   'preprocessed|p:s' => \$preprocessed,
-   'kernel|k!'       =>  \$kernel_sw,
-   'modules|m!'      =>  \$modules_sw,
-   'unknown|u!'      =>  \$unknown_sw,
-   'show-macro|s!'   =>  \$show_macro,
-   'only-names!'     =>  \$only_names,
-   'modulename|n=s'  =>  \$modulename,
-   'progressbar|b!'  =>  \$progressbar,
-   'columns|c=s'     =>  \$columns,
-   'status=s'        =>  \$specs,
-   'output|o=s'      =>  \$output,
-   'csv-output|v!'   =>  \$csvout,
+   'ksources|s=s'     =>  sub { if ( -f "$_[1]/Kbuild" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: '$_[1]'\n)) } },
+   'directory|d=s'    =>  \$moduledir,
+   'preprocessed|p:s' =>  \$preprocessed,
+   'kernel|k!'        =>  \$kernel_sw,
+   'modules|m!'       =>  \$modules_sw,
+   'unknown|u!'       =>  \$unknown_sw,
+   'only-names!'      =>  \$only_names,
+   'modulename|n=s'   =>  \$modulename,
+   'progressbar|b!'   =>  \$progressbar,
+   'columns|c=s'      =>  \$columns,
+   'status=s'         =>  \$specs,
+   'output|o=s'       =>  \$output,
+   'csv-output|v!'    =>  \$csvout,
+   'only-functions!'  =>  \$only_functions,
+   'only-macro!'      =>  \$only_macro,
 #   'full-path|f!'    =>  \$full_path;
    '1' => sub { $kernel_sw = 1; $modules_sw = 0; $unknown_sw = 0; },
    '2' => sub { $kernel_sw = 0; $modules_sw = 1; $unknown_sw = 0; },
@@ -610,9 +612,10 @@ foreach (keys %status) {
    }
 
    if ($type eq 'kM' or $type eq 'mM') {
-      delete $status{$_} if !$show_macro;
+      delete $status{$_} if $only_functions;
+   } elsif ($type eq 'kF' or $type eq 'mF' or $type eq 'kmF') {
+      delete $status{$_} if $only_macro;
    }
-#   delete $status{$_} if ($type ne 'kM' and $type ne 'mM');
 }
 
 my $specs_column = 0;
