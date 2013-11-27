@@ -36,11 +36,14 @@ my $output = '';
 my $csvout = 0;
 
 GetOptions(
-   'kdir|k=s' => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$kfile" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
-   'parsec|p=s' => sub { if ( -d $_[1] && -r "$_[1]/$pfile" ) { $pdir = $_[1] } else { die(qq(Incorrect path to parsec: "$_[1]"\n)) } },
-   'output|o=s' => \$output,
+   'kdir|k=s'      => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$kfile" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'parsec|p=s'    => \$pdir,
+   'file|f=s'      => \$pfile,
+   'output|o=s'    => \$output,
    'csv-output|c!' => \$csvout,
 ) or die "Incorrect usage!\n";
+
+die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdir/$pfile" );
 
 if (!$kdir) {
    if ( -r "./$kfile") {
