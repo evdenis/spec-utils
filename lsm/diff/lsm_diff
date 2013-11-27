@@ -224,53 +224,53 @@ if ($output) {
    print $str;
 }
 
+if (keys %str_parsec) {
+   $columns = ['Idx', 'Указатель на функцию', 'Функция parsec', 'Конфигурация parsec'];
 
-$columns = ['Idx', 'Указатель на функцию', 'Функция parsec', 'Конфигурация parsec'];
+   #TODO: добавить аргументы
+   if (!$csvout) {
+      my $t2 = Text::ANSITable->new;
+      $t2->border_style('Default::bold');
+      $t2->color_theme('Default::default_gradation') if -t STDOUT;
+      if ( -t STDOUT && !$output ) {
+         $t2->color_theme('Default::default_gradation');
+      } else {
+         $t2->color_theme('Default::no_color');
+      }
 
-#TODO: добавить аргументы
-if (!$csvout) {
-   my $t2 = Text::ANSITable->new;
-   $t2->border_style('Default::bold');
-   $t2->color_theme('Default::default_gradation') if -t STDOUT;
-   if ( -t STDOUT && !$output ) {
-      $t2->color_theme('Default::default_gradation');
+
+      $t2->columns($columns);
+
+      $t2->set_column_style('Idx',                  pad  => 0);
+      $t2->set_column_style('Указатель на функцию', align  => 'left');
+      $t2->set_column_style('Функция parsec',       align  => 'middle');
+      $t2->set_column_style('Конфигурация parsec',  align  => 'middle');
+
+      $obj = \$t2;
    } else {
-      $t2->color_theme('Default::no_color');
+      my $csv = Class::CSV->new(
+         fields         => $columns,
+         line_separator => "\r\n",
+      );
+
+      $obj = \$csv;
    }
 
 
-   $t2->columns($columns);
+   $counter = 1;
 
-   $t2->set_column_style('Idx',                  pad  => 0);
-   $t2->set_column_style('Указатель на функцию', align  => 'left');
-   $t2->set_column_style('Функция parsec',       align  => 'middle');
-   $t2->set_column_style('Конфигурация parsec',  align  => 'middle');
+   foreach (keys %str_parsec) {
+      my $init  = $str_parsec{$_}{init};
+      my $pconf = $str_parsec{$_}{conf};
+      my $line = [$counter++, $_, $init, $pconf];
 
-   $obj = \$t2;
-} else {
-   my $csv = Class::CSV->new(
-      fields         => $columns,
-      line_separator => "\r\n",
-   );
+      $addfunc->($$obj, $line);
+   }
 
-   $obj = \$csv;
+   $str = "\r\n" . $retfunc->('"Таблица функций, отсутствующих в security_operations"', $$obj);
+   if ($output) {
+      write_file($output, { binmode => ':utf8', append => 1 }, $str);
+   } else {
+      print "\r\n" . $str;
+   }
 }
-
-
-$counter = 1;
-
-foreach (keys %str_parsec) {
-   my $init  = $str_parsec{$_}{init};
-   my $pconf = $str_parsec{$_}{conf};
-   my $line = [$counter++, $_, $init, $pconf];
-
-   $addfunc->($$obj, $line);
-}
-
-$str = "\r\n" . $retfunc->('"Таблица функций, отсутствующих в security_operations"', $$obj);
-if ($output) {
-   write_file($output, { binmode => ':utf8', append => 1 }, $str);
-} else {
-   print "\r\n" . $str;
-}
-
