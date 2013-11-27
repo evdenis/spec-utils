@@ -63,6 +63,11 @@ if (!$pdir) {
 die "Can't find path to parsec sources directory.\n" if (!$pdir);
 
 
+open MAKEFILE, "< $kdir/Makefile";
+my @kver = map { <MAKEFILE> =~ m/=\s*(\d+)/ } (1 .. 3);
+my $kernel_version = join('.', @kver);
+close MAKEFILE;
+
 my $sec_file = read_file("$kdir/$kfile");
 my $hooks_file = read_file("$pdir/$pfile");
 
@@ -217,7 +222,7 @@ foreach (reverse sort {defined $str_kernel{$a}{parsec} <=> defined $str_kernel{$
 }
 
 
-my $str = $retfunc->('"Таблица функций в security_operations"', $$obj);
+my $str = $retfunc->(qq("Таблица функций в security_operations (версия ядра $kernel_version)"), $$obj);
 if ($output) {
    write_file($output, { binmode => ':utf8' }, $str);
 } else {
@@ -267,7 +272,7 @@ if (keys %str_parsec) {
       $addfunc->($$obj, $line);
    }
 
-   $str = "\r\n" . $retfunc->('"Таблица функций, отсутствующих в security_operations"', $$obj);
+   $str = "\r\n" . $retfunc->(qq("Таблица функций, отсутствующих в security_operations (версия ядра $kernel_version)"), $$obj);
    if ($output) {
       write_file($output, { binmode => ':utf8', append => 1 }, $str);
    } else {
