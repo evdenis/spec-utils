@@ -205,11 +205,14 @@ if (!$csvout) {
    my $csv = Class::CSV->new(
       fields         => $columns,
       line_separator => "\r\n",
+      csv_xs_options => {
+         sep_char          => ';',
+      },
    );
 
    $obj = \$csv;
    $addfunc = \&Class::CSV::add_line;
-   $retfunc = sub { $_[0] . "\r\n" . join(',', map { '"' . $_ . '"' } @$columns) . "\r\n" . Class::CSV::string($_[1]); };
+   $retfunc = sub { $_[0] . "\r\n" . join(';', map { '"' . $_ . '"' } @$columns) . "\r\n" . Class::CSV::string($_[1]); };
 }
 
 
@@ -259,6 +262,9 @@ if (keys %str_parsec) {
       my $csv = Class::CSV->new(
          fields         => $columns,
          line_separator => "\r\n",
+         csv_xs_options => {
+            sep_char          => ';',
+         },
       );
 
       $obj = \$csv;

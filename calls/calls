@@ -685,13 +685,16 @@ if (!$csvout) {
    my $csv = Class::CSV->new(
       fields         => [ @{ $column_names }[@ind] ],
       line_separator => "\r\n",
+      csv_xs_options => {
+         sep_char          => ';',
+      },
    );
 
    $obj = \$csv;
    $addfunc = sub {
                   Class::CSV::add_line($_[0], [ @{$_[1]}[@ind] ]);
               };
-   $retfunc = sub { join(',', map { '"' . $_ . '"' } @{ $column_names }[@ind]) . "\r\n" . Class::CSV::string($_[0]); };
+   $retfunc = sub { join(';', @{ $column_names }[@ind]) . "\r\n" . Class::CSV::string($_[0]); };
 }
 
 my $counter = 1;
