@@ -242,7 +242,6 @@ if (keys %str_parsec) {
    if (!$csvout) {
       my $t2 = Text::ANSITable->new;
       $t2->border_style('Default::bold');
-      $t2->color_theme('Default::default_gradation') if -t STDOUT;
       if ( -t STDOUT && !$output ) {
          $t2->color_theme('Default::default_gradation');
       } else {
