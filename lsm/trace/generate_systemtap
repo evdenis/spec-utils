@@ -20,7 +20,7 @@ my $kdir = '';
 my $verbose = 0;
 my $caller_lev = 2;
 my $caller_set = 0;
-my $trace_functions = 1;
+my $trace_functions = 0;
 my $trace_syscalls = 1;
 
 GetOptions(
