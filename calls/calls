@@ -392,6 +392,7 @@ sub get_list_of_calls
                         (for)|
                         (if)|
                         (while)|
+                        (switch)|
                         (sizeof)|
                         (return)|
                         (typeof)|
