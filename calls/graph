@@ -1,0 +1,131 @@
+#!/usr/bin/env perl
+
+use common::sense;
+
+use Graph;
+use Graph::Writer::Dot;
+
+use File::Slurp qw(read_file write_file);
+use Getopt::Long qw(:config gnu_getopt);
+
+my $function;
+my $format = 'png';
+my $out = 'graph';
+my $clean = 0;
+
+GetOptions(
+   'function|f=s' =>  \$function,
+   'format=s'     =>  \$format,
+   'output|o=s'   =>  \$out,
+   'clean|c!'     =>  \$clean,
+) or die "Incorrect usage!\n";
+
+
+my $module_functions_file_name = 'parsec_functions.txt';
+my $priority_list = 'plist.txt';
+
+my @funcs = read_file($module_functions_file_name, chomp => 1);
+my @pr = read_file($priority_list, chomp => 1);
+
+my %colormap;
+my $curr_color;
+my $cnt = 0;
+my @colorlist;
+
+foreach (@pr) {
+   next if !$_;
+
+   if (m/<(\w+)>/) {
+      $curr_color = $1;
+      ++$cnt;
+      push @colorlist, $curr_color;
+      next;
+   }
+
+   $colormap{$_} = [$cnt, $curr_color];
+}
+
+my $graph = Graph->new();
+
+foreach my $root (@funcs) {
+   my @v = map { my @s = split / /, $_; $s[1] } `cscope -d -L -2$root`;
+
+   my %hash;
+   @v = grep {!$hash{$_}++ && $_} @v;
+
+   foreach (@v) {
+      $graph->add_edge($root, $_) if $_ ~~ @funcs;
+   }
+}
+
+foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($_)} keys %colormap) {
+   my @subgraph;
+   my $color = $colormap{$_}[1];
+   my $pr = $colormap{$_}[0];
+
+   $graph->set_vertex_attributes($_, { style => 'filled', fillcolor => $color, shape => 'tripleoctagon' } );
+
+   push @subgraph, map { $$_[1] } $graph->edges_from($_);
+
+   while (1) {
+      my $v = shift @subgraph;
+
+      last if !$v;
+
+      if (!$graph->has_vertex_attribute($v, 'fillcolor')) {
+         $graph->set_vertex_attributes($v, { style => 'filled', fillcolor => $color } );
+         push @subgraph, map { $$_[1] } $graph->edges_from($v);
+      }
+   }
+}
+
+foreach($graph->vertices) {
+   $graph->set_vertex_attribute($_, shape => 'octagon') if !$graph->out_degree($_);
+}
+
+if ($function) {
+   my @vertices;
+   my @edges;
+   my @check;
+
+   @edges = $graph->edges_from($function);
+   push @vertices, map { $$_[1] } @edges;
+   push @check, $function;
+
+   while (1) {
+      my $v = shift @vertices;
+
+      last if !$v || $v ~~ @check;
+
+      @edges = $graph->edges_from($v);
+      push @vertices, map { $$_[1] } @edges;
+      push @check, $v;
+   }
+   
+   $graph->delete_vertices( grep { ! ($_ ~~ @check) } $graph->vertices );
+}
+
+
+my $writer = Graph::Writer::Dot->new();
+$writer->write_graph($graph, "$out.dot");
+
+my @legenda;
+
+my @dot = read_file("$out.dot");
+push @legenda, qq(  subgraph "cluster_legenda" {\n);
+push @legenda, qq(    style = "filled";\n);
+push @legenda, qq(    color = "lightgrey";\n);
+push @legenda, qq(    label = "Legenda";\n);
+push @legenda, qq(    node [shape = "box", style = "filled"];\n);
+push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
+while (my ($idx, $color) = each @colorlist) {
+   ++$idx;
+   push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+}
+push @legenda, qq(  }\n);
+
+splice @dot, 2, 0, @legenda;
+write_file("$out.dot", @dot);
+
+`dot -T$format $out.dot -o $out.$format`;
+
