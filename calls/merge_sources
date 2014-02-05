@@ -16,18 +16,19 @@ use feature qw(say);
 my $output = 'sources';
 my $preprocess = 1;
 my $keep_merged = 0;
+my $debug = 0;
 
 GetOptions(
    'source|d|s=s'     =>  \$PARSEC_SOURCES_PATH,
    'output|o=s'       =>  \$output,
    'preprocess|p!'    =>  \$preprocess,
    'keep-merged|k!'   =>  \$keep_merged,
+   'debug!'           =>  \$debug,
 ) or die "Incorrect usage!\n";
 
 die("Can't find parsec sources.\n") if !defined $PARSEC_SOURCES_PATH;
 
 
-my $debug = 1;
 
 sub add_files ($$) {
 	my @files;
