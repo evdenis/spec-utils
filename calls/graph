@@ -27,6 +27,8 @@ my $priority_list = 'priority_list.txt';
 my @funcs = read_file($module_functions_file_name, chomp => 1);
 my @pr = read_file($priority_list, chomp => 1);
 
+die("Error: there is no cscope files.\n") if ( !( -r 'cscope.in.out' && -r 'cscope.out' && -r  'cscope.po.out' ));
+
 my %colormap;
 my $curr_color;
 my $cnt = 0;
