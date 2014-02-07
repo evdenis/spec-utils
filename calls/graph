@@ -7,33 +7,118 @@ use Graph::Writer::Dot;
 
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
+use Env qw(PARSEC_SOURCES_PATH);
+use File::Find;
+
+use Data::Dumper;
 
 my $function;
 my $format = 'png';
 my $out = 'graph';
-my $clean = 0;
+my $cscope = 0;
+my $source_dir = $PARSEC_SOURCES_PATH ? $PARSEC_SOURCES_PATH : '.';
+my $preprocessed;
 
 GetOptions(
-   'function|f=s' =>  \$function,
-   'format=s'     =>  \$format,
-   'output|o=s'   =>  \$out,
-   'clean|c!'     =>  \$clean,
+   'function|f=s'     =>  \$function,
+   'format=s'         =>  \$format,
+   'output|o=s'       =>  \$out,
+   'cscope|c!'        =>  \$cscope,
+   'preprocessed|p=s' =>  \$preprocessed,
+   'sources|s=s'      =>  \$source_dir,
 ) or die "Incorrect usage!\n";
 
 
-my $module_functions_file_name = 'parsec_functions.txt';
-my $priority_list = 'priority_list.txt';
+sub remove_strings {
+   $_[0] =~ s/(?<!\\|')"(?:[^\\"]+|\\.)*"/""/mg;
+}
 
-my @funcs = read_file($module_functions_file_name, chomp => 1);
-my @pr = read_file($priority_list, chomp => 1);
+sub remove_comments
+{
+   $_[0] =~ s#/\*[^*]*\*+([^/*][^*]*\*+)*/|//([^\\]|[^\n][\n]?)*?\n|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^/"'\\]*)#defined $3 ? $3 : ""#gse;
+}
 
-die("Error: there is no cscope files.\n") if ( !( -r 'cscope.in.out' && -r 'cscope.out' && -r  'cscope.po.out' ));
+sub add_files
+{
+	my @files;
+	my $source = '';
+	my ($path, $mask) = @_;
+
+	find(sub { push @files, $File::Find::name if m/\Q${mask}\E$/ }, $path);
+
+   @files = sort @files;
+
+	foreach (@files) {
+		$source .= read_file($_);
+	}
+	return \$source;
+}
+
+sub get_list_of_calls
+{
+   my @calls;
+
+   while (
+      $_[0] =~
+         m/
+            \b(?<fname>\w+)
+            \s*
+            (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
+            (?!\s*(?:\{|\()) # исключает функции которые ни разу не вызываются
+         /gmx
+   ) {
+      # Просматриваем ещё раз аргументы вызова прошлой функции.
+      # Там могут быть ещё вызовы.
+      # -1 - первая скобка после имени не учитывается.
+      my $offset = pos($_[0]) - (length($+{fargs}) - 1);
+
+      my $call = $+{fname};
+      #$call = $+{fname} . $+{fargs} if length $+{fname} <= 1;
+      $call =~ s/\n/ /mg;
+      $call =~ s/\s+/ /g;
+      $call =~ s/^\s//g;
+      $call =~ s/\s$//g;
+      push @calls, $call;
+
+      pos($_[0]) = $offset;
+   }
+
+   #filter
+   @calls = grep { ! m/^(
+                        (for)|
+                        (if)|
+                        (while)|
+                        (switch)|
+                        (sizeof)|
+                        (return)|
+                        (typeof)|
+                        (case)|
+                        (else)|
+                        (defined)|
+                        (__attribute__)|
+                        (__typeof__)|
+                        (volatile)|
+                        (asm)|
+                        (__builtin_.+)|
+                        (__section__)|
+                        (section)|
+                        (alias)|
+                        (aligned))$/x } @calls;
+
+   return @calls;
+}
+
+die("Error: there is no cscope files.\n") if ($cscope && !( -r 'cscope.in.out' && -r 'cscope.out' && -r  'cscope.po.out' ));
+
+# pr list init
 
 my %colormap;
 my $curr_color;
 my $cnt = 0;
 my @colorlist;
 
+my $priority_list = 'priority_list.txt';
+my @pr = read_file($priority_list, chomp => 1);
 foreach (@pr) {
    next if !$_;
 
@@ -47,13 +132,56 @@ foreach (@pr) {
    $colormap{$_} = [$cnt, $curr_color];
 }
 
+# read sources
+my $source;
+if ($preprocessed) {
+   $source  = read_file($preprocessed);
+} else {
+   $source  = ${ add_files $source_dir, '.h' };
+   $source .= ${ add_files $source_dir, '.c' };
+}
+remove_comments($source);
+remove_strings($source);
+
+#funcs init
+my %cg;
+
+my $ret  = qr'';
+my $name = qr'(?<name>[a-zA-Z]\w*)';
+my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+
+while ( $source =~ m/$ret\s*+$name\s*+$args\s*+$body/gmx ) {
+   my ($name, $body) = ($+{name}, $+{fbody});
+   next if $name =~ m/^((for)|(if)|(while)|(switch))$/x;
+
+   if ($cscope) {
+      ++$cg{$name};
+   } else {
+      if (!exists $cg{$name}) {
+         $cg{$name} = [ get_list_of_calls($body) ];
+      } else {
+         warn "$name already parsed\n";
+      }
+   }
+}
+
+#graph
 my $graph = Graph->new();
+my @funcs = keys %cg;
 
 foreach my $root (@funcs) {
-   my @v = map { my @s = split / /, $_; $s[1] } `cscope -d -L -2$root`;
+   my @v;
+   
+   if ($cscope) {
+      @v =  map { my @s = split / /, $_; $s[1] } `cscope -d -L -2$root`;
+   } else {
+      @v = @{ $cg{$root} };
+   }
 
    my %hash;
-   @v = grep {!$hash{$_}++ && $_} @v;
+   #cscope can return empty string, $_ check
+   @v = grep {$_ && !$hash{$_}++} @v;
 
    foreach (@v) {
       $graph->add_edge($root, $_) if $_ ~~ @funcs;
