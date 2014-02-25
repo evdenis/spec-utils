@@ -1,0 +1,284 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use utf8;
+use File::Find;
+use File::Slurp qw(read_file write_file);
+use Getopt::Long qw(:config gnu_getopt);
+use Pod::Usage;
+
+use feature qw(say);
+
+binmode STDOUT, ':utf8';
+
+=encoding utf8
+
+=pod
+
+=head1 merge
+
+merge - Переложение спецификаций с одной версии исходного кода на другую.
+
+=head1 SYNOPSIS
+
+ merge [options]
+ Options:
+  -f|--from dir - откуда переносятся спецификации
+  -t|--to dir   - куда переносятся спецификации
+  -h|--help     - выводит полное описание программы
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-f|--from dir>
+
+Указание на директорию, откуда переносятся спецификации. По умолчанию - текущая директория.
+
+=item B<-t|--to dir>
+
+Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения PARSEC_SOURCES.
+
+=item B<-h|--help>
+
+Выводит данное сообщение.
+
+=back
+
+=head1 DESCRIPTION
+
+Программа считывает спецификации из всех *.[ch] файлов директории --from и её поддиректорий. После пошагово переносит спецификации, прикреплённые к конкретным функциям на эти же функции из файлов директории --to и её поддиректорий. Какая функция в каком конкретном файле располагается не имеет значения. Старые спецификации, если они были, заменяются новыми. Для того, чтобы программа считала спецификацию прикреплённой к функции, необходимо чтобы последняя распологалась перед B<определением> функции. Если несколько спецификаций расположено подряд, то все они считаются прикреплёнными к одной функции.
+
+Если программа не смогла найти функцию, для которой написаны спецификации, то выводится сообщение об ошибке. Работа программы при этом продолжается.
+
+Обычные комментарии к функциям не переносятся. Комментарии внутри спецификаций переносятся.
+
+Если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Соответственно, в данным случае переносятся также и все изменения в коде, если таковые наличествуют.
+
+На последнем этапе функционирования программа выводит в STDERR все спецификации, которые не были перенесены. Чаще всего это спецификации, которые прикреплены не к функциям.
+
+=head1 BUGS
+
+Программа не осуществляет никакого препроцессирования. Необходимость этого выглядит сомнительной. Однако, в ряде случаев это может приводить к переносу спецификаций, которые программистом считались скрытыми от таких инструментов, как Frama-C.
+
+Если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Возможно, необходимо исправить на перенос только спецификаций и прикрепление их к конкретным строкам в теле функции.
+
+=cut
+
+my $help = 0;
+my $parsec_dir = defined $ENV{PARSEC_SOURCES} ? $ENV{PARSEC_SOURCES} : '';
+my $specs_dir = '.';
+
+GetOptions(
+   'from|f=s'     =>  \$specs_dir,
+   'to|t=s'       =>  \$parsec_dir,
+   'help|h'      =>   \$help,
+) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0}) if $help;
+pod2usage({ -msg => "Wrong arguments.\n", -exitval => 2 }) if !( -d $parsec_dir && -d $specs_dir);
+
+my ($array, $pattern);
+
+sub wanted
+{
+	push @$array, $File::Find::name if m/${pattern}/;
+}
+
+my @parsec;
+$array = \@parsec;
+$pattern = qr(\.[ch]$);
+find(\&wanted, $parsec_dir);
+
+my @current;
+$array = \@current;
+find(\&wanted, $specs_dir);
+
+sub remove_macro
+{
+   my @macro;
+
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      \#
+      [ \t]*
+      (?:
+         e(?:lse|ndif)
+         |
+         line
+         |
+         include
+         |
+         undef
+      )
+      .*
+      $
+   /push @macro, $&;"\@$#macro\@"/gmxe;
+   
+   $_[0] =~ s/
+      ^
+      [ \t]*
+      \#
+      [ \t]*
+      (?:
+         define
+         |
+         elif
+         |
+         ifn?(?:def)?
+      )
+      [ \t]+
+      (?<mbody>
+         .*(?=\\\n)
+         \\\n
+         (?&mbody)?
+      )?
+      .+
+      $
+   /push @macro, $&;"\@$#macro\@"/gmex;
+
+   \@macro
+}
+
+sub remove_comments
+{
+   my @comments;
+
+   $_[0] =~ s!
+               /\*[^*]*\*+(?:[^/*][^*]*\*+)*/|
+               //(?:[^\\]|[^\n][\n]?)*?(?=\n)|
+               ("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.[^/"'\\]*)
+            !if (defined $1) { $1 } else { push @comments, $&; "\$$#comments\$"}!gsxe;
+
+   \@comments
+}
+
+die("Can't find specifications sources.\n") if (!@current);
+die("Can't find parsec sources.\n") if (!@parsec);
+
+my $code;
+foreach(@current) {
+   $code .= read_file($_);
+}
+
+my %parsec;
+foreach my $f (@parsec) {
+   $parsec{$f}{code} = read_file($f);
+   $parsec{$f}{c} = remove_comments($parsec{$f}{code});
+   my %i;
+   foreach (0 .. $#{ $parsec{$f}{c} }) {
+      $i{$_} = 1 if @{ $parsec{$f}{c} }[$_] =~ m!^(?:/\*\@|//\@)!
+   }
+   $parsec{$f}{i} = \%i;
+   $parsec{$f}{m} = remove_macro($parsec{$f}{code});
+}
+
+my @comments = @{ remove_comments($code) };
+my %specs;
+
+foreach(0 .. $#comments) {
+   $specs{$_} = 1 if $comments[$_] =~ m!^(?:/\*\@|//\@)!;
+}
+
+#funcs init
+my %f;
+my $ret  = qr'(?<ret>[\w\s\*\$]+)';
+my $name = qr'(?<name>[a-zA-Z]\w*)';
+my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+my $comment_regexp = qr'(?:\$(\d++)\$)';
+my $spacer = qr"(?:\s++|$comment_regexp)*";
+
+while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
+   my ($fret, $fname, $fbody) = ($+{ret}, $+{name}, $+{fbody});
+  
+   if ($fret =~ m/^\s*($comment_regexp(\s*$comment_regexp)*).*$/m) {
+      my $spec = $1;
+      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {delete $specs{$1}; "$comments[$1]"} else {''}/meg;
+      $spec =~ s/^\s+//s;
+      $spec =~ s/\s+$//s;
+      $spec .= "\n";
+      next if $spec =~ m/^\s+$/s;
+
+      my $done = 0;
+      foreach(keys %parsec) {
+         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${spacer}$args${spacer}$body/m) {
+            my ($bbegin, $bend) = ($-[5], $+[5]);
+            my $fret = $+{ret};
+            my $sbegin = $-[1];
+            my $send = $+[1];
+
+            #TODO: line by line
+            {
+               my $cond = 0;
+               $fbody =~ s/$comment_regexp/$cond = 1 if exists $specs{$1}; delete $specs{$1}; "$comments[$1]"/eg;
+
+               if ($cond) {
+                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody);
+               }
+            }
+
+            #remove previous specifications
+            my @interval;
+            my $continue = 0;
+            my ($cb, $ce) = (0, 0);
+            while ($fret =~ m/$comment_regexp/g) {
+               my ($b, $e) = ($-[0], $+[0]);
+               if (exists $parsec{$_}{i}{$1}) {
+                  if ($continue) {
+                     $ce = $e + 1;
+                  } else {
+                     $cb = $b;
+                     $ce = $e + 1;
+                  }
+
+                  $continue = 1;
+               } else {
+                  push @interval, ($cb, $ce);
+                  $continue = 0;
+               }
+            }
+            push @interval, ($cb, $ce);
+
+            while (($cb, $ce) = splice (@interval, 0, 2)) {
+               substr($fret, $cb, $ce - $cb, '');
+            }
+            $fret =~ s/\b(?=[a-zA-Z_])/$spec/s;
+
+            substr($parsec{$_}{code}, $sbegin, $send - $sbegin, $fret);
+
+            $done = 1;
+            last;
+         }
+      }
+      warn "Can't find function $fname\n" if (!$done);
+   }
+}
+
+foreach my $f (keys %parsec) {
+   $parsec{$f}{code} =~ s/\@(\d+)\@/@{ $parsec{$f}{m} }[$1]/eg;
+   $parsec{$f}{code} =~ s/\$(\d+)\$/@{ $parsec{$f}{c} }[$1]/eg;
+   write_file($f, $parsec{$f}{code});
+}
+
+if (keys %specs) {
+   require 'sys/ioctl.ph';
+   require Term::ANSIColor;
+   import  Term::ANSIColor qw(color);
+
+   die "no TIOCGWINSZ" unless defined &TIOCGWINSZ;
+   open(TTY, "+</dev/tty") or die "No tty: $!";
+   my $winsize;
+   unless (ioctl(TTY, &TIOCGWINSZ, $winsize='')) {
+      die sprintf "$0: ioctl TIOCGWINSZ (%08x: $!)\n", &TIOCGWINSZ;
+   }
+   my ($row, $col, $xpixel, $ypixel) = unpack('S4', $winsize);
+
+
+   say STDERR color("red"),"Can't merge these specifications:\n", color('reset');
+   say STDERR join("\n" . color('blue') . '-' x $col . color('reset'), map {$comments[$_]} sort keys %specs);
+}
+
