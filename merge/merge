@@ -41,6 +41,10 @@ merge - Переложение спецификаций с одной верси
 
 Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения PARSEC_SOURCES.
 
+=item B<--[no-]strict>
+
+Осуществлять точное сопоставление по аргументам и возвращаемому результату функций или отключить эти проверки. По умолчанию проверки включены.
+
 =item B<-h|--help>
 
 Выводит данное сообщение.
@@ -70,11 +74,13 @@ merge - Переложение спецификаций с одной верси
 my $help = 0;
 my $parsec_dir = defined $ENV{PARSEC_SOURCES} ? $ENV{PARSEC_SOURCES} : '';
 my $specs_dir = '.';
+my $strict = 1;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
    'to|t=s'       =>  \$parsec_dir,
-   'help|h'      =>   \$help,
+   'strict|s!'    =>  \$strict,
+   'help|h'       =>  \$help,
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
@@ -227,23 +233,42 @@ my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 my $spacer = qr"(?:\s++|$comment_regexp)*";
 
 while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
-   my ($fret, $fname, $fbody) = ($+{ret}, $+{name}, $+{fbody});
+   my ($fret, $fname, $fargs, $fbody) = ($+{ret}, $+{name}, $+{args}, $+{fbody});
   
    if ($fret =~ m/^\s*($comment_regexp(\s*$comment_regexp)*).*$/m) {
       my $spec = $1;
-      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {delete $specs{$1}; "$comments[$1]"} else {''}/meg;
+      my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
+      my @exclude_specs;
+
+      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/meg;
       $spec =~ s/^\s+//s;
       $spec =~ s/\s+$//s;
       $spec .= "\n";
       next if $spec =~ m/^\s+$/s;
 
+      my $args_pattern = $fargs =~ s/\s+//gsr;
+
       my $done = 0;
       foreach(keys %parsec) {
+         #only one function in one file
          if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${spacer}$args${spacer}$body/m) {
             my ($bbegin, $bend) = ($-[5], $+[5]);
-            my $fret = $+{ret};
-            my $sbegin = $-[1];
-            my $send = $+[1];
+            my ($sbegin, $send) = ($-[1], $+[1]);
+            my ($fret, $fargs) = ($+{ret}, $+{args});
+
+            #additional checks
+            if ($strict) {
+               if ($args_pattern ne $fargs =~ s/\s+//gr) {
+                  warn "$_: arguments of function '$fname' doesn't match.\n";
+                  next;
+               }
+
+               $fret =~ m/[a-zA-Z_]/s;
+               if ($ret_pattern ne substr($fret, $-[0]) =~ s/\s+//gr) {
+                  warn "$_: return type of function '$fname' doesn't match.\n";
+                  next;
+               }
+            }
 
             #TODO: line by line
             {
@@ -289,7 +314,11 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
             last;
          }
       }
-      warn "Can't find function $fname\n" if (!$done);
+      if (!$done) {
+         warn "Can't find function " . GREEN . "$fname" . RESET "\n"
+      } else {
+         delete $specs{$_} foreach @exclude_specs;
+      }
    }
 }
 
