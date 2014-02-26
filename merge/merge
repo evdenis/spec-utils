@@ -8,6 +8,7 @@ use File::Find;
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Pod::Usage;
+use Term::ANSIColor qw(:constants);
 
 use feature qw(say);
 
@@ -259,13 +260,13 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
             #additional checks
             if ($strict) {
                if ($args_pattern ne $fargs =~ s/\s+//gr) {
-                  warn "$_: arguments of function '$fname' doesn't match.\n";
+                  warn "$_: " . RED . 'arguments' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
                   next;
                }
 
                $fret =~ m/[a-zA-Z_]/s;
                if ($ret_pattern ne substr($fret, $-[0]) =~ s/\s+//gr) {
-                  warn "$_: return type of function '$fname' doesn't match.\n";
+                  warn "$_: " . RED . 'return type' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
                   next;
                }
             }
@@ -330,8 +331,6 @@ foreach my $f (keys %parsec) {
 
 if (keys %specs) {
    require 'sys/ioctl.ph';
-   require Term::ANSIColor;
-   import  Term::ANSIColor qw(color);
 
    die "no TIOCGWINSZ" unless defined &TIOCGWINSZ;
    open(TTY, "+</dev/tty") or die "No tty: $!";
@@ -342,7 +341,7 @@ if (keys %specs) {
    my ($row, $col, $xpixel, $ypixel) = unpack('S4', $winsize);
 
 
-   say STDERR color("red"),"Can't merge following specifications:\n", color('reset');
-   say STDERR join("\n" . color('blue') . '-' x $col . color('reset'), map {$comments[$_]} sort keys %specs);
+   say STDERR RED,"Can't merge following specifications:\n", RESET;
+   say STDERR join("\n" . BLUE . '-' x $col . RESET, map {$comments[$_]} sort keys %specs);
 }
 
