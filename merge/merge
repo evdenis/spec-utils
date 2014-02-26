@@ -61,7 +61,7 @@ merge - Переложение спецификаций с одной верси
 
 =head1 BUGS
 
-Программа не осуществляет никакого препроцессирования. Необходимость этого выглядит сомнительной. Однако, в ряде случаев это может приводить к переносу спецификаций, которые программистом считались скрытыми от таких инструментов, как Frama-C.
+Программа не осуществляет никакого препроцессирования, за исключением обработки "#if 0" в исходниках из директории со спецификациями. Необходимость этого выглядит сомнительной. Однако, в ряде случаев это может приводить к переносу спецификаций, которые программистом считались скрытыми от таких инструментов, как Frama-C.
 
 Если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Возможно, необходимо исправить на перенос только спецификаций и прикрепление их к конкретным строкам в теле функции.
 
@@ -106,40 +106,35 @@ sub remove_macro
       \#
       [ \t]*
       (?:
-         e(?:lse|ndif)
+           (?:
+               e(?:lse|ndif)
+               |
+               line
+               |
+               include
+               |
+               undef
+            )
+            .*
          |
-         line
-         |
-         include
-         |
-         undef
+            (?:
+            define
+            |
+            elif
+            |
+            ifn?(?:def)?
+            )
+            [ \t]+
+            (?<mbody>
+               .*(?=\\\n)
+               \\\n
+               (?&mbody)?
+            )?
+            .+
       )
-      .*
       $
    /push @macro, $&;"\@$#macro\@"/gmxe;
    
-   $_[0] =~ s/
-      ^
-      [ \t]*
-      \#
-      [ \t]*
-      (?:
-         define
-         |
-         elif
-         |
-         ifn?(?:def)?
-      )
-      [ \t]+
-      (?<mbody>
-         .*(?=\\\n)
-         \\\n
-         (?&mbody)?
-      )?
-      .+
-      $
-   /push @macro, $&;"\@$#macro\@"/gmex;
-
    \@macro
 }
 
@@ -177,6 +172,46 @@ foreach my $f (@parsec) {
 }
 
 my @comments = @{ remove_comments($code) };
+my @macro = @{ remove_macro($code) };
+
+my $comment_regexp = qr'(?:\$(\d++)\$)';
+
+#simple preprocess
+my $skip = 0;
+my $ifdef_rec = 0;
+my ($begin, $end) = (undef, undef);
+foreach my $i (0 .. $#macro)
+{
+   if (!$skip) {
+      if ($macro[$i] =~ m/^\s*+#\s*+if\s*+0/) {
+         $skip = 1;
+         $begin = $i;
+         $ifdef_rec = 0;
+      }
+   } else {
+      if ($macro[$i] =~ m/^\s*+#\s*+if(?:(?:n)?def)?/) {
+         ++$ifdef_rec;
+      } elsif ($macro[$i] =~ m/^\s*+#\s*+endif/) {
+         if ($ifdef_rec == 0) {
+            $skip = 0;
+            $end = $i;
+
+            #remove part of the code
+            $code =~ m/\@$begin\@/;
+            $begin = $-[0];
+            $code =~ m/\@$end\@/;
+            $end = $+[0];
+            my $remove = substr($code, $begin, $end - $begin, '');
+
+            #exclude comments from
+            $comments[$_] = '' foreach ($remove =~ m/$comment_regexp/g);
+         } else {
+            --$ifdef_rec;
+         }
+      }
+   }
+}
+
 my %specs;
 
 foreach(0 .. $#comments) {
@@ -189,7 +224,6 @@ my $ret  = qr'(?<ret>[\w\s\*\$]+)';
 my $name = qr'(?<name>[a-zA-Z]\w*)';
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
-my $comment_regexp = qr'(?:\$(\d++)\$)';
 my $spacer = qr"(?:\s++|$comment_regexp)*";
 
 while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
@@ -217,6 +251,7 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
                $fbody =~ s/$comment_regexp/$cond = 1 if exists $specs{$1}; delete $specs{$1}; "$comments[$1]"/eg;
 
                if ($cond) {
+                  $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
                   substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody);
                }
             }
@@ -259,8 +294,8 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
 }
 
 foreach my $f (keys %parsec) {
-   $parsec{$f}{code} =~ s/\@(\d+)\@/@{ $parsec{$f}{m} }[$1]/eg;
-   $parsec{$f}{code} =~ s/\$(\d+)\$/@{ $parsec{$f}{c} }[$1]/eg;
+   $parsec{$f}{code} =~ s/\@(\d+)\@/@{ $parsec{$f}{m} }[$1]/g;
+   $parsec{$f}{code} =~ s/$comment_regexp/@{ $parsec{$f}{c} }[$1]/g;
    write_file($f, $parsec{$f}{code});
 }
 
@@ -278,7 +313,7 @@ if (keys %specs) {
    my ($row, $col, $xpixel, $ypixel) = unpack('S4', $winsize);
 
 
-   say STDERR color("red"),"Can't merge these specifications:\n", color('reset');
+   say STDERR color("red"),"Can't merge following specifications:\n", color('reset');
    say STDERR join("\n" . color('blue') . '-' x $col . color('reset'), map {$comments[$_]} sort keys %specs);
 }
 
