@@ -4,11 +4,14 @@ use warnings;
 use strict;
 
 use utf8;
+
 use File::Find;
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Pod::Usage;
 use Term::ANSIColor qw(:constants);
+use File::Temp qw(tempfile);
+use Algorithm::Diff qw(traverse_sequences);
 
 use feature qw(say);
 
@@ -26,10 +29,12 @@ merge - Переложение спецификаций с одной верси
 
  merge [options]
  Options:
-  -f|--from dir    - откуда переносятся спецификации
-  -t|--to dir      - куда переносятся спецификации
-  -s|--[no-]strict - осуществлять дополнительные проверки при сопоставлении функций
-  -h|--help        - выводит полное описание программы
+  -f|--from dir      - откуда переносятся спецификации
+  -t|--to dir        - куда переносятся спецификации
+  -d|--[no-]detailed - переключение режимов переноса спецификаций внутри тел функций
+  -s|--[no-]strict   - осуществлять дополнительные проверки при сопоставлении функций
+  -k|--[no-]kdiff    - использовать kdiff3 вместо meld
+  -h|--help          - выводит полное описание программы
 
 =head1 OPTIONS
 
@@ -43,9 +48,17 @@ merge - Переложение спецификаций с одной верси
 
 Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения PARSEC_SOURCES.
 
-=item B<--[no-]strict>
+=item B<-d|--[no-]detailed>
+
+Если режим включён, то спецификации внутри тела функции переносятся по отдельности через привязки к строкам. В противном случае, если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Соответственно, в данным случае переносятся также и все изменения в коде, если таковые наличествуют. По умолчанию включён режим детального переноса, то есть посредством копирования отдельных спецификаций внутри тела функции.
+
+=item B<-s|--[no-]strict>
 
 Осуществлять точное сопоставление по аргументам и возвращаемому результату функций или отключить эти проверки. По умолчанию проверки включены.
+
+=item B<-k|--[no-]kdiff>
+
+Когда программа не в состоянии автоматически переместить спецификации, вызывается внешний инструмент. По умолчанию это программа meld. Опция включает использование программы kdiff3 вместо meld.
 
 =item B<-h|--help>
 
@@ -61,15 +74,11 @@ merge - Переложение спецификаций с одной верси
 
 Обычные комментарии к функциям не переносятся. Комментарии внутри спецификаций переносятся.
 
-Если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Соответственно, в данным случае переносятся также и все изменения в коде, если таковые наличествуют.
-
 На последнем этапе функционирования программа выводит в STDERR все спецификации, которые не были перенесены. Чаще всего это спецификации, которые прикреплены не к функциям.
 
 =head1 BUGS
 
 Программа не осуществляет никакого препроцессирования, за исключением обработки "#if 0" в исходниках из директории со спецификациями. Необходимость этого выглядит сомнительной. Однако, в ряде случаев это может приводить к переносу спецификаций, которые программистом считались скрытыми от таких инструментов, как Frama-C.
-
-Если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Возможно, необходимо исправить на перенос только спецификаций и прикрепление их к конкретным строкам в теле функции.
 
 =cut
 
@@ -77,11 +86,15 @@ my $help = 0;
 my $parsec_dir = defined $ENV{PARSEC_SOURCES} ? $ENV{PARSEC_SOURCES} : '';
 my $specs_dir = '.';
 my $strict = 1;
+my $mode = 1;
+my $kdiff = 0;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
    'to|t=s'       =>  \$parsec_dir,
+   'detailed|d!'  =>  \$mode,
    'strict|s!'    =>  \$strict,
+   'kdiff|k!'     =>  \$kdiff,
    'help|h'       =>  \$help,
 ) or pod2usage(1);
 
@@ -159,8 +172,35 @@ sub remove_comments
    \@comments
 }
 
-die("Can't find specifications sources.\n") if (!@current);
-die("Can't find parsec sources.\n") if (!@parsec);
+sub call_meld
+{
+   return 1 if $#_ > 2;
+
+   my @f;
+   foreach my $i (0 .. $#_) {
+      my (undef, $name) = tempfile(SUFFIX => '.c');
+      push @f, $name;
+
+      write_file $name, @{$_[$i]}
+   }
+
+   my $ret;
+   if ($kdiff) {
+      $ret = system('kdiff3', @f)
+   } else {
+      $ret = system('meld', @f)
+   }
+
+   @{$_[$#_]} = read_file($f[$#f]) if !$ret;
+
+   unlink $f[$_] for 0 .. $#_;
+
+   $ret
+}
+
+
+die(RED . "Can't find specifications sources." . RESET ."\n") if (!@current);
+die(RED . "Can't find parsec sources." . RESET . "\n") if (!@parsec);
 
 my $code;
 foreach(@current) {
@@ -205,9 +245,9 @@ foreach my $i (0 .. $#macro)
             $end = $i;
 
             #remove part of the code
-            $code =~ m/\@$begin\@/;
+            $code =~ m/\@\Q$begin\E\@/;
             $begin = $-[0];
-            $code =~ m/\@$end\@/;
+            $code =~ m/\@\Q$end\E\@/;
             $end = $+[0];
             my $remove = substr($code, $begin, $end - $begin, '');
 
@@ -234,29 +274,29 @@ my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 my $spacer = qr"(?:\s++|$comment_regexp)*";
 
-while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
+while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
    my ($fret, $fname, $fargs, $fbody) = ($+{ret}, $+{name}, $+{args}, $+{fbody});
   
-   if ($fret =~ m/^\s*($comment_regexp(\s*$comment_regexp)*).*$/m) {
+   if ($fret =~ m/^\s*($comment_regexp(\s*$comment_regexp)*).*$/s) {
       my $spec = $1;
       my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
       my @exclude_specs;
 
-      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/meg;
+      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
       $spec =~ s/^\s+//s;
       $spec =~ s/\s+$//s;
       $spec .= "\n";
       next if $spec =~ m/^\s+$/s;
 
-      my $args_pattern = $fargs =~ s/\s+//gsr;
+      my $args_pattern = $fargs =~ s/\s+//gr;
 
       my $done = 0;
       foreach(keys %parsec) {
          #only one function in one file
-         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${spacer}$args${spacer}$body/m) {
+         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${spacer}$args${spacer}$body/) {
             my ($bbegin, $bend) = ($-[5], $+[5]);
             my ($sbegin, $send) = ($-[1], $+[1]);
-            my ($fret, $fargs) = ($+{ret}, $+{args});
+            my ($fret, $fargs, $nbody) = ($+{ret}, $+{args}, $+{fbody});
 
             #additional checks
             if ($strict) {
@@ -265,21 +305,112 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
                   next;
                }
 
-               $fret =~ m/[a-zA-Z_]/s;
+               $fret =~ m/[a-zA-Z_]/;
                if ($ret_pattern ne substr($fret, $-[0]) =~ s/\s+//gr) {
                   warn "$_: " . RED . 'return type' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
                   next;
                }
             }
 
-            #TODO: line by line
-            {
-               my $cond = 0;
-               $fbody =~ s/$comment_regexp/$cond = 1 if exists $specs{$1}; delete $specs{$1}; "$comments[$1]"/eg;
-
-               if ($cond) {
+            my $specs_exists = 0;
+            while ($fbody =~ m/$comment_regexp/g) {
+               if (exists $specs{$1}) {
+                  $specs_exists = 1;
+                  last
+               }
+            }
+            if ($specs_exists) {
+               if (!$mode) {
+                  $fbody =~ s/$comment_regexp/delete $specs{$1}; "$comments[$1]"/eg;
                   $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
-                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody);
+                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
+               } else {
+                  my $fbody_saved = $fbody;
+                  my @exclude_specs;
+                  my @intervals;
+
+                  $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
+=unnecessary
+# This code remove simple comments from new_code. Not very useful.
+                  while ($fbody =~ m/^[ \t]*$comment_regexp(?:[ \t]*+|$comment_regexp)*\n/gm){
+                     my ($b, $e) = ($-[0], $+[0]);
+                     my @m = $& =~ m/$comment_regexp/g;
+                     my $cond = 0;
+
+                     foreach (@m) {
+                        $cond = 1 if exists $specs{$_}
+                     }
+                     if (!$cond) {
+                        push @intervals, ($b, $e)
+                     }
+                  }
+                  while (@intervals) {
+                     my $e = pop @intervals;
+                     my $b = pop @intervals;
+                     substr($fbody, $b, $e - $b, '');
+                  }
+=cut
+                  $fbody =~ s/$comment_regexp/if (exists $specs{$1}) {$&} else {$comments[$1]}/eg;
+
+                  $nbody =~ s/\@(\d+)\@/@{ $parsec{$_}{m} }[$1]/g;
+                  $nbody =~ s/$comment_regexp/if (exists $parsec{$_}{i}{$1}) {$&} else {@{$parsec{$_}{c}}[$1]}/eg;
+
+                  my @new_code = map { split(/^/m, $_) } $fbody;
+                  my @old_code = map { split(/^/m, $_) } $nbody;
+                  my @code;
+
+                  my $cant_resolve = 0;
+
+                  traverse_sequences(
+                     \@old_code,
+                     \@new_code,
+                     {
+                        MATCH => sub {push @code, $new_code[$_[1]]},
+                        DISCARD_A => sub {push @code, $old_code[$_[0]]},
+                        DISCARD_B => sub {
+                           if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_regexp)*$/) {
+                              push @code, $new_code[$_[1]]
+                           } elsif ($new_code[$_[1]] =~ m/$comment_regexp/) {
+                              $cant_resolve = 1;
+                              push @code, $new_code[$_[1]]
+                           } else {
+                              $cant_resolve = 1
+                           }
+                        }
+                     },
+                     sub {$_[0] =~ s/\s+|[(){}\[\];]|$comment_regexp//gr}
+                  );
+
+                  @code = split(/^/, join('', @code) =~ s/$comment_regexp/push @exclude_specs, $1;$comments[$1]/ger);
+
+                  if ($cant_resolve) {
+                     my $function = $fret . ' ' . $fname . $fargs;
+                     $function =~ s/$comment_regexp//g;
+                     $function =~ s/\s+/ /g;
+                     $function =~ s/^\s+//g;
+                     $function =~ s/\n//g;
+                     $function .= "\n";
+
+                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_regexp/@{$parsec{$_}{c}}[$1]/gr);
+                     @new_code = split(/^/, $fbody_saved =~ s/$comment_regexp/$comments[$1]/gr);
+
+                     unshift @old_code, $function;
+                     unshift @new_code, $function;
+                     unshift @code, $function;
+
+                     warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
+                        ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
+                           if call_meld(\@old_code, \@new_code, \@code);
+
+                     shift @old_code;
+                     shift @new_code;
+                     my $check = shift @code;
+                     warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
+                        if $check ne $function;
+                  }
+
+                  delete $specs{$_} foreach @exclude_specs;
+                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
                }
             }
 
@@ -305,10 +436,12 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
             }
             push @interval, ($cb, $ce);
 
-            while (($cb, $ce) = splice (@interval, 0, 2)) {
+            while (@interval) {
+               $ce = pop @interval;
+               $cb = pop @interval;
                substr($fret, $cb, $ce - $cb, '');
             }
-            $fret =~ s/\b(?=[a-zA-Z_])/$spec/s;
+            $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
             substr($parsec{$_}{code}, $sbegin, $send - $sbegin, $fret);
 
@@ -323,6 +456,7 @@ while ( $code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/gm ) {
       }
    }
 }
+
 
 foreach my $f (keys %parsec) {
    $parsec{$f}{code} =~ s/\@(\d+)\@/@{ $parsec{$f}{m} }[$1]/g;
