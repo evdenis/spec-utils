@@ -415,7 +415,7 @@ while ($g->has_a_cycle) {
 
 
    if ($single_file) {
-      $module_c_content = join('//' . '-' x 78 . "\n",
+      $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
                                    $kernel_macro, $module_macro,
                                    $kernel_h_content,
