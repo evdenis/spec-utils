@@ -27,7 +27,7 @@ sub parse_function
    my $self = shift;
    my %functions;
 
-   my $ret  = qr/(?<ret>[\w\s\*$Local::C::Transformation::special_symbols]+)/;
+   my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
    my $name = qr'(?<name>[a-zA-Z_]\w*+)';
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
