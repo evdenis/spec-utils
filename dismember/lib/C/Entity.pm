@@ -13,7 +13,8 @@ has 'id' => (
    is => 'ro',
    isa => 'Str',
    required => 1,
-   builder => '_compose_id'
+   builder => '_compose_id',
+   init_arg => undef
 );
 
 sub _compose_id
