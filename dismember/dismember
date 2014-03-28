@@ -291,18 +291,8 @@ while ($g->has_a_cycle) {
       say "$t1" . " " . $o1->name . " -> " . $o2->name;
 
       if ($t1 eq 'C::Function') {
-         $o1->code =~ m/(.*?)\{/s;
-         my $dep = $1 . ';';
-         $dep = normalize($dep);
-
-         my $a;
-         if ($g->has_vertex_attribute($path[0], 'forward_declaration')) {
-            $a = $g->get_vertex_attribute($path[0], 'forward_declaration');
-         } else {
-            $a = [];
-            $g->set_vertex_attribute($path[0], 'forward_declaration', $a );
-         }
-         push @$a, $dep;
+         $o2->code =~ m/(\w.*?)\{/s;
+         $o1->add_fw_decl(normalize($1) . ';');
 
          $g->delete_edge($path[0], $path[1])
       } elsif ($t1 eq 'C::Structure') {
@@ -404,7 +394,7 @@ while ($g->has_a_cycle) {
             }
          }
 
-         $$content .= $o->code . "\n\n";
+         $$content .= $o->to_string . "\n\n";
       }
 
       $g->delete_vertices(@zv);

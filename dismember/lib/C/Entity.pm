@@ -37,6 +37,11 @@ has 'code' => (
 );
 
 
+sub to_string
+{
+   $_[0]->code
+}
+
 sub get_code_ids
 {
    [ $_[0]->name ]
