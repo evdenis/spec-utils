@@ -1,0 +1,560 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use feature qw(say state switch);
+use re '/aa';
+
+use Graph::Directed;
+use Graph::Writer::Dot;
+use Graph::Reader::Dot;
+
+use Data::Alias qw(alias deref);
+use Data::Dumper;
+use File::Slurp qw(write_file);
+use Getopt::Long qw(:config gnu_getopt);
+
+use lib './lib/';
+
+use Local::List::Utils qw(difference any);
+use Local::String::Utils qw(normalize);
+use Local::File::C::Merge qw(merge_headers merge_sources);
+use Local::GCC::Preprocess qw(gcc_preprocess_as_kernel_module gcc_preprocess_as_kernel_module_get_macro);
+use Local::C::Transformation qw(adapt restore);
+use Local::C::Preprocessing;
+
+use Scalar::Util qw(blessed);
+
+use C::Macro;
+use C::MacroSet;
+use C::TypedefSet;
+use C::StructureSet;
+use C::EnumSet;
+use C::FunctionSet;
+use C::DeclarationSet;
+use C::GlobalSet;
+
+use Storable;
+
+my $function;
+my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
+my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
+my $use_cache = 1;
+my $cache_level = 2;
+my $cache_file_1 = 'kernel.cache';
+my $cache_file_2 = 'graph.cache';
+
+my $module_c = 'parsec.c';
+my $module_h = 'module.h';
+my $kernel_h = 'kernel.h';
+my $extern_h = 'extern.h';
+
+my $single_file = 0;
+
+GetOptions(
+   'function|f=s'          =>  \$function,
+   'parsec|d=s'            =>  \$parsec_dir,
+   'kernel|k=s'            =>  \$kernel_dir,
+   'cache|c!'              =>  \$use_cache,
+   'cache-level|level|l=i' =>  \$cache_level,
+   'single|s!'             =>  \$single_file
+) or die "Incorrect usage!\n";
+
+die("You should provide function name.\n") if !$function;
+die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
+die("$kernel_dir is not a kernel directory.\n") if (! -d $kernel_dir) || (! -f "$kernel_dir/Kbuild");
+
+
+if ($use_cache) {
+RECHECK:
+   if ($cache_level == 1) {
+      $use_cache = 0, $cache_level = 0 if ! -r $cache_file_1
+   } elsif ($cache_level == 2) {
+      if (! -r $cache_file_2) {
+         $cache_level = 1;
+         goto RECHECK;
+      }
+   }
+} else {
+   $cache_level = 0
+}
+
+say "CACHE $use_cache LEVEL: $cache_level";
+
+goto CACHED_GRAPH if $cache_level == 2;
+
+sub prepare_module_sources
+{
+   my @kernel_includes;
+   my $headers = merge_headers($parsec_dir, \@kernel_includes);
+   my $code    = merge_sources($parsec_dir);
+
+   @kernel_includes = map {"#include <$_>"} @kernel_includes;
+
+   #getting list of kernel headers from *.c files; and remove others
+   $code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))\h*$/
+               push @kernel_includes, "#include $1\n" if defined $1;''/meg;
+
+   my $kernel_code;
+   my @kernel_macro;
+
+   if (!$use_cache) {
+      my $kernel_includes = join("\n", @kernel_includes);
+
+      $kernel_code = gcc_preprocess_as_kernel_module($kernel_dir, $kernel_includes);
+      @kernel_macro = gcc_preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
+   }
+
+   #remove includes, because they are already included
+   $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
+   $code = $headers . $code;
+
+   (\$code, \$kernel_code, \@kernel_macro)
+}
+
+alias my ($code, $kcode, @kmacro) = deref prepare_module_sources;
+
+
+adapt($kcode, attributes => 1); #remove the attributes
+
+
+#TODO: rewrite based on the role and keys of hash
+sub generic_parse
+{
+   no strict 'refs';
+
+   my $call = sub { goto &{$_[0]->can( splice(@_, 1, 1) )} };
+
+   foreach my $i (qw(typedef enum structure global)) {
+      say "C::" . ucfirst(${i}) . "Set->parse_${i}";
+      $_[1]->{$i} = $call->("C::\u${i}Set", "parse_${i}", $_[0])
+   }
+}
+
+#FIXME: rename to parse and use role for this
+my %kernel;
+my %module;
+
+if (!$use_cache) {
+   generic_parse $kcode, \%kernel;
+   $kernel{declaration} = C::DeclarationSet->parse_declaration($kcode);
+   $kernel{macro} = C::MacroSet->parse_kernel_macro(\@kmacro);
+
+   store(\%kernel, $cache_file_1);
+} else {
+   %kernel = %{ retrieve($cache_file_1) };
+}
+
+my @comments;
+adapt($code, comments => \@comments);
+
+$kernel{macro}->push(C::Macro->new(name => 'SPECIFICATION', code => "#define SPECIFICATION 1\n"));
+#extracting module macro
+{
+   #save
+   my @index = keys %{$kernel{macro}->index};
+
+   $code = preprocess_conditionals($code, $kernel{macro});
+
+   $module{macro} = C::MacroSet->new(set => []);
+
+   foreach(difference([keys %{$kernel{macro}->index}], \@index)) {
+      $module{macro}->push($kernel{macro}->get($_));
+      $kernel{macro}->delete($_);
+   }
+}
+
+my @strings;
+adapt($code, strings => \@strings);
+
+generic_parse $code, \%module;
+$module{function} = C::FunctionSet->parse_function($code);
+
+sub check
+{
+   alias my @ids  = @{$_[0]};
+   alias my @tags = @{$_[1]};
+   my @connections;
+
+   while (my ($i, $id) = each @ids) {
+      $id = '\b(?:' . join('|', @$id) . ')\b';
+      while (my ($j, $tag) = each @tags) {
+         $tag = join(' ', @$tag);
+         push @connections, [$i, $j] if ($tag =~ m/$id/)
+      }
+   }
+
+   \@connections
+}
+
+#global graph building
+my %source = (module => \%module, kernel => \%kernel);
+
+
+sub add_vertices
+{
+   my $g = shift;
+   my $s = shift;
+   my $a = shift;
+   my $t = shift;
+
+   state %init;
+
+   return if $init{$a}{$t};
+
+   foreach (@$s) {
+      my $id = $_->id;
+
+      if (!$g->has_vertex($id)) {
+         $g->add_vertex($id);
+         $g->set_vertex_attributes($id, { object => $_, area => $a });
+      } else {
+         die("Vertex has been already added to the graph.\n");
+      }
+   }
+
+   $init{$a}{$t} = 1;
+}
+
+
+my $g = Graph::Directed->new();
+$g->set_graph_attribute('comments', \@comments);
+$g->set_graph_attribute('strings',  \@strings);
+
+foreach (Graph::Reader::Dot->new()->read_graph(\*main::DATA)->edges()) {
+   my @keys1 = split /_/, $_->[0];
+   my @keys2 = split /_/, $_->[1];
+
+   say "@keys1 -> @keys2";
+   my $set1 = $source{$keys1[0]}->{$keys1[1]};
+   my $set2 = $source{$keys2[0]}->{$keys2[1]};
+
+   add_vertices($g, $set1->set, $keys1[0], $keys1[1]);
+   add_vertices($g, $set2->set, $keys2[0], $keys2[1]);
+
+   my $index = check($set1->ids, $set2->tags);
+
+   foreach (@$index) {
+      my $obj1 = $set1->get_from_index($_->[0]);
+      my $obj2 = $set2->get_from_index($_->[1]);
+      #say $obj2->name . '->' . $obj1->name;
+      
+      $g->add_edge($obj1->id, $obj2->id)
+   }
+}
+
+$g->set_graph_attribute('index', $module{function}->index);
+
+CACHED_GRAPH:
+if ($cache_level == 2) {
+   $g = retrieve($cache_file_2);
+} else {
+   store($g, $cache_file_2)
+}
+
+
+{
+   my $id = $g->get_graph_attribute('index')->{$function};
+   die("There is no function $function in module\n") if ! $id;
+
+   my @sv = $g->all_predecessors($id);
+   push @sv, $id;
+
+   local $| = 1;
+   print "DELETE UNNEEDED VERTICES";
+      my $g2 = Graph::Directed->new(edges => [ grep { any($_->[0], \@sv) && any($_->[1], \@sv) } $g->edges ]);
+      foreach (@sv) {
+         $g2->set_vertex_attributes($_, $g->get_vertex_attributes($_))
+      }
+      $g2->set_graph_attribute('comments', $g->get_graph_attribute('comments'));
+      $g2->set_graph_attribute('strings',  $g->get_graph_attribute('strings'));
+
+      $g = $g2;
+   print "\tDONE\n";
+}
+
+
+#resolve cycles
+while ($g->has_a_cycle) {
+   my @path = $g->find_a_cycle;
+   my $o1 = $g->get_vertex_attribute($path[0], 'object');
+   my $o2 = $g->get_vertex_attribute($path[1], 'object');
+
+   my $t1 = blessed($o1);
+   my $t2 = blessed($o2);
+
+   say "@path";
+
+   if ($t1 eq $t2) {
+      say "$t1" . " " . $o1->name . " -> " . $o2->name;
+
+      if ($t1 eq 'C::Function') {
+         $o1->code =~ m/(.*?)\{/s;
+         my $dep = $1 . ';';
+         $dep = normalize($dep);
+
+         my $a;
+         if ($g->has_vertex_attribute($path[0], 'forward_declaration')) {
+            $a = $g->get_vertex_attribute($path[0], 'forward_declaration');
+         } else {
+            $a = [];
+            $g->set_vertex_attribute($path[0], 'forward_declaration', $a );
+         }
+         push @$a, $dep;
+
+         $g->delete_edge($path[0], $path[1])
+      } elsif ($t1 eq 'C::Structure') {
+         $g->delete_edge($path[0], $path[1])
+      } elsif ($t1 eq 'C::Macro') {
+         $g->delete_edge($path[0], $path[1])
+      } elsif ($t1 eq 'C::Typedef') {
+         $g->delete_edge($path[0], $path[1])
+      } else {
+         say "@path";
+         exit;
+      }
+   } else {
+      say "$t1" . " " . $o1->name . " -> " . "$t2" . " " . $o2->name;
+
+      if ($t1 eq 'C::Typedef' && $t2 eq 'C::Structure') {
+         $g->delete_edge($path[1], $path[0]) ; # FIXME: Is it right?
+      } elsif ($t1 eq 'C::Structure' && $t2 eq 'C::Typedef') {
+         $g->delete_edge($path[0], $path[1]);
+      } else {
+         say "ERROR: @path";
+         exit;
+      }
+
+   }
+}
+
+
+{
+   my $module_c_content = '';
+   my $module_h_content = '';
+   my $kernel_h_content = '';
+   my $extern_h_content = '';
+   my $kernel_macro = '';
+   my $module_macro = '';
+
+
+   my @order;
+   my %vertices = map { ($_ => 0) } $g->vertices;
+
+   while (keys %vertices) {
+      my @zv;
+      foreach(keys %vertices) {
+         push @zv, $_ if !$g->in_degree($_);
+      }
+
+      die("Cycle in graph") if !@zv;
+
+      push @order, @zv;
+      delete $vertices{$_} foreach @zv;
+
+      my %i = map {
+                     my $h = $g->get_vertex_attributes($_);
+                     ( $_ => {
+                              object => $h->{object},
+                              type => blessed($h->{object}),
+                              area => $h->{area}
+                           } )
+                  } @zv;
+
+      my %sp = (
+                   'C::Enum'      => 2,
+                   'C::Typedef'   => 3,
+                   'C::Structure' => 4,
+
+                   'C::Macro'       => 1,
+                   'C::Global'      => 5,
+                   'C::Declaration' => 6,
+                   'C::Function'    => 7
+               );
+      my $sort_sub = sub {
+         my $cmp = $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}};
+         $cmp = $i{$a}->{object}->name cmp $i{$b}->{object}->name
+            unless $cmp;
+         $cmp
+      };
+
+      foreach (sort $sort_sub keys %i) {
+         my $o = $i{$_}->{object};
+         my $a = $i{$_}->{area};
+         my $t = $i{$_}->{type};
+         my $content;
+
+         if ($a eq 'kernel') {
+            if ($t eq 'C::Declaration' || $t eq 'C::Global') {
+               $content = \$extern_h_content
+            } elsif ($t eq 'C::Macro') {
+               $content = \$kernel_macro
+            } else {
+               $content = \$kernel_h_content
+            }
+         } else {
+            if ($t eq 'C::Function') {
+               $content = \$module_c_content
+            } elsif ($t eq 'C::Macro') {
+               $content = \$module_macro
+            } else {
+               $content = \$module_h_content
+            }
+         }
+
+         $$content .= $o->code . "\n\n";
+      }
+
+      $g->delete_vertices(@zv);
+   }
+
+   #say "ORDER @order";
+
+
+
+   if ($single_file) {
+      $module_c_content = join('//' . '-' x 78 . "\n",
+                                 (
+                                   $kernel_macro, $module_macro,
+                                   $kernel_h_content,
+                                   $extern_h_content,
+                                   $module_h_content,
+                                   $module_c_content
+                                 )
+                          );
+
+      restore($module_c_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
+
+      write_file($module_c, $module_c_content);
+   } else {
+      $module_h_content = $module_macro . $module_h_content;
+      $kernel_h_content = $kernel_macro . $kernel_h_content;
+
+      restore($module_c_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
+      restore($module_h_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
+
+      $module_c_content = qq(#include "kernel.h"\n#include "extern.h"\n#include "module.h"\n\n) . $module_c_content;
+
+      write_file($module_c, $module_c_content);
+      write_file($module_h, $module_h_content);
+      write_file($kernel_h, $kernel_h_content);
+      write_file($extern_h, $extern_h_content);
+   }
+}
+
+__DATA__
+digraph g
+{
+   subgraph cluster_kernel {
+      kernel_macro;
+      kernel_structure;
+      kernel_declaration;
+      kernel_typedef;
+      kernel_enum;
+      kernel_global;
+
+      // kernel_macro; nothing already preprocessed
+      kernel_macro -> kernel_macro;
+
+      kernel_structure -> kernel_macro;
+      kernel_structure -> kernel_structure;
+      kernel_structure -> kernel_declaration;
+      kernel_structure -> kernel_typedef;
+      kernel_structure -> kernel_global;
+
+      kernel_declaration -> kernel_macro;
+
+      kernel_typedef -> kernel_macro;
+      kernel_typedef -> kernel_structure;
+      kernel_typedef -> kernel_declaration;
+      kernel_typedef -> kernel_typedef;
+      kernel_typedef -> kernel_enum;
+      kernel_typedef -> kernel_global;
+
+      kernel_enum -> kernel_macro;
+      kernel_enum -> kernel_structure;
+      kernel_enum -> kernel_declaration;
+      kernel_enum -> kernel_typedef;
+      kernel_enum -> kernel_enum;
+      kernel_enum -> kernel_global;
+
+      kernel_global -> kernel_macro;
+   }
+
+   subgraph cluster_m {
+      module_macro;
+      module_structure;
+      module_function;
+      module_typedef;
+      module_enum;
+      module_global;
+
+      module_macro -> module_macro;
+      module_macro -> module_structure;
+      module_macro -> module_function;
+      module_macro -> module_typedef;
+      module_macro -> module_enum;
+      //module_macro -> module_global;
+      //
+      kernel_macro -> module_macro;
+      kernel_macro -> module_structure;
+      kernel_macro -> module_function;
+      kernel_macro -> module_typedef;
+      kernel_macro -> module_enum;
+      //kernel_macro -> module_global;
+
+      module_structure -> module_macro;
+      module_structure -> module_structure;
+      module_structure -> module_function;
+      module_structure -> module_typedef;
+      module_structure -> module_global;
+      //
+      kernel_structure -> module_macro;
+      kernel_structure -> module_structure;
+      kernel_structure -> module_function;
+      kernel_structure -> module_typedef;
+      kernel_structure -> module_global;
+
+      module_function -> module_macro;
+      module_function -> module_function;
+      //
+      kernel_declaration -> module_macro;
+      kernel_declaration -> module_function;
+
+      module_typedef -> module_macro;
+      module_typedef -> module_structure;
+      module_typedef -> module_function;
+      module_typedef -> module_typedef;
+      module_typedef -> module_enum;
+      module_typedef -> module_global;
+      //
+      kernel_typedef -> module_macro;
+      kernel_typedef -> module_structure;
+      kernel_typedef -> module_function;
+      kernel_typedef -> module_typedef;
+      kernel_typedef -> module_enum;
+      kernel_typedef -> module_global;
+
+      module_enum -> module_macro;
+      module_enum -> module_structure;
+      module_enum -> module_function;
+      module_enum -> module_typedef;
+      module_enum -> module_enum;
+      module_enum -> module_global;
+      //
+      kernel_enum -> module_macro;
+      kernel_enum -> module_structure;
+      kernel_enum -> module_function;
+      kernel_enum -> module_typedef;
+      kernel_enum -> module_enum;
+      kernel_enum -> module_global;
+
+      module_global -> module_macro;
+      module_global -> module_function;
+      //
+      kernel_global -> module_macro;
+      kernel_global -> module_function;
+   }
+}
+
