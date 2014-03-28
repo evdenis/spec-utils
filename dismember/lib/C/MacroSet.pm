@@ -50,13 +50,21 @@ sub push
 
 sub _build_ids
 {
-   [ $_[0]->map( sub { if ($_) { $_->get_code_ids } else {[]} } ) ];
+   [ $_[0]->map( sub { return undef unless $_; '\b(?:' . join('|', @{ $_->get_code_ids }) . ')\b' } ) ];
 }
 
 sub _build_tags
 {
-   [ $_[0]->map( sub { if ($_) { $_->get_code_tags } else {[]} } ) ];
+   [ $_[0]->map( sub {  return undef unless $_;
+                        my @t = @{ $_->get_code_tags };
+                        if (@t) {
+                           join(' ', @t)
+                        } else {
+                           undef
+                        }
+                     } ) ]
 }
+
 
 sub delete
 {

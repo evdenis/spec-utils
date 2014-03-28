@@ -178,9 +178,10 @@ sub check
    my @connections;
 
    while (my ($i, $id) = each @ids) {
-      $id = '\b(?:' . join('|', @$id) . ')\b';
+      next unless $id;
       while (my ($j, $tag) = each @tags) {
-         $tag = join(' ', @$tag);
+         next unless $tag;
+
          push @connections, [$i, $j] if ($tag =~ m/$id/)
       }
    }
