@@ -2,18 +2,11 @@ package C::Structure;
 use namespace::autoclean;
 use Moose;
 
-extends 'C::Entity';
-
 use re '/aa';
+use Local::C::Parse qw(_argname);
+use Local::C::Transformation qw(:RE);
 
-
-sub _argname
-{
-   if ($_[0] =~ m/(?|([a-zA-Z_]\w*)(?:\[[^\]]+\]|:\d+)?\h*+\Z|\(\h*\*\h*([a-zA-Z_]\w*)\h*\)\h*\()/) {
-      return $1
-   }
-   undef
-}
+extends 'C::Entity';
 
 
 sub get_fields
@@ -26,7 +19,7 @@ sub get_fields
 
    my @fields;
    foreach(split(/;/, $code)) {
-      next if m/\A\s*\z/;
+      next if m/\A${s}*+\z/;
 
       push @fields, _argname($_)
    }

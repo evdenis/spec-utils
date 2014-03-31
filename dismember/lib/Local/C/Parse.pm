@@ -8,8 +8,9 @@ use re '/aa';
 use Exporter qw(import);
 
 use Local::List::Utils qw(uniq any);
+use Local::C::Transformation qw(:RE);
 
-our @EXPORT_OK = qw(parse_structures parse_calls @keywords);
+our @EXPORT_OK = qw(parse_structures parse_calls @keywords _argname);
 
 our @keywords = qw/
 auto
@@ -58,9 +59,17 @@ aligned
 #__builtin_.+
 
 
+sub _argname
+{
+   if ($_[0] =~ m/(?|([a-zA-Z_]\w*)(?:\[[^\]]+\]|:\d+)?${h}*+\Z|\(\h*\*\h*([a-zA-Z_]\w*)\h*\)\h*\()/) {
+      return $1
+   }
+   undef
+}
+
 sub parse_structures
 {
-   my @s = [$_[0] =~ m/struct\s+([a-zA-Z_]\w*)/g];
+   my @s = [$_[0] =~ m/struct${s}++([a-zA-Z_]\w*)/g];
 
    uniq(\@s);
 
@@ -75,9 +84,9 @@ sub parse_calls
       $_[0] =~
          m/
             \b(?<fname>[a-zA-Z_]\w*)
-            \s*
+            ${s}*+
             (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
-            (?!\s*(?:\{|\()) # исключает функции которые ни разу не вызываются
+            (?!${s}*+(?:\{|\()) # исключает функции которые ни разу не вызываются
          /gx
    ) {
       # Просматриваем ещё раз аргументы вызова прошлой функции.
