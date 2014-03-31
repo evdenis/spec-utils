@@ -11,14 +11,15 @@ has 'has_name' => (
    is => 'ro',
    isa => 'Bool',
    default => '1',
-   required => 1,
+   required => 1
 );
 
 has 'get_code_ids' => (
    is => 'ro',
    isa => 'ArrayRef[Str]',
    lazy => 1,
-   builder => '_build_code_ids'
+   builder => '_build_code_ids',
+   init_arg => undef
 );
 
 around BUILDARGS => sub {
