@@ -114,7 +114,13 @@ sub prepare_module_sources
 alias my ($code, $kcode, @kmacro) = deref prepare_module_sources;
 
 
-adapt($kcode, attributes => 1); #remove the attributes
+my @kernel_strings;
+{
+   adapt($kcode, attributes => 1, strings => \@kernel_strings);
+   my $kmacro = join("\n", @kmacro);
+   adapt($kmacro, strings => \@kernel_strings);
+   @kmacro = split /^/m, $kmacro;
+}
 
 
 #TODO: rewrite based on the role and keys of hash
@@ -163,6 +169,7 @@ $kernel{macro}->push(C::Macro->new(name => 'SPECIFICATION', code => "#define SPE
    }
 }
 
+#can interfere with macro preprocessing
 my @strings;
 adapt($code, strings => \@strings);
 
@@ -220,6 +227,7 @@ sub add_vertices
 my $g = Graph::Directed->new();
 $g->set_graph_attribute('comments', \@comments);
 $g->set_graph_attribute('strings',  \@strings);
+$g->set_graph_attribute('kernel_strings',  \@kernel_strings);
 
 foreach (Graph::Reader::Dot->new()->read_graph(\*main::DATA)->edges()) {
    my @keys1 = split /_/, $_->[0];
@@ -266,8 +274,10 @@ if ($cache_level == 2) {
       foreach (@sv) {
          $g2->set_vertex_attributes($_, $g->get_vertex_attributes($_))
       }
+      # we do not want to inherit index attribute
       $g2->set_graph_attribute('comments', $g->get_graph_attribute('comments'));
       $g2->set_graph_attribute('strings',  $g->get_graph_attribute('strings'));
+      $g2->set_graph_attribute('kernel_strings',  $g->get_graph_attribute('kernel_strings'));
 
       $g = $g2;
    print "\tDONE\n";
@@ -401,6 +411,20 @@ while ($g->has_a_cycle) {
    #say "ORDER @order";
 
 
+   {
+      my ($ks, $c, $s) =   (
+         $g->get_graph_attribute('kernel_strings'),
+         $g->get_graph_attribute('comments'),
+         $g->get_graph_attribute('strings')
+      );
+
+      foreach ($kernel_macro, $extern_h_content, $kernel_h_content) {
+         restore($_, strings => $ks)
+      }
+      foreach ($module_macro, $module_h_content, $module_c_content) {
+         restore($_, comments => $c, strings => $s)
+      }
+   }
 
    if ($single_file) {
       $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
@@ -413,17 +437,13 @@ while ($g->has_a_cycle) {
                                  )
                           );
 
-      restore($module_c_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
-
       write_file($module_c, $module_c_content);
    } else {
       $module_h_content = $module_macro . $module_h_content;
       $kernel_h_content = $kernel_macro . $kernel_h_content;
 
-      restore($module_c_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
-      restore($module_h_content, comments => $g->get_graph_attribute('comments'), strings => $g->get_graph_attribute('strings'));
-
       $module_c_content = qq(#include "kernel.h"\n#include "extern.h"\n#include "module.h"\n\n) . $module_c_content;
+
 
       write_file($module_c, $module_c_content);
       write_file($module_h, $module_h_content);
