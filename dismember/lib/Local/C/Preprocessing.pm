@@ -120,7 +120,6 @@ sub preprocess_conditionals
                      (?<val>.+?)?
                   \Z\n/px) {
                my $name = $+{def};
-   				warn("$name already defined.\n") if $macro_set->exists($name);
                my ($args, $code) = ($+{args}, ${^MATCH});
 
                if (defined $code && $code =~ m/$delimeter/) {
@@ -130,8 +129,14 @@ sub preprocess_conditionals
                $code = rtrim($code);
 
                $args = [$args =~ m/[a-zA-Z_]\w*/g] if $args;
-   
-   				$macro_set->push(C::Macro->new(name => $name, args => $args, code => $code));
+
+               if ($macro_set->exists($name)) {
+                  warn("Redefinition of macro $name.\n");
+                  my $ind = $macro_set->get_index($name);
+                  $macro_set->set->[$ind] = C::Macro->new(name => $name, args => $args, code => $code);
+               } else {
+                  $macro_set->push(C::Macro->new(name => $name, args => $args, code => $code));
+               }
    			}
    			when (m/\A${h}*+#${h}*+if(?<no>n)?def${h}++${def}${h}*+\Z/) {
                my $exists = $macro_set->exists($+{def});
