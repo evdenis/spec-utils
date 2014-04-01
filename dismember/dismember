@@ -470,6 +470,7 @@ digraph g
       kernel_structure -> kernel_structure;
       kernel_structure -> kernel_declaration;
       kernel_structure -> kernel_typedef;
+      kernel_structure -> kernel_enum; //sizeof
       kernel_structure -> kernel_global;
 
       kernel_declaration -> kernel_macro;
@@ -504,25 +505,27 @@ digraph g
       module_macro -> module_function;
       module_macro -> module_typedef;
       module_macro -> module_enum;
-      //module_macro -> module_global;
+      module_macro -> module_global;
       //
       kernel_macro -> module_macro;
       kernel_macro -> module_structure;
       kernel_macro -> module_function;
       kernel_macro -> module_typedef;
       kernel_macro -> module_enum;
-      //kernel_macro -> module_global;
+      kernel_macro -> module_global;
 
       module_structure -> module_macro;
       module_structure -> module_structure;
       module_structure -> module_function;
       module_structure -> module_typedef;
+      module_structure -> module_enum; //sizeof
       module_structure -> module_global;
       //
       kernel_structure -> module_macro;
       kernel_structure -> module_structure;
       kernel_structure -> module_function;
       kernel_structure -> module_typedef;
+      kernel_structure -> module_enum; //sizeof
       kernel_structure -> module_global;
 
       module_function -> module_macro;
