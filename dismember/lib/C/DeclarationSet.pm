@@ -29,6 +29,7 @@ sub parse_declaration
 
    while ( $_[0] =~ m/($ret${s}*+\b$name${s}*+$args${s}*+)(?:;|$body)/g ) {
       my $name = $+{name};
+      next if index($+{ret}, 'typedef') != -1;
       next if (any($name, \@keywords));
 
       my $code = $1 . ';';
