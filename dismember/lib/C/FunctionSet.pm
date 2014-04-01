@@ -6,6 +6,8 @@ use Carp;
 
 use C::Function;
 use Local::C::Transformation qw(:RE);
+use Local::List::Utils qw(any);
+use Local::C::Parse qw(@keywords);
 
 use re '/aa';
 
@@ -37,7 +39,7 @@ sub parse_function
       my $name = $+{name};
       my $code = ${^MATCH}; 
 
-      if ($name =~ m/\A(for|if|while|switch)\z/) {
+      if (any($name, \@keywords)) {
          carp("Parsing error; function name: '$name'. Skipping.");
          next
       }
