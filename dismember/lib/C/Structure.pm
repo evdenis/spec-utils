@@ -1,7 +1,7 @@
 package C::Structure;
 use Moose;
 
-use Local::C::Parse qw(_argname_exists);
+use Local::C::Parsing qw(_argname_exists);
 use Local::C::Transformation qw(:RE);
 use namespace::autoclean;
 

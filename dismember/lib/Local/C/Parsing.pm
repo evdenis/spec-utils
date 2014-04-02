@@ -1,4 +1,4 @@
-package Local::C::Parse;
+package Local::C::Parsing;
 
 use warnings;
 use strict;

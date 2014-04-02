@@ -1,7 +1,7 @@
 package C::Function;
 use Moose;
 
-use Local::C::Parse qw(_argname_exists);
+use Local::C::Parsing qw(_argname_exists);
 use C::Keywords qw(@keywords_to_filter);
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(difference);
