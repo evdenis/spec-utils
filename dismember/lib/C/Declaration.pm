@@ -25,7 +25,7 @@ sub _build_code_tags
    my $self = shift;
    my $code = $self->code;
 
-   my @list = ($code =~ m/\b[a-zA-Z_]\w*\b/g);
+   my @list = ($code =~ m/\b[a-zA-Z_]\w*+\b/g);
 
    my ($begin, $end) = (index($code, '(') + 1, rindex($code, ')'));
    $code = substr($code, $begin, $end - $begin);

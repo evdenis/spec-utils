@@ -36,7 +36,7 @@ sub _build_code_tags
    my $self = shift;
    my $code = $self->code;
 
-   my @list = ($code =~ m/\b[a-zA-Z_]\w*\b/g);
+   my @list = ($code =~ m/\b[a-zA-Z_]\w*+\b/g);
 
    my $begin = index($code, '(') + 1;
    $code =~ m/\)${s}*+\{/;

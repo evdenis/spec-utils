@@ -39,7 +39,7 @@ sub _build_substitution
 
 sub get_code_tags
 {
-   my @list = ($_[0]->substitution =~ m/\b[a-zA-Z_]\w*\b/g);
+   my @list = ($_[0]->substitution =~ m/\b[a-zA-Z_]\w*+\b/g);
 
    my $filter = $_[0]->get_code_ids();
    push @$filter, @keywords;

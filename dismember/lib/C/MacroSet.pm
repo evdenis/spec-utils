@@ -94,7 +94,7 @@ sub parse_kernel_macro
             [ \t]*+
             define
             [ \t]++
-            (?<def>[a-zA-Z_]\w*)
+            (?<def>[a-zA-Z_]\w*+)
             (?:\([ \t]*(?<args>[^\)]*)\))?
             [ \t]*+
             (?<code>.*)\Z
@@ -109,7 +109,7 @@ sub parse_kernel_macro
             my $args = undef;
 
             if (exists $+{args}) {
-               $args = [ $+{args} =~ m/[a-zA-Z_]\w*/g ]
+               $args = [ $+{args} =~ m/[a-zA-Z_]\w*+/g ]
             }
 
             $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution)
