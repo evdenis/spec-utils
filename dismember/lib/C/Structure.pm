@@ -3,7 +3,7 @@ use namespace::autoclean;
 use Moose;
 
 use re '/aa';
-use Local::C::Parse qw(_argname);
+use Local::C::Parse qw(_argname_exists);
 use Local::C::Transformation qw(:RE);
 
 extends 'C::Entity';
@@ -21,7 +21,7 @@ sub get_fields
    foreach(split(/;/, $code)) {
       next if m/\A${s}*+\z/;
 
-      push @fields, _argname($_)
+      push @fields, _argname_exists($_)
    }
 
    \@fields

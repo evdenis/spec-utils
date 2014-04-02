@@ -10,7 +10,7 @@ use Exporter qw(import);
 use Local::List::Utils qw(uniq any);
 use Local::C::Transformation qw(:RE);
 
-our @EXPORT_OK = qw(parse_structures parse_calls @keywords _argname);
+our @EXPORT_OK = qw(parse_structures parse_calls @keywords _argname _argname_exists);
 
 our @keywords = qw/
 auto
@@ -58,18 +58,63 @@ aligned
 
 #__builtin_.+
 
+sub _argname_exists
+{
+   if ($_[0] =~ m/(?|([a-zA-Z_]\w*+)(?:\[[^\]]+\]|:\d+)?${h}*+\Z|\(${h}*+\*${h}*+([a-zA-Z_]\w*+)${h}*+\)${h}*+\()/) {
+      return $1 ne 'void' ? $1 : undef; #just in case
+   }
+}
 
 sub _argname
 {
-   if ($_[0] =~ m/(?|([a-zA-Z_]\w*)(?:\[[^\]]+\]|:\d+)?${h}*+\Z|\(\h*\*\h*([a-zA-Z_]\w*)\h*\)\h*\()/) {
-      return $1
+   if (index($_[0], '(') != -1) {
+      if ($_[0] =~ m/\(${h}*+\*${h}*+([a-zA-Z_]\w*+)${h}*+\)${h}*+\(/) {
+         return $1
+      }
+   } else {
+      my @a = $_[0] =~ m/[a-zA-Z_]\w*+/g;
+      my $i  = 1;
+      my $us = 0;
+      my $l  = 0;
+
+
+      foreach (@a) {
+         if ($l) {
+            ++$i if $_ eq 'long';
+            $l = 0;
+         }
+
+         if ($us) {
+            ++$i if  $_ eq 'char'  ||
+                     $_ eq 'short' ||
+                     $_ eq 'int'   ||
+                     $_ eq 'long';
+           $us = 0;
+         }
+
+
+         ++$i  if $_ eq 'struct'   ||
+                  $_ eq 'union'    ||
+                  $_ eq 'enum'     ||
+                  $_ eq 'const'    ||
+                  $_ eq 'volatile';
+
+         $us = 1 if $_ eq 'signed' || $_ eq 'unsigned';
+         $l  = 1 if $_ eq 'long';
+      }
+
+      ++$i if $us;
+      ++$i if $l;
+
+      return $a[$#a] if @a > $i;
    }
+
    undef
 }
 
 sub parse_structures
 {
-   my @s = [$_[0] =~ m/struct${s}++([a-zA-Z_]\w*)/g];
+   my @s = [$_[0] =~ m/struct${s}++([a-zA-Z_]\w*+)/g];
 
    uniq(\@s);
 
@@ -83,7 +128,7 @@ sub parse_calls
    while (
       $_[0] =~
          m/
-            \b(?<fname>[a-zA-Z_]\w*)
+            \b(?<fname>[a-zA-Z_]\w*+)
             ${s}*+
             (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
             (?!${s}*+(?:\{|\()) # исключает функции которые ни разу не вызываются

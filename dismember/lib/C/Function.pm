@@ -3,7 +3,7 @@ use namespace::autoclean;
 use Moose;
 
 use re '/aa';
-use Local::C::Parse qw(@keywords _argname);
+use Local::C::Parse qw(@keywords _argname_exists);
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(difference);
 
@@ -44,10 +44,12 @@ sub _build_code_tags
    $code = substr($code, $begin, $end - $begin);
 
    my @args;
-   foreach(split(/,/, $code)) {
-      next if m/\A${s}*+\z/;
+   if ($code !~ m/\A${s}*+(?:void)?${s}*+\z/) {
+      foreach(split(/,/, $code)) {
+         next if m/\A${s}*+\z/;
 
-      push @args, _argname($_)
+         push @args, _argname_exists($_)
+      }
    }
 
    my $filter = $self->get_code_ids();
