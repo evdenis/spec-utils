@@ -3,6 +3,7 @@ use Moose;
 
 use Local::C::Transformation qw(:RE);
 use Local::String::Utils qw(normalize);
+use C::Keywords qw(prepare_tags);
 use namespace::autoclean;
 
 extends 'C::Entity';
@@ -69,6 +70,14 @@ sub _build_code_ids
    \@a
 }
 
+sub get_code_tags
+{
+   my $filter = $_[0]->get_code_ids();
+
+   $filter->[0] = "enum " . $_[0]->name if $_[0]->has_name; #HACK
+
+   prepare_tags(substr($_[0]->code, index($_[0]->code, '{')), $filter)
+}
 
 __PACKAGE__->meta->make_immutable;
 

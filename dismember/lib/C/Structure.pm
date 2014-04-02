@@ -1,8 +1,9 @@
 package C::Structure;
 use Moose;
 
-use Local::C::Parsing qw(_argname_exists);
+use Local::C::Parsing qw(_get_structure_fields);
 use Local::C::Transformation qw(:RE);
+use C::Keywords qw(prepare_tags);
 use namespace::autoclean;
 
 use re '/aa';
@@ -10,22 +11,16 @@ use re '/aa';
 extends 'C::Entity';
 
 
-sub get_fields
+sub get_code_tags
 {
-   my $self = shift;
-   my $code = $self->code;
+   my $code = $_[0]->code;
    my ($begin, $end) = (index($code, '{') + 1, rindex($code, '}'));
-
    $code = substr($code, $begin, $end - $begin);
 
-   my @fields;
-   foreach(split(/;/, $code)) {
-      next if m/\A${s}*+\z/;
+   my $filter = ["struct " . $_[0]->name]; #instead if get_code_ids
+   push @$filter, @{ _get_structure_fields($code) };
 
-      push @fields, _argname_exists($_)
-   }
-
-   \@fields
+   prepare_tags($code, $filter)
 }
 
 

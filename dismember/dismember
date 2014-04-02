@@ -113,10 +113,8 @@ sub prepare_module_sources
 
 alias my ($code, $kcode, $kmacro) = deref prepare_module_sources;
 
-
-my @kernel_strings;
-adapt($kcode, attributes => 1, strings => \@kernel_strings);
-adapt($kmacro, strings => \@kernel_strings);
+#remove attributes
+adapt($kcode, attributes => 1);
 
 
 #TODO: rewrite based on the role and keys of hash
@@ -147,7 +145,6 @@ if (!$use_cache) {
 }
 
 my @comments;
-my @strings;
 adapt($code, comments => \@comments);
 
 $kernel{macro}->push(C::Macro->new( name         => 'SPECIFICATION',
@@ -160,8 +157,7 @@ $kernel{macro}->push(C::Macro->new( name         => 'SPECIFICATION',
    my @index = keys %{$kernel{macro}->index};
 
    $code = preprocess_conditionals($code, $kernel{macro}, 'module');
-   #can interfere with macro preprocessing
-   adapt($code, strings => \@strings);
+
    generic_parse(\%module, 'module');
 
 
@@ -223,8 +219,6 @@ sub add_vertices
 
 my $g = Graph::Directed->new();
 $g->set_graph_attribute('comments', \@comments);
-$g->set_graph_attribute('strings',  \@strings);
-$g->set_graph_attribute('kernel_strings',  \@kernel_strings);
 
 foreach (Graph::Reader::Dot->new()->read_graph(\*main::DATA)->edges()) {
    my @keys1 = split /_/, $_->[0];
@@ -273,8 +267,6 @@ if ($cache_level == 2) {
       }
       # we do not want to inherit index attribute
       $g2->set_graph_attribute('comments', $g->get_graph_attribute('comments'));
-      $g2->set_graph_attribute('strings',  $g->get_graph_attribute('strings'));
-      $g2->set_graph_attribute('kernel_strings',  $g->get_graph_attribute('kernel_strings'));
 
       $g = $g2;
    print "\tDONE\n";
@@ -284,6 +276,11 @@ if ($cache_level == 2) {
 #resolve cycles
 while ($g->has_a_cycle) {
    my @path = $g->find_a_cycle;
+   if (@path == 1) {
+      $g->delete_edge($path[0], $path[0]);
+      next
+   }
+
    my $o1 = $g->get_vertex_attribute($path[0], 'object');
    my $o2 = $g->get_vertex_attribute($path[1], 'object');
 
@@ -409,17 +406,10 @@ while ($g->has_a_cycle) {
 
 
    {
-      my ($ks, $c, $s) =   (
-         $g->get_graph_attribute('kernel_strings'),
-         $g->get_graph_attribute('comments'),
-         $g->get_graph_attribute('strings')
-      );
+      my $c = $g->get_graph_attribute('comments');
 
-      foreach ($kernel_macro, $extern_h_content, $kernel_h_content) {
-         restore($_, strings => $ks)
-      }
       foreach ($module_macro, $module_h_content, $module_c_content) {
-         restore($_, comments => $c, strings => $s)
+         restore($_, comments => $c)
       }
    }
 

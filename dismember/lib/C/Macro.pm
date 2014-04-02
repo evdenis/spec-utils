@@ -1,7 +1,7 @@
 package C::Macro;
 use Moose;
 
-use C::Keywords qw(@keywords_to_filter);
+use C::Keywords qw(prepare_tags);
 use Local::List::Utils qw(difference);
 use namespace::autoclean;
 
@@ -39,13 +39,10 @@ sub _build_substitution
 
 sub get_code_tags
 {
-   my @list = ($_[0]->substitution =~ m/\b[a-zA-Z_]\w*+\b/g);
-
    my $filter = $_[0]->get_code_ids();
-   push @$filter, @keywords_to_filter;
-   push @$filter, @{ $_[0]->args } if $_[0]->args;
+   push @$filter, @{ $_[0]->args } if $_[0]->args; #struct arg case ?
 
-   [ difference(\@list, $filter) ]
+   prepare_tags($_[0]->substitution, $filter)
 }
 
 

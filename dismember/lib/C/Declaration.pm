@@ -2,7 +2,7 @@ package C::Declaration;
 use Moose;
 
 use Local::C::Parsing qw(_argname);
-use C::Keywords qw(@keywords_to_filter);
+use C::Keywords qw(prepare_tags);
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(difference);
 use namespace::autoclean;
@@ -26,24 +26,21 @@ sub _build_code_tags
    my $self = shift;
    my $code = $self->code;
 
-   my @list = ($code =~ m/\b[a-zA-Z_]\w*+\b/g);
-
    my ($begin, $end) = (index($code, '(') + 1, rindex($code, ')'));
    $code = substr($code, $begin, $end - $begin);
 
    my @args;
    foreach(split(/,/, $code)) {
       next if m/\A${s}*+\z/;
-      my $name = _argname($_);
+      my @names = _argname($_);
 
-      push @args, $name if $name;
+      push @args, @names if @names;
    }
 
    my $filter = $self->get_code_ids();
-   push @$filter, @keywords_to_filter;
    push @$filter, @args;
 
-   [ difference(\@list, $filter) ]
+   prepare_tags($self->code, $filter)
 }
 
 sub to_string

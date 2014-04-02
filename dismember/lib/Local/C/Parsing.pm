@@ -10,7 +10,7 @@ use Exporter qw(import);
 use Local::List::Utils qw(uniq any);
 use Local::C::Transformation qw(:RE);
 
-our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists);
+our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields);
 
 our @keywords = qw(
 auto
@@ -76,17 +76,44 @@ aligned
 
 sub _argname_exists
 {
-   if ($_[0] =~ m/(?|([a-zA-Z_]\w*+)(?:\[[^\]]+\]|:\d+)?${h}*+\Z|\(${h}*+\*${h}*+([a-zA-Z_]\w*+)${h}*+\)${h}*+\()/) {
-      return $1 ne 'void' ? $1 : undef; #just in case
+   my $name = qr/[a-zA-Z_]\w*+/;
+   my @result = ();
+
+   if ($_[0] =~ m/\(${h}*+\*${h}*+($name)${h}*+\)${h}*+\(/) {
+      @result = ($1);
+      my ($begin, $end) = ($+[0]+1, rindex($_[0], ')'));
+
+      foreach(split(/,/, substr($_[0], $begin, $end - $begin))) {
+         next if m/\A${s}*+\z/;
+         my $name = _argname($_);
+
+         push @result, $name if $name
+      }
+
+      return @result
    }
+
+   my $name_ex = qr/($name)(?:\[[^\]]+\]|:\d+)?/;
+   my $several = index($_[0], ',');
+   if ($several != -1) {
+      my $tail = substr($_[0], $several + 1);
+      push @result, $1 while ($tail =~ m/($name)/g);
+
+      $_[0] =~ m/${name_ex}${h}*+,/;
+      unshift @result, $1;
+
+      return @result;
+   } elsif ($_[0] =~ m/${name_ex}${h}*+\Z/) {
+      return $1 ne 'void'? ($1) : (); #just in case
+   }
+
+   ()
 }
 
 sub _argname
 {
    if (index($_[0], '(') != -1) {
-      if ($_[0] =~ m/\(${h}*+\*${h}*+([a-zA-Z_]\w*+)${h}*+\)${h}*+\(/) {
-         return $1
-      }
+      return _argname_exists($_[0])
    } else {
       my @a = $_[0] =~ m/[a-zA-Z_]\w*+/g;
       my $i  = 1;
@@ -125,7 +152,19 @@ sub _argname
       return $a[$#a] if @a > $i;
    }
 
-   undef
+   ()
+}
+
+sub _get_structure_fields
+{
+   my @fields;
+   foreach(split(/;/, $_[0])) {
+      next if m/\A${s}*+\z/;
+
+      push @fields, _argname_exists($_)
+   }
+
+   \@fields
 }
 
 sub parse_structures
