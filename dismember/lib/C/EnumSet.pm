@@ -40,7 +40,7 @@ sub parse
             )
          )${s}*+;
       /gmpx) {
-      push @enums, C::Enum->new(name => $+{ename}, code => ${^MATCH})
+      push @enums, C::Enum->new(name => $+{ename}, code => ${^MATCH}, area => $_[1])
    }
 
    return $self->new(set => \@enums);

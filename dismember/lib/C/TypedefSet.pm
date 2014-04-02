@@ -17,6 +17,7 @@ has '+set' => (
 sub parse
 {
    my $self = shift;
+   my $area = $_[1];
    my %typedefs;
 
    my $name = qr/(?:[\*\s]+)?(?<name>[a-zA-Z_]\w*)(?:\[[^\]]+\])?/;
@@ -34,7 +35,7 @@ sub parse
       $typedefs{$+{name}} = ${^MATCH}
    }
 
-   return $self->new(set => [ map { C::Typedef->new(name => $_, code => $typedefs{$_}) } keys %typedefs ]);
+   return $self->new(set => [ map { C::Typedef->new(name => $_, code => $typedefs{$_}, area => $area) } keys %typedefs ]);
 }
 
 

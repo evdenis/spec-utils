@@ -93,6 +93,7 @@ sub def_eval
 sub preprocess_conditionals
 {
    my $macro_set = $_[1];
+   my $area = $_[2];
    my ($ncond, $ncond_rec) = (0, 0);
    
    my @preprocessed;
@@ -130,12 +131,13 @@ sub preprocess_conditionals
 
                $args = [$args =~ m/[a-zA-Z_]\w*/g] if $args;
 
+               my $m = C::Macro->new(name => $name, args => $args, code => $code, area => $area);
                if ($macro_set->exists($name)) {
                   warn("Redefinition of macro $name.\n");
                   my $ind = $macro_set->get_index($name);
-                  $macro_set->set->[$ind] = C::Macro->new(name => $name, args => $args, code => $code);
+                  $macro_set->set->[$ind] = $m;
                } else {
-                  $macro_set->push(C::Macro->new(name => $name, args => $args, code => $code));
+                  $macro_set->push($m);
                }
    			}
    			when (m/\A${h}*+#${h}*+if(?<no>n)?def${h}++${def}${h}*+\Z/) {

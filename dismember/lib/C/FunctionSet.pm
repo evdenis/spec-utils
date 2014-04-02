@@ -28,6 +28,7 @@ sub index
 sub parse
 {
    my $self = shift;
+   my $area = $_[1];
    my %functions;
 
    my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
@@ -52,7 +53,7 @@ sub parse
       $functions{$name} = $code
    }
    
-   return $self->new(set => [ map { C::Function->new(name => $_, code => $functions{$_}) } keys %functions ]);
+   return $self->new(set => [ map { C::Function->new(name => $_, code => $functions{$_}, area => $area) } keys %functions ]);
 }
 
 __PACKAGE__->meta->make_immutable;

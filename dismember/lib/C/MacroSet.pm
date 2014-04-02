@@ -82,6 +82,7 @@ sub parse
 {
    my $self = shift;
    my @lines = split(/^/m, $_[0]);
+   my $area = $_[1];
    my %defines;
 
    foreach(@lines) {
@@ -112,7 +113,7 @@ sub parse
                $args = [ $+{args} =~ m/[a-zA-Z_]\w*+/g ]
             }
 
-            $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution)
+            $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution, area => $area)
          }
       } else {
          carp("Can't parse $_");

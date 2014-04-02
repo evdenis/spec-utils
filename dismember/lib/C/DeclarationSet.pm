@@ -37,7 +37,7 @@ sub parse
       $code = 'extern ' . $code if $code =~ s!\A${s}*+\K(static\h++inline)!/*$1*/!;
 
       if (!exists $declarations{$name}) {
-         $declarations{$name} = C::Declaration->new(name => $name, code => $code)
+         $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $_[1])
       }
    }
 

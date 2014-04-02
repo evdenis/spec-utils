@@ -1,6 +1,7 @@
 package C::Entity;
 use Moose;
 
+use Moose::Util::TypeConstraints;
 use Local::List::Utils qw(difference);
 use Local::C::Parse qw(@keywords);
 use namespace::autoclean;
@@ -37,6 +38,11 @@ has 'code' => (
    required => 1
 );
 
+has 'area' => (
+   is => 'ro',
+   isa => enum([qw(kernel module)]),
+   required => 1
+);
 
 sub to_string
 {

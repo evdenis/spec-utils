@@ -19,13 +19,15 @@ has '+set' => (
 
 sub parse
 {
+   my $self = shift;
+   my $area = $_[1];
    my %globals;
 
-   while ($_[1] =~ m/extern${s}++([^;}{]+?)(?<name>[a-zA-Z_]\w*)${s}*+;/gp) {
+   while ($_[0] =~ m/extern${s}++([^;}{]+?)(?<name>[a-zA-Z_]\w*)${s}*+;/gp) {
       $globals{$+{name}} = ${^MATCH}
    }
 
-   return $_[0]->new(set => [ map {C::Global->new(name => $_, code => $globals{$_})} keys %globals ]);
+   return $self->new(set => [ map {C::Global->new(name => $_, code => $globals{$_}, area => $area)} keys %globals ]);
 }
 
 __PACKAGE__->meta->make_immutable;

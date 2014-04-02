@@ -17,6 +17,7 @@ has '+set' => (
 sub parse
 {
    my $self = shift;
+   my $area = $_[1];
    my %structures;
 
    my $name = qr!(?<sname>[a-zA-Z_]\w*)!;
@@ -42,7 +43,7 @@ sub parse
       $structures{$+{sname}} = ${^MATCH}
    }
 
-   return $self->new(set => [ map { C::Structure->new(name => $_, code => $structures{$_}) } keys %structures ]);
+   return $self->new(set => [ map { C::Structure->new(name => $_, code => $structures{$_}, area => $area) } keys %structures ]);
 }
 
 

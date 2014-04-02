@@ -128,9 +128,9 @@ sub generic_parse
 
    foreach my $k (keys %{$_[0]}) {
       my $class = "C::\u${k}Set";
-      say "${class} parse";
+      say "\u$_[1] ${class} parse";
 
-      $_[0]->{$k} = $call->($class, ${$_[0]->{$k}})
+      $_[0]->{$k} = $call->($class, ${$_[0]->{$k}}, $_[1])
    }
 }
 
@@ -140,7 +140,7 @@ my %module = map { $_ => \$code }  qw(typedef enum structure global function);
 
 
 if (!$use_cache) {
-   generic_parse(\%kernel);
+   generic_parse(\%kernel, 'kernel');
    store(\%kernel, $cache_file_1)
 } else {
    %kernel = %{ retrieve($cache_file_1) }
@@ -150,16 +150,20 @@ my @comments;
 my @strings;
 adapt($code, comments => \@comments);
 
-$kernel{macro}->push(C::Macro->new(name => 'SPECIFICATION', code => "#define SPECIFICATION 1\n"));
+$kernel{macro}->push(C::Macro->new( name         => 'SPECIFICATION',
+                                    code         => "#define SPECIFICATION 1\n",
+                                    substitution => '1',
+                                    area         => 'module'));
 #extracting module macro
 {
    #save
    my @index = keys %{$kernel{macro}->index};
 
-   $code = preprocess_conditionals($code, $kernel{macro});
+   $code = preprocess_conditionals($code, $kernel{macro}, 'module');
    #can interfere with macro preprocessing
    adapt($code, strings => \@strings);
-   generic_parse(\%module);
+   generic_parse(\%module, 'module');
+
 
    $module{macro} = C::MacroSet->new(set => []);
    foreach(difference([keys %{$kernel{macro}->index}], \@index)) {
@@ -207,7 +211,7 @@ sub add_vertices
 
       if (!$g->has_vertex($id)) {
          $g->add_vertex($id);
-         $g->set_vertex_attributes($id, { object => $_, area => $a });
+         $g->set_vertex_attributes($id, { object => $_ });
       } else {
          die("Vertex has been already added to the graph.\n");
       }
@@ -346,11 +350,11 @@ while ($g->has_a_cycle) {
       delete $vertices{$_} foreach @zv;
 
       my %i = map {
-                     my $h = $g->get_vertex_attributes($_);
+                     my $o = $g->get_vertex_attribute($_, 'object');
                      ( $_ => {
-                              object => $h->{object},
-                              type => blessed($h->{object}),
-                              area => $h->{area}
+                              object => $o,
+                              type => blessed($o),
+                              area => $o->area
                            } )
                   } @zv;
 
