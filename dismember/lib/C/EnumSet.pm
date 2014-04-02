@@ -8,6 +8,7 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Enum]',
@@ -15,7 +16,7 @@ has '+set' => (
 
 
 #FIXME: check for duplicates?
-sub parse_enum
+sub parse
 {
    my $self = shift;
    my @enums;

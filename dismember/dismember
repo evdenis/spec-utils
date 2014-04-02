@@ -95,32 +95,28 @@ sub prepare_module_sources
                push @kernel_includes, "#include $1\n" if defined $1;''/meg;
 
    my $kernel_code;
-   my @kernel_macro;
+   my $kernel_macro;
 
    if (!$use_cache) {
       my $kernel_includes = join("\n", @kernel_includes);
 
       $kernel_code = gcc_preprocess_as_kernel_module($kernel_dir, $kernel_includes);
-      @kernel_macro = gcc_preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
+      $kernel_macro = gcc_preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
    }
 
    #remove includes, because they are already included
    $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
    $code = $headers . $code;
 
-   (\$code, \$kernel_code, \@kernel_macro)
+   (\$code, \$kernel_code, \$kernel_macro)
 }
 
-alias my ($code, $kcode, @kmacro) = deref prepare_module_sources;
+alias my ($code, $kcode, $kmacro) = deref prepare_module_sources;
 
 
 my @kernel_strings;
-{
-   adapt($kcode, attributes => 1, strings => \@kernel_strings);
-   my $kmacro = join("\n", @kmacro);
-   adapt($kmacro, strings => \@kernel_strings);
-   @kmacro = split /^/m, $kmacro;
-}
+adapt($kcode, attributes => 1, strings => \@kernel_strings);
+adapt($kmacro, strings => \@kernel_strings);
 
 
 #TODO: rewrite based on the role and keys of hash
@@ -128,29 +124,30 @@ sub generic_parse
 {
    no strict 'refs';
 
-   my $call = sub { goto &{$_[0]->can( splice(@_, 1, 1) )} };
+   my $call = sub { goto &{$_[0]->can('parse')} };
 
-   foreach my $i (qw(typedef enum structure global)) {
-      say "C::" . ucfirst(${i}) . "Set->parse_${i}";
-      $_[1]->{$i} = $call->("C::\u${i}Set", "parse_${i}", $_[0])
+   foreach my $k (keys %{$_[0]}) {
+      my $class = "C::\u${k}Set";
+      say "${class} parse";
+
+      $_[0]->{$k} = $call->($class, ${$_[0]->{$k}})
    }
 }
 
-#FIXME: rename to parse and use role for this
-my %kernel;
-my %module;
+my %kernel = map { $_ => \$kcode } qw(typedef enum structure global declaration);
+$kernel{macro} = \$kmacro;
+my %module = map { $_ => \$code }  qw(typedef enum structure global function);
+
 
 if (!$use_cache) {
-   generic_parse $kcode, \%kernel;
-   $kernel{declaration} = C::DeclarationSet->parse_declaration($kcode);
-   $kernel{macro} = C::MacroSet->parse_kernel_macro(\@kmacro);
-
-   store(\%kernel, $cache_file_1);
+   generic_parse(\%kernel);
+   store(\%kernel, $cache_file_1)
 } else {
-   %kernel = %{ retrieve($cache_file_1) };
+   %kernel = %{ retrieve($cache_file_1) }
 }
 
 my @comments;
+my @strings;
 adapt($code, comments => \@comments);
 
 $kernel{macro}->push(C::Macro->new(name => 'SPECIFICATION', code => "#define SPECIFICATION 1\n"));
@@ -160,21 +157,17 @@ $kernel{macro}->push(C::Macro->new(name => 'SPECIFICATION', code => "#define SPE
    my @index = keys %{$kernel{macro}->index};
 
    $code = preprocess_conditionals($code, $kernel{macro});
+   #can interfere with macro preprocessing
+   adapt($code, strings => \@strings);
+   generic_parse(\%module);
 
    $module{macro} = C::MacroSet->new(set => []);
-
    foreach(difference([keys %{$kernel{macro}->index}], \@index)) {
       $module{macro}->push($kernel{macro}->get($_));
       $kernel{macro}->delete($_);
    }
 }
 
-#can interfere with macro preprocessing
-my @strings;
-adapt($code, strings => \@strings);
-
-generic_parse $code, \%module;
-$module{function} = C::FunctionSet->parse_function($code);
 
 sub check
 {
@@ -429,9 +422,10 @@ while ($g->has_a_cycle) {
    if ($single_file) {
       $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
-                                   $kernel_macro, $module_macro,
+                                   $kernel_macro,
                                    $kernel_h_content,
                                    $extern_h_content,
+                                   $module_macro,
                                    $module_h_content,
                                    $module_c_content
                                  )

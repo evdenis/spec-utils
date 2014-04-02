@@ -8,12 +8,13 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Structure]',
 );
 
-sub parse_structure
+sub parse
 {
    my $self = shift;
    my %structures;

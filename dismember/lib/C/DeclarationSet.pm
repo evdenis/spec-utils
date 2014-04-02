@@ -10,13 +10,13 @@ use C::Declaration;
 use namespace::autoclean;
 
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Declaration]',
 );
 
-#FIXME: wrong parsing
-sub parse_declaration
+sub parse
 {
    my $self = shift;
 

@@ -7,14 +7,14 @@ use namespace::autoclean;
 
 use re '/aa';
 
-
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Typedef]',
 );
 
-sub parse_typedef
+sub parse
 {
    my $self = shift;
    my %typedefs;

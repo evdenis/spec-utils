@@ -8,6 +8,7 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Macro]',
@@ -77,13 +78,13 @@ sub get
 }
 
 #FIXME: only oneline defines currently allowed
-#TODO: parse_kernel_macro -> parse_macro
-sub parse_kernel_macro
+sub parse
 {
    my $self = shift;
+   my @lines = split(/^/m, $_[0]);
    my %defines;
 
-   foreach(@{$_[0]}) {
+   foreach(@lines) {
       chomp;
 
       if (

@@ -12,6 +12,7 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
+with    'C::Parse';
 
 
 has '+set' => (
@@ -24,7 +25,7 @@ sub index
    +{ $_[0]->map(sub { ($_->name, $_->id) }) }
 }
 
-sub parse_function
+sub parse
 {
    my $self = shift;
    my %functions;

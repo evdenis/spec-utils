@@ -10,13 +10,14 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
+with    'C::Parse';
 
 has '+set' => (
    isa => 'ArrayRef[C::Global]'
 );
 
 
-sub parse_global
+sub parse
 {
    my %globals;
 
