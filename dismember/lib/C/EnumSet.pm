@@ -1,9 +1,9 @@
 package C::EnumSet;
-use namespace::autoclean;
 use Moose;
 
 use C::Enum;
 use Local::C::Transformation qw(:RE);
+use namespace::autoclean;
 
 use re '/aa';
 

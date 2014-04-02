@@ -1,9 +1,9 @@
 package C::Entity;
-use namespace::autoclean;
 use Moose;
 
 use Local::List::Utils qw(difference);
 use Local::C::Parse qw(@keywords);
+use namespace::autoclean;
 
 use feature qw(state);
 use re '/aa';

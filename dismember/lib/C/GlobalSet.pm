@@ -1,13 +1,13 @@
 package C::GlobalSet;
-use namespace::autoclean;
 use Moose;
-
-use re '/aa';
-use Local::C::Transformation qw(:RE);
 
 use Carp;
 
 use C::Global;
+use Local::C::Transformation qw(:RE);
+use namespace::autoclean;
+
+use re '/aa';
 
 extends 'C::Set';
 

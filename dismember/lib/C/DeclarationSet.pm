@@ -1,5 +1,4 @@
 package C::DeclarationSet;
-use namespace::autoclean;
 use Moose;
 
 use Local::C::Transformation qw(:RE);
@@ -8,6 +7,7 @@ use Local::List::Utils qw(any);
 use Local::C::Parse qw(@keywords);
 
 use C::Declaration;
+use namespace::autoclean;
 
 extends 'C::Set';
 

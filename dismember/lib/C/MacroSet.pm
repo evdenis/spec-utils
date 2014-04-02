@@ -1,10 +1,9 @@
 package C::MacroSet;
-
-use namespace::autoclean;
-use Carp;
 use Moose;
 
+use Carp;
 use C::Macro;
+use namespace::autoclean;
 
 use re '/aa';
 

@@ -1,6 +1,6 @@
 package C::Typedef;
-use namespace::autoclean;
 use Moose;
+use namespace::autoclean;
 
 extends 'C::Entity';
 

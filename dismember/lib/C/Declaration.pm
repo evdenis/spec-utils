@@ -1,12 +1,12 @@
 package C::Declaration;
-use namespace::autoclean;
 use Moose;
 
-use re '/aa';
 use Local::C::Parse qw(@keywords _argname);
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(difference);
+use namespace::autoclean;
 
+use re '/aa';
 
 extends 'C::Entity';
 

@@ -1,9 +1,9 @@
 package C::Macro;
-use namespace::autoclean;
 use Moose;
 
 use Local::C::Parse qw(@keywords);
 use Local::List::Utils qw(difference);
+use namespace::autoclean;
 
 extends 'C::Entity';
 

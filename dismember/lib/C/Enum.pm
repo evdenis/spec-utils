@@ -1,9 +1,9 @@
 package C::Enum;
-use namespace::autoclean;
 use Moose;
 
 use Local::C::Transformation qw(:RE);
 use Local::String::Utils qw(normalize);
+use namespace::autoclean;
 
 extends 'C::Entity';
 

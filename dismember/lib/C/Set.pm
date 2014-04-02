@@ -1,6 +1,6 @@
 package C::Set;
-use namespace::autoclean;
 use Moose;
+use namespace::autoclean;
 
 has 'set' => (
    is => 'rw',

@@ -1,9 +1,9 @@
 package C::TypedefSet;
-use namespace::autoclean;
 use Moose;
 
 use C::Typedef;
 use Local::C::Transformation qw(:RE);
+use namespace::autoclean;
 
 use re '/aa';
 

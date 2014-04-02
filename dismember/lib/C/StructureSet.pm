@@ -1,9 +1,9 @@
 package C::StructureSet;
-use namespace::autoclean;
 use Moose;
 
 use C::Structure;
 use Local::C::Transformation qw(:RE);
+use namespace::autoclean;
 
 use re '/aa';
 

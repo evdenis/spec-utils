@@ -1,10 +1,11 @@
 package C::Structure;
-use namespace::autoclean;
 use Moose;
 
-use re '/aa';
 use Local::C::Parse qw(_argname_exists);
 use Local::C::Transformation qw(:RE);
+use namespace::autoclean;
+
+use re '/aa';
 
 extends 'C::Entity';
 
