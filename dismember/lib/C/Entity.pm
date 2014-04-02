@@ -3,7 +3,7 @@ use Moose;
 
 use Moose::Util::TypeConstraints;
 use Local::List::Utils qw(difference);
-use Local::C::Parse qw(@keywords);
+use C::Keywords qw(@keywords_to_filter);
 use namespace::autoclean;
 
 use feature qw(state);
@@ -59,7 +59,7 @@ sub get_code_tags
    my @list = ($_[0]->code =~ m/\b[a-zA-Z_]\w*+\b/g);
 
    my $filter = $_[0]->get_code_ids();
-   push @$filter, @keywords;
+   push @$filter, @keywords_to_filter;
 
    [ difference(\@list, $filter) ]
 }

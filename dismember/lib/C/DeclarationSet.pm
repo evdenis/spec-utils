@@ -4,7 +4,7 @@ use Moose;
 use Local::C::Transformation qw(:RE);
 use Local::String::Utils qw(normalize);
 use Local::List::Utils qw(any);
-use Local::C::Parse qw(@keywords);
+use C::Keywords;
 
 use C::Declaration;
 use namespace::autoclean;

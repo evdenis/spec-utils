@@ -6,7 +6,7 @@ use Carp;
 use C::Function;
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(any);
-use Local::C::Parse qw(@keywords);
+use C::Keywords;
 use namespace::autoclean;
 
 use re '/aa';

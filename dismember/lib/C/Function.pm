@@ -1,7 +1,8 @@
 package C::Function;
 use Moose;
 
-use Local::C::Parse qw(@keywords _argname_exists);
+use Local::C::Parse qw(_argname_exists);
+use C::Keywords qw(@keywords_to_filter);
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(difference);
 use namespace::autoclean;
@@ -54,7 +55,7 @@ sub _build_code_tags
    }
 
    my $filter = $self->get_code_ids();
-   push @$filter, @keywords;
+   push @$filter, @keywords_to_filter;
    push @$filter, @args;
 
    [ difference(\@list, $filter) ]
