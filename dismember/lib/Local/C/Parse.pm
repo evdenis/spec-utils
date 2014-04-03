@@ -12,7 +12,7 @@ use Local::C::Transformation qw(:RE);
 
 our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists);
 
-our @keywords = qw/
+our @keywords = qw(
 auto
 break
 case
@@ -29,9 +29,11 @@ float
 for
 goto
 if
+inline
 int
 long
 register
+restrict
 return
 short
 signed
@@ -45,8 +47,21 @@ unsigned
 void
 volatile
 while
+_Alignas
+_Alignof
+_Atomic
+_Bool
+_Complex
+_Generic
+_Imaginary
+_Noreturn
+_Static_assert
+_Thread_local
+);
+
+#additional filtration keywords. kernel related
+push @keywords, qw(
 typeof
-defined
 __attribute__
 __typeof__
 asm
@@ -54,7 +69,7 @@ __section__
 section
 alias
 aligned
-/;
+);
 
 #__builtin_.+
 
