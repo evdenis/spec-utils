@@ -28,7 +28,7 @@ sub _build_substitution
 
    if ($code) {
       $code =~ s/\\\h*+$//mg;
-      $code =~ m/$name(?:\(\h*+[^)]*\))?\s*+/;
+      $code =~ m/\b$name\b(?:\(\h*+[^)]*+\))?\s*+/;
 
       return substr($code, $+[0]);
    } else {
