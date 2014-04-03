@@ -34,7 +34,6 @@ sub parse
 
       my $code = $1 . ';';
       $code = normalize($code);
-      $code = 'extern ' . $code if $code =~ s!\A${s}*+\K(static\h++inline)!/*$1*/!;
 
       if (!exists $declarations{$name}) {
          $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $_[1])

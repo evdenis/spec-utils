@@ -46,6 +46,13 @@ sub _build_code_tags
    [ difference(\@list, $filter) ]
 }
 
+sub to_string
+{
+   my $code = $_[0]->code;
+   $code = 'extern ' . $code if $code =~ s!\A${s}*+\K(static\h++inline)!/*$1*/!;
+
+   $code
+}
 
 __PACKAGE__->meta->make_immutable;
 
