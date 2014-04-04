@@ -366,10 +366,9 @@ while ($g->has_a_cycle) {
                    'C::Function'    => 7
                );
       my $sort_sub = sub {
-         my $cmp = $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}};
-         $cmp = $i{$a}->{object}->name cmp $i{$b}->{object}->name
-            unless $cmp;
-         $cmp
+            $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}}
+         or
+            $i{$a}->{object}->name cmp $i{$b}->{object}->name
       };
 
       foreach (sort $sort_sub keys %i) {
