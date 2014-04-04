@@ -14,8 +14,6 @@ extends 'C::Entity';
 sub get_code_tags
 {
    my $code = $_[0]->code;
-   my ($begin, $end) = (index($code, '{') + 1, rindex($code, '}'));
-   $code = substr($code, $begin, $end - $begin);
 
    my $filter = ["struct " . $_[0]->name]; #instead if get_code_ids
    push @$filter, @{ _get_structure_fields($code) };

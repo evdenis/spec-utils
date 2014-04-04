@@ -157,6 +157,10 @@ sub _argname
 
 sub _get_structure_fields
 {
+   my $code = $_[0];
+   my ($begin, $end) = (index($code, '{') + 1, rindex($code, '}'));
+   $code = substr($code, $begin, $end - $begin);
+
    my @fields;
    foreach(split(/;/, $_[0])) {
       next if m/\A${s}*+\z/;

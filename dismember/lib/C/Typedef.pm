@@ -12,15 +12,48 @@ use re '/aa';
 extends 'C::Entity';
 
 
+has 'inside' => (
+   is => 'ro',
+   isa => 'Maybe[ArrayRef[Str]]',
+   lazy => 1,
+   builder => '_build_inside',
+   init_arg => undef
+);
+
+
+sub _build_inside
+{
+   if ($_[0]->code =~ m/typedef${s}*+(union|struct|enum)${s}*+([a-zA-Z_]\w*+)?${s}*+\{/) {
+      return $2 ? [$1, $2] : [$1]
+   }
+
+   undef
+}
+
+sub get_code_ids
+{
+   my $code = $_[0]->code;
+   my @result = ( $_[0]->name );
+
+   my $i = $_[0]->inside;
+   push @result, $i->[1]
+      if $i && @$i == 2;
+
+   \@result
+}
+
 sub get_code_tags
 {
    my $code = $_[0]->code;
-   my $filter = $_[0]->get_code_ids();
+   my $filter = [ $_[0]->name ];
 
-   if ($code =~ m/typedef${s}*+(?:union|struct)${s}*+\{/) {
-      my ($begin, $end) = ($+[0] + 1, rindex($code, '}'));
-      $code = substr($code, $begin, $end - $begin);
-      push @$filter, @{ _get_structure_fields($code) };
+   my $i = $_[0]->inside;
+   if ($i) {
+      push @$filter, @{ _get_structure_fields($code) }
+         if $i && (@$i[0] eq 'struct' || @$i[0] eq 'union');
+
+      push @$filter, join(' ', @$i)
+         if @$i == 2;
    }
 
    prepare_tags($code, $filter)
