@@ -169,31 +169,6 @@ $kernel{macro}->push(C::Macro->new( name         => 'SPECIFICATION',
 }
 
 
-sub check
-{
-   alias my @ids  = @{$_[0]};
-   alias my @tags = @{$_[1]};
-   my @connections;
-
-
-   while (my ($i, $id) = each @ids) {
-      next unless $id;
-
-      $id = '\b' . join('|', @$id) . '\b';
-      $id = qr/$id/;
-
-      while (my ($j, $tag) = each @tags) {
-         next unless $tag;
-         @$tag = map { ref $_ eq 'ARRAY' ? @{$_} : $_ } @$tag;
-         $tag = join(' ', @$tag);
-
-         push @connections, [$i, $j] if ($tag =~ m/$id/)
-      }
-   }
-
-   \@connections
-}
-
 #global graph building
 my %source = (module => \%module, kernel => \%kernel);
 
@@ -227,27 +202,176 @@ sub add_vertices
 my $g = Graph::Directed->new();
 $g->set_graph_attribute('comments', \@comments);
 
-foreach (Graph::Reader::Dot->new()->read_graph(\*main::DATA)->edges()) {
-   my @keys1 = split /_/, $_->[0];
-   my @keys2 = split /_/, $_->[1];
+{
+   my %index;
+   my $dg = Graph::Reader::Dot->new()->read_graph(\*main::DATA);
 
-   say "@keys1 -> @keys2";
-   my $set1 = $source{$keys1[0]}->{$keys1[1]};
-   my $set2 = $source{$keys2[0]}->{$keys2[1]};
+   foreach ($dg->vertices) {
+      my @keys = split /_/, $_;
+      my $set = $source{$keys[0]}->{$keys[1]};
+      add_vertices($g, $set->set, $keys[0], $keys[1]);
+      my $ids = $set->ids();
 
-   add_vertices($g, $set1->set, $keys1[0], $keys1[1]);
-   add_vertices($g, $set2->set, $keys2[0], $keys2[1]);
+      while ( my ($i, $id) = each @{$ids} ) {
+         my @id = @{$id};
 
-   my $index = check($set1->ids, $set2->tags);
+         foreach (@id) {
+            if (exists $index{$_}) {
+RECHECK:
+               my $o  = $index{$_};
+               my $to = ref($o);
 
-   foreach (@$index) {
-      my $obj1 = $set1->get_from_index($_->[0]);
-      my $obj2 = $set2->get_from_index($_->[1]);
-      #say $obj2->name . '->' . $obj1->name;
-      
-      $g->add_edge($obj1->id, $obj2->id)
+               if ($to eq 'HASH') {
+                  my $n  = $set->get_from_index($i);
+                  my $tn = blessed($n);
+
+                  if (!exists $index{$_}{$tn}) {
+                     $index{$_}{$tn} = $n;
+                  } else {
+                     die("$tn duplicate\n");
+                  }
+               } else {
+                  $index{$_} = {};
+                  $index{$_}{$to} = $o;
+                  goto RECHECK;
+               }
+            } else {
+               $index{$_} = $set->get_from_index($i);
+            }
+         }
+      }
+   }
+
+=cmt
+   #use Data::Dumper;
+   foreach (keys %index) {
+      if (ref($index{$_}) eq 'HASH') {
+         #print join(' ', sort keys $index{$_}) . "\n";
+         my @keys = sort keys $index{$_};
+         #if ('C::Declaration' eq $keys[0] && 'C::Structure' eq $keys[1]) {
+         #   print Dumper $index{$_};
+         #   say '-' x 80;
+         #}
+         say "@keys";
+      }
+   }
+   exit;
+=cut
+
+   foreach ($dg->vertices) {
+      my @keys = split /_/, $_;
+
+      say "TAGS: @keys";
+      my $set = $source{$keys[0]}->{$keys[1]};
+      my $tags = $set->tags();
+
+      while (my ($i, $t) = each @{$tags}) {
+
+NEXT:    foreach my $tag (@{$t}) {
+            my $s;
+            if (ref $tag eq 'ARRAY') {
+               $s = $tag->[0];
+               $tag = $tag->[1];
+            }
+
+            if (exists $index{$tag}) {
+               sub to_vertex { $_[0]->area . '_' . lcfirst(substr(blessed($_[0]), 3)) };
+               my $from = $index{$tag};
+               my $to = $set->get_from_index($i);
+
+               if (ref($from) eq 'HASH') {
+                  #get all possible "from" objects
+                  my @possible;
+                  foreach (keys %$from) {
+                     push @possible, $from->{$_}
+                        if $dg->has_edge(to_vertex($from->{$_}), to_vertex($to))
+                  }
+                  die('Can\'t find object of appropriate type' . blessed($to) . ' for ' . $to->name . "\n")
+                     unless @possible;
+
+                  my %sort_pr = (
+                     'C::Macro'     => 1,
+                     'C::Structure' => 2,
+                     'C::Enum'      => 3,
+                     'C::Typedef'   => 4,
+                  );
+                  my $sort_sub = sub {
+                     my $pa = $sort_pr{blessed($a)} // 10;
+                     my $pb = $sort_pr{blessed($b)} // 10;
+                     $pa <=> $pb
+                  };
+                  @possible = sort $sort_sub @possible;
+
+                  my @from;
+                  #only one instance of type possible
+                  my $legal = 0;
+                  foreach (@possible) {
+                     my $t = blessed($_);
+                     if ($s) {
+                        if (
+                              $t eq 'C::Macro'
+                              ||
+                              ($s eq 'struct' || $s eq 'union') && ($t eq 'C::Structure' || $t eq 'C::Typedef')
+                              ||
+                              $s eq 'enum' && ($t eq 'C::Enum' || $t eq 'C::Typedef')
+                           ) {
+                           push @from, $_;
+                           $legal = 1;
+                           last
+                        }
+                     } else {
+                        if ($t eq 'C::Macro') {
+                           push @from, $_;
+                           $legal = 1;
+                           last
+                        }
+                        # Should bind them anyway
+                        #if ($t eq 'C::Structure' || $t eq 'C::Enum') {
+                        #   use Data::Dumper;
+                        #   print Dumper $_;
+                        #   print Dumper $to;
+                        #   die('Internal error')
+                        #}
+                     }
+
+                     #bind with all
+                     push @from, $_;
+                  }
+
+                  if ($legal && @from == 1) {
+                     $g->add_edge($from[0]->id, $to->id)
+                  } elsif (!$legal && $s) {
+                     die('Internal error')
+                  } elsif (!$legal && !$s) {
+                     foreach(@from) {
+                        $g->add_edge($_->id, $to->id)
+                     }
+                  } else {
+                     die('Internal error')
+                  }
+
+               } else {
+                  if ($dg->has_edge(to_vertex($from), to_vertex($to))) {
+                     if ($s) {
+                        my $t = blessed($from);
+                        die("Wrong type: want $s, but get $t. Objects:\n" . $from->code . "\n<->\n" . $to->code . "\n")
+                                 unless
+                                    $t eq 'C::Macro'
+                                    ||
+                                    ($s eq 'struct' || $s eq 'union') && ($t eq 'C::Structure' || $t eq 'C::Typedef')
+                                    ||
+                                    $s eq 'enum' && ($t eq 'C::Enum' || $t eq 'C::Typedef')
+                     }
+                     $g->add_edge($from->id, $to->id)
+                  }
+               }
+            }
+         }
+      }
    }
 }
+
+#exit;
 
 $g->set_graph_attribute('index', $module{function}->index);
 
