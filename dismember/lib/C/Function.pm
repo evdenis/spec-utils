@@ -24,16 +24,8 @@ has 'forward_declaration' => (
    }
 );
 
-has 'get_code_tags' => (
-   is => 'ro',
-   isa => 'ArrayRef[Str]',
-   lazy => 1,
-   builder => '_build_code_tags',
-   init_arg => undef
-);
 
-
-sub _build_code_tags
+sub get_code_tags
 {
    my $self = shift;
    my $code = $self->code;

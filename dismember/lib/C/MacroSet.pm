@@ -48,12 +48,12 @@ sub push
    }
 }
 
-sub _build_ids
+sub ids
 {
    [ $_[0]->map( sub { return undef unless $_; '\b(?:' . join('|', @{ $_->get_code_ids }) . ')\b' } ) ];
 }
 
-sub _build_tags
+sub tags
 {
    [ $_[0]->map( sub {  return undef unless $_;
                         my @t = @{ $_->get_code_tags };
