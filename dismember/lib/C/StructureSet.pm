@@ -23,7 +23,7 @@ sub parse
    my $name = qr!(?<sname>[a-zA-Z_]\w*)!;
    
    while ( $_[0] =~ m/^${h}*+
-         (?:struct|union)
+         (struct|union)
          ${s}++
             $name
          ${s}*+
@@ -39,11 +39,20 @@ sub parse
             )
          )${s}*+;
       /gmpx) {
-      carp("Repeated defenition of structure $+{sname}") if (exists $structures{$+{sname}});
-      $structures{$+{sname}} = ${^MATCH}
+      my $name = $+{sname};
+
+      carp("Repeated defenition of structure $name")
+         if (exists $structures{$name});
+
+      $structures{$name} = C::Structure->new(
+                                 name => $name,
+                                 code => ${^MATCH},
+                                 type => $1,
+                                 area => $area
+                           );
    }
 
-   return $self->new(set => [ map { C::Structure->new(name => $_, code => $structures{$_}, area => $area) } keys %structures ]);
+   return $self->new(set => [values %structures]);
 }
 
 
