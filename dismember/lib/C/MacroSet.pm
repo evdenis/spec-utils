@@ -50,19 +50,12 @@ sub push
 
 sub ids
 {
-   [ $_[0]->map( sub { return undef unless $_; '\b(?:' . join('|', @{ $_->get_code_ids }) . ')\b' } ) ];
+   [ $_[0]->map( sub { return [] unless $_; $_->get_code_ids }) ]
 }
 
 sub tags
 {
-   [ $_[0]->map( sub {  return undef unless $_;
-                        my @t = @{ $_->get_code_tags };
-                        if (@t) {
-                           join(' ', @t)
-                        } else {
-                           undef
-                        }
-                     } ) ]
+   [ $_[0]->map( sub { return [] unless $_; $_->get_code_tags }) ]
 }
 
 

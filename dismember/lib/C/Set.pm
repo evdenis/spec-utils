@@ -17,18 +17,12 @@ has 'set' => (
 
 sub ids
 {
-   [ $_[0]->map( sub { '\b(?:' . join('|', @{ $_->get_code_ids }) . ')\b' } ) ]
+   [ $_[0]->map( sub { $_->get_code_ids } ) ]
 }
 
 sub tags
 {
-   [ $_[0]->map( sub {  my @t = @{ $_->get_code_tags };
-                        if (@t) {
-                           join(' ', @t)
-                        } else {
-                           undef
-                        }
-                     } ) ]
+   [ $_[0]->map( sub { $_->get_code_tags } ) ]
 }
 
 

@@ -63,8 +63,6 @@ sub prepare_tags
       }
    }
 
-   @tags = map { ref $_ eq 'ARRAY' ? @{$_} : $_ } @tags; #temp
-
    \@tags
 }
 

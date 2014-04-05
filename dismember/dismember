@@ -175,10 +175,17 @@ sub check
    alias my @tags = @{$_[1]};
    my @connections;
 
+
    while (my ($i, $id) = each @ids) {
       next unless $id;
+
+      $id = '\b' . join('|', @$id) . '\b';
+      $id = qr/$id/;
+
       while (my ($j, $tag) = each @tags) {
          next unless $tag;
+         @$tag = map { ref $_ eq 'ARRAY' ? @{$_} : $_ } @$tag;
+         $tag = join(' ', @$tag);
 
          push @connections, [$i, $j] if ($tag =~ m/$id/)
       }
