@@ -105,8 +105,10 @@ sub prepare_module_sources
    }
 
    #remove includes, because they are already included
-   $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
-   $code = $headers . $code;
+   if ($headers) {
+      $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
+      $code = $headers . $code;
+   }
 
    (\$code, \$kernel_code, \$kernel_macro)
 }
@@ -132,10 +134,15 @@ sub generic_parse
    }
 }
 
-my %kernel = map { $_ => \$kcode } qw(typedef enum structure global declaration);
-$kernel{macro} = \$kmacro;
-my %module = map { $_ => \$code }  qw(typedef enum structure global function);
+my %kernel = map { $_ => \$kcode } qw(typedef enum structure global declaration)
+   if $kcode;
+$kernel{macro} = \$kmacro
+   if $kmacro;
 
+my %module = map { $_ => \$code }  qw(typedef enum structure global function)
+   if $code;
+
+exit 0 if (!$kcode && !$kmacro && !$code);
 
 if (!$use_cache) {
    generic_parse(\%kernel, 'kernel');
@@ -209,9 +216,11 @@ $g->set_graph_attribute('comments', \@comments);
    foreach ($dg->vertices) {
       my @keys = split /_/, $_;
       my $set = $source{$keys[0]}->{$keys[1]};
-      add_vertices($g, $set->set, $keys[0], $keys[1]);
-      my $ids = $set->ids();
+      next unless $set;
 
+      add_vertices($g, $set->set, $keys[0], $keys[1]);
+
+      my $ids = $set->ids();
       while ( my ($i, $id) = each @{$ids} ) {
          my @id = @{$id};
 
@@ -263,11 +272,12 @@ RECHECK:
 
       say "TAGS: @keys";
       my $set = $source{$keys[0]}->{$keys[1]};
-      my $tags = $set->tags();
+      next unless $set;
 
+      my $tags = $set->tags();
       while (my ($i, $t) = each @{$tags}) {
 
-NEXT:    foreach my $tag (@{$t}) {
+         foreach my $tag (@{$t}) {
             my $s;
             if (ref $tag eq 'ARRAY') {
                $s = $tag->[0];
