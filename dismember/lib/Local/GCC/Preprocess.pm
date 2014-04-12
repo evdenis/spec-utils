@@ -69,7 +69,7 @@ sub form_gcc_kernel_include_path
       return $gcc_include_path
    }
 
-   croak("$kdir_path is not a kernel directory.") if ! -d $kdir_path || ! -e "$kdir_path/Kbuild";
+   croak("$kdir_path is not a kernel directory.") if ! -e "$kdir_path/Kbuild";
 
    $last_path = $kdir_path;
    $gcc_include_path = '';
