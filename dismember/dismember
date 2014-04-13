@@ -13,7 +13,8 @@ use Data::Alias qw(alias deref);
 use File::Slurp qw(write_file);
 use Getopt::Long qw(:config gnu_getopt);
 
-use lib './lib/';
+use FindBin;
+use lib "$FindBin::Bin/lib/";
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
