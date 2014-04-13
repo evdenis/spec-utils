@@ -19,9 +19,13 @@ use lib "$FindBin::Bin/lib/";
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
 use Local::File::C::Merge qw(merge_headers merge_sources);
-use Local::GCC::Preprocess qw(gcc_preprocess_as_kernel_module gcc_preprocess_as_kernel_module_get_macro);
+use Local::GCC::Preprocess qw(
+      preprocess_directives_only
+      preprocess_as_kernel_module
+      preprocess_as_kernel_module_get_macro
+);
+
 use Local::C::Transformation qw(adapt restore);
-use Local::C::Preprocessing;
 
 use Scalar::Util qw(blessed);
 
@@ -101,8 +105,8 @@ sub prepare_module_sources
    if (!$use_cache) {
       my $kernel_includes = join("\n", @kernel_includes);
 
-      $kernel_code = gcc_preprocess_as_kernel_module($kernel_dir, $kernel_includes);
-      $kernel_macro = gcc_preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
+      $kernel_code  = preprocess_as_kernel_module($kernel_dir, $kernel_includes);
+      $kernel_macro = preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
    }
 
    #remove includes, because they are already included
@@ -110,6 +114,20 @@ sub prepare_module_sources
       $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
       $code = $headers . $code;
    }
+
+   {
+      my $macro = $kernel_macro;
+      $macro =~ s/^#define __STDC__\N+$//m;
+      $macro =~ s/^#define __STDC_HOSTED__\N+$//m;
+      $code = preprocess_directives_only(
+                     $macro .
+                     "\n//<special_mark>\n" .
+                     "\n#define SPECIFICATION 1\n" .
+                     $code
+      )
+   }
+
+   $code = substr($code, index($code, '//<special_mark>') + length('//<special_mark>') + 1);
 
    (\$code, \$kernel_code, \$kernel_macro)
 }
@@ -137,13 +155,15 @@ sub generic_parse
 
 my %kernel = map { $_ => \$kcode } qw(typedef enum structure global declaration)
    if $kcode;
+
 $kernel{macro} = \$kmacro
    if $kmacro;
 
-my %module = map { $_ => \$code }  qw(typedef enum structure global function)
+my %module = map { $_ => \$code }  qw(typedef enum structure global macro function)
    if $code;
 
 exit 0 if (!$kcode && !$kmacro && !$code);
+
 
 if (!$use_cache) {
    generic_parse(\%kernel, 'kernel');
@@ -155,26 +175,9 @@ if (!$use_cache) {
 my @comments;
 adapt($code, comments => \@comments);
 
-$kernel{macro}->push(C::Macro->new( name         => 'SPECIFICATION',
-                                    code         => "#define SPECIFICATION 1\n",
-                                    substitution => '1',
-                                    area         => 'module'));
-#extracting module macro
-{
-   #save
-   my @index = keys %{$kernel{macro}->index};
+generic_parse(\%module, 'module');
+adapt($code, macro => 1);
 
-   $code = preprocess_conditionals($code, $kernel{macro}, 'module');
-
-   generic_parse(\%module, 'module');
-
-
-   $module{macro} = C::MacroSet->new(set => []);
-   foreach(difference([keys %{$kernel{macro}->index}], \@index)) {
-      $module{macro}->push($kernel{macro}->get($_));
-      $kernel{macro}->delete($_);
-   }
-}
 
 
 #global graph building

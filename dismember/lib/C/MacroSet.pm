@@ -74,42 +74,35 @@ sub get
 sub parse
 {
    my $self = shift;
-   my @lines = split(/^/m, $_[0]);
    my $area = $_[1];
    my %defines;
 
-   foreach(@lines) {
-      chomp;
+   while ($_[0] =~
+                  m/^
+                  [ \t]*+
+                  \#
+                  [ \t]*+
+                  define
+                  [ \t]++
+                  (?<def>[a-zA-Z_]\w*+)
+                  (?:\([ \t]*(?<args>[^\)]*)\))?
+                  [ \t]*+
+                  (?<code>.*)$
+                  /xmgp) {
+      my $name = $+{def};
 
-      if (
-            m/\A
-            [ \t]*+
-            \#
-            [ \t]*+
-            define
-            [ \t]++
-            (?<def>[a-zA-Z_]\w*+)
-            (?:\([ \t]*(?<args>[^\)]*)\))?
-            [ \t]*+
-            (?<code>.*)\Z
-         /xp) {
-         my $name = $+{def};
-
-         if (exists $defines{$name}) {
-            carp("Repeated defenition of typedef $name")
-         } else {
-            my $code = ${^MATCH};
-            my $substitution = $+{code};
-            my $args = undef;
-
-            if (exists $+{args}) {
-               $args = [ $+{args} =~ m/[a-zA-Z_]\w*+/g ]
-            }
-
-            $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution, area => $area)
-         }
+      if (exists $defines{$name}) {
+         carp("Repeated defenition of typedef $name")
       } else {
-         carp("Can't parse $_");
+         my $code = ${^MATCH};
+         my $substitution = $+{code};
+         my $args = undef;
+
+         if (exists $+{args}) {
+            $args = [ $+{args} =~ m/[a-zA-Z_]\w*+/g ]
+         }
+
+         $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution, area => $area)
       }
    }
 
