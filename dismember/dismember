@@ -412,6 +412,12 @@ if ($cache_level == 2) {
    my $id = $g->get_graph_attribute('index')->{$function};
    die("There is no function $function in module\n") if ! $id;
 
+   $output_dir = "$output_dir/$function";
+   mkdir($output_dir) or
+      die("Can't create output directory for function $output_dir\n")
+         if $output_dir && (! -e $output_dir);
+
+
    my @sv = $g->all_predecessors($id);
    push @sv, $id;
 
@@ -569,10 +575,10 @@ while ($g->has_a_cycle) {
    }
 
 
-   my $module_c = "parsec-$function.c";
-   my $module_h = "module-$function.h";
-   my $kernel_h = "kernel-$function.h";
-   my $extern_h = "extern-$function.h";
+   my $module_c = 'parsec.c';
+   my $module_h = 'module.h';
+   my $kernel_h = 'kernel.h';
+   my $extern_h = 'extern.h';
 
    $module_c = "$output_dir/$module_c"
       if $output_dir;
