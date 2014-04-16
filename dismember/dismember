@@ -49,11 +49,6 @@ my $cache_dir = "$FindBin::Bin/.cache";
 my $cache_file_1 = "$cache_dir/kernel.cache";
 my $cache_file_2 = "$cache_dir/graph.cache";
 
-my $module_c = 'parsec.c';
-my $module_h = 'module.h';
-my $kernel_h = 'kernel.h';
-my $extern_h = 'extern.h';
-
 my $single_file = 0;
 
 GetOptions(
@@ -567,6 +562,12 @@ while ($g->has_a_cycle) {
       }
    }
 
+
+   my $module_c = "parsec-$function.c";
+   my $module_h = "module-$function.h";
+   my $kernel_h = "kernel-$function.h";
+   my $extern_h = "extern-$function.h";
+
    if ($single_file) {
       $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
@@ -584,7 +585,12 @@ while ($g->has_a_cycle) {
       $module_h_content = $module_macro . $module_h_content;
       $kernel_h_content = $kernel_macro . $kernel_h_content;
 
-      $module_c_content = qq(#include "kernel.h"\n#include "extern.h"\n#include "module.h"\n\n) . $module_c_content;
+      $module_c_content =
+qq(#include "$kernel_h"
+#include "$extern_h"
+#include "$module_h"
+
+) . $module_c_content;
 
 
       write_file($module_c, $module_c_content);
