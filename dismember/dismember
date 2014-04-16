@@ -45,8 +45,9 @@ my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
 my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $use_cache = 1;
 my $cache_level = 2;
-my $cache_file_1 = 'kernel.cache';
-my $cache_file_2 = 'graph.cache';
+my $cache_dir = "$FindBin::Bin/.cache";
+my $cache_file_1 = "$cache_dir/kernel.cache";
+my $cache_file_2 = "$cache_dir/graph.cache";
 
 my $module_c = 'parsec.c';
 my $module_h = 'module.h';
@@ -68,6 +69,15 @@ die("You should provide function name.\n") if !$function;
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
 die("$kernel_dir is not a kernel directory.\n") if ! -f "$kernel_dir/Kbuild";
 
+
+if ($cache_dir) {
+   $cache_file_1 = "$cache_dir/$cache_file_1";
+   $cache_file_2 = "$cache_dir/$cache_file_2";
+}
+
+mkdir($cache_dir) or
+   die("Can't create cache directory $cache_dir\n")
+      if $cache_dir && (! -e $cache_dir);
 
 if ($use_cache) {
 RECHECK:
