@@ -41,14 +41,14 @@ sub call_gcc
    return $type ? @res : $res;
 }
 
-sub get_macro ($)
+sub get_macro
 {
-   call_gcc('-dM -E -P', $_[0]);
+   call_gcc('-dM -E -P -nostdinc', $_[0])
 }
 
-sub preprocess ($)
+sub preprocess
 {
-   call_gcc('-E -P', $_[0]);
+   call_gcc('-E -P -nostdinc', $_[0])
 }
 
 sub preprocess_directives_only
