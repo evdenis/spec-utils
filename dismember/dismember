@@ -45,9 +45,10 @@ my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
 my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $use_cache = 1;
 my $cache_level = 2;
-my $cache_dir = "$FindBin::Bin/.cache";
-my $cache_file_1 = "$cache_dir/kernel.cache";
-my $cache_file_2 = "$cache_dir/graph.cache";
+my $output_dir = "$FindBin::Bin/result";
+my $cache_dir  = "$FindBin::Bin/.cache";
+my $cache_file_1 = "kernel.cache";
+my $cache_file_2 = "graph.cache";
 
 my $single_file = 0;
 
@@ -73,6 +74,11 @@ if ($cache_dir) {
 mkdir($cache_dir) or
    die("Can't create cache directory $cache_dir\n")
       if $cache_dir && (! -e $cache_dir);
+
+mkdir($output_dir) or
+   die("Can't create output directory $output_dir\n")
+      if $output_dir && (! -e $output_dir);
+
 
 if ($use_cache) {
 RECHECK:
@@ -568,6 +574,9 @@ while ($g->has_a_cycle) {
    my $kernel_h = "kernel-$function.h";
    my $extern_h = "extern-$function.h";
 
+   $module_c = "$output_dir/$module_c"
+      if $output_dir;
+
    if ($single_file) {
       $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
@@ -592,6 +601,11 @@ qq(#include "$kernel_h"
 
 ) . $module_c_content;
 
+      if ($output_dir) {
+         $module_h = "$output_dir/$module_h";
+         $kernel_h = "$output_dir/$kernel_h";
+         $extern_h = "$output_dir/$extern_h";
+      }
 
       write_file($module_c, $module_c_content);
       write_file($module_h, $module_h_content);
