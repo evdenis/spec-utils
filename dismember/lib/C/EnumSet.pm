@@ -23,7 +23,7 @@ sub parse
 
    my $name = qr!(?<ename>[a-zA-Z_]\w*)!;
    
-   while ( $_[0] =~ m/^${h}*+
+   while ( ${$_[0]} =~ m/^${h}*+
          enum
          ${s}++
             (?:$name)?

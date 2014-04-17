@@ -22,7 +22,7 @@ sub parse
 
    my $name = qr!(?<sname>[a-zA-Z_]\w*)!;
    
-   while ( $_[0] =~ m/^${h}*+
+   while ( ${$_[0]} =~ m/^${h}*+
          (struct|union)
          ${s}++
             $name

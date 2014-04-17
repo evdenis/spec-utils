@@ -37,7 +37,7 @@ sub parse
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
    
    #get list of all module functions
-   while ( $_[0] =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/gp ) {
+   while ( ${$_[0]} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/gp ) {
       my $name = $+{name};
       my $code = ${^MATCH}; 
 

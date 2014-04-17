@@ -23,7 +23,7 @@ sub parse
    my $area = $_[1];
    my %globals;
 
-   while ($_[0] =~ m/extern${s}++([^;}{]+?)(?<name>[a-zA-Z_]\w*)${s}*+;/gp) {
+   while (${$_[0]} =~ m/extern${s}++([^;}{]+?)(?<name>[a-zA-Z_]\w*)${s}*+;/gp) {
       $globals{$+{name}} = ${^MATCH}
    }
 

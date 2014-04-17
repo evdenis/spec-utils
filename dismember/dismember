@@ -3,31 +3,28 @@
 use warnings;
 use strict;
 
-use feature qw(say state);
+use feature qw(say);
 use re '/aa';
 
 use Graph::Directed;
 use Graph::Reader::Dot;
 
 use Data::Alias qw(alias deref);
-use File::Slurp qw(write_file);
 use Getopt::Long qw(:config gnu_getopt);
+use Scalar::Util qw(blessed);
+use Storable;
 
 use FindBin;
 use lib "$FindBin::Bin/lib/";
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
-use Local::File::C::Merge qw(merge_headers merge_sources);
-use Local::GCC::Preprocess qw(
-      preprocess_directives_only
-      preprocess_as_kernel_module
-      preprocess_as_kernel_module_get_macro
+use Local::Kernel::Module qw(parse_sources);
+use Local::Kernel::Module::Graph qw(
+   build_sources_graph
+   get_predecessors_subgraph
+   output_sources_graph
 );
-
-use Local::C::Transformation qw(adapt restore);
-
-use Scalar::Util qw(blessed);
 
 use C::Macro;
 use C::MacroSet;
@@ -38,17 +35,14 @@ use C::FunctionSet;
 use C::DeclarationSet;
 use C::GlobalSet;
 
-use Storable;
 
 my $function;
 my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
 my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $use_cache = 1;
-my $cache_level = 2;
 my $output_dir = "$FindBin::Bin/result";
 my $cache_dir  = "$FindBin::Bin/.cache";
-my $cache_file_1 = "kernel.cache";
-my $cache_file_2 = "graph.cache";
+my $cache_file = "graph.cache";
 
 my $single_file = 0;
 
@@ -57,7 +51,6 @@ GetOptions(
    'parsec|d=s'            =>  \$parsec_dir,
    'kernel|k=s'            =>  \$kernel_dir,
    'cache|c!'              =>  \$use_cache,
-   'cache-level|level|l=i' =>  \$cache_level,
    'single|s!'             =>  \$single_file
 ) or die "Incorrect usage!\n";
 
@@ -65,373 +58,51 @@ die("You should provide function name.\n") if !$function;
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
 die("$kernel_dir is not a kernel directory.\n") if ! -f "$kernel_dir/Kbuild";
 
+sub create_directory
+{
+   mkdir($_[0]) or
+      die("Can't create directory $_[0]: $!\n")
+         if $_[0] && (! -e $_[0])
+}
+
 
 if ($cache_dir) {
-   $cache_file_1 = "$cache_dir/$cache_file_1";
-   $cache_file_2 = "$cache_dir/$cache_file_2";
+   $cache_file = "$cache_dir/$cache_file";
 }
 
-mkdir($cache_dir) or
-   die("Can't create cache directory $cache_dir\n")
-      if $cache_dir && (! -e $cache_dir);
+create_directory $cache_dir;
+create_directory $output_dir;
 
-mkdir($output_dir) or
-   die("Can't create output directory $output_dir\n")
-      if $output_dir && (! -e $output_dir);
-
-
-if ($use_cache) {
-RECHECK:
-   if ($cache_level == 1) {
-      $use_cache = 0, $cache_level = 0 if ! -r $cache_file_1
-   } elsif ($cache_level == 2) {
-      if (! -r $cache_file_2) {
-         $cache_level = 1;
-         goto RECHECK;
-      }
-   }
-} else {
-   $cache_level = 0
-}
-
-say "CACHE $use_cache LEVEL: $cache_level";
-
-goto CACHED_GRAPH if $cache_level == 2;
-
-sub prepare_module_sources
-{
-   my @kernel_includes;
-   my $headers = merge_headers($parsec_dir, \@kernel_includes);
-   my $code    = merge_sources($parsec_dir);
-
-   @kernel_includes = map {"#include <$_>"} @kernel_includes;
-
-   #getting list of kernel headers from *.c files; and remove others
-   $code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))\h*$/
-               push @kernel_includes, "#include $1\n" if defined $1;''/meg;
-
-   my $kernel_code;
-   my $kernel_macro;
-
-   if (!$use_cache) {
-      my $kernel_includes = join("\n", @kernel_includes);
-
-      $kernel_code  = preprocess_as_kernel_module($kernel_dir, $kernel_includes);
-      $kernel_macro = preprocess_as_kernel_module_get_macro($kernel_dir, $kernel_includes);
-   }
-
-   #remove includes, because they are already included
-   if ($headers) {
-      $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
-      $code = $headers . $code;
-   }
-
-   {
-      my $macro = $kernel_macro;
-      $macro =~ s/^#define __STDC__\N+$//m;
-      $macro =~ s/^#define __STDC_HOSTED__\N+$//m;
-      $code = preprocess_directives_only(
-                     $macro .
-                     "\n//<special_mark>\n" .
-                     "\n#define SPECIFICATION 1\n" .
-                     $code
-      )
-   }
-
-   $code = substr($code, index($code, '//<special_mark>') + length('//<special_mark>') + 1);
-
-   (\$code, \$kernel_code, \$kernel_macro)
-}
-
-alias my ($code, $kcode, $kmacro) = deref prepare_module_sources;
-
-#remove attributes
-adapt($kcode, attributes => 1);
+$use_cache = 0 if ! -r $cache_file;
+say "USE_CACHE: $use_cache";
+goto CACHED_GRAPH if $use_cache;
 
 
-#TODO: rewrite based on the role and keys of hash
-sub generic_parse
-{
-   no strict 'refs';
+my %sources = parse_sources($kernel_dir, $parsec_dir, ["#define SPECIFICATION 1\n"]);
 
-   my $call = sub { goto &{$_[0]->can('parse')} };
+my $g = build_sources_graph(\%sources);
+$g->set_graph_attribute('comments', $sources{comments});
+$g->set_graph_attribute('index', $sources{module}{function}->index);
 
-   foreach my $k (keys %{$_[0]}) {
-      my $class = "C::\u${k}Set";
-      say "\u$_[1] ${class} parse";
-
-      $_[0]->{$k} = $call->($class, ${$_[0]->{$k}}, $_[1])
-   }
-}
-
-my %kernel = map { $_ => \$kcode } qw(typedef enum structure global declaration)
-   if $kcode;
-
-$kernel{macro} = \$kmacro
-   if $kmacro;
-
-my %module = map { $_ => \$code }  qw(typedef enum structure global macro function)
-   if $code;
-
-exit 0 if (!$kcode && !$kmacro && !$code);
-
-
-if (!$use_cache) {
-   generic_parse(\%kernel, 'kernel');
-   store(\%kernel, $cache_file_1)
-} else {
-   %kernel = %{ retrieve($cache_file_1) }
-}
-
-my @comments;
-adapt($code, comments => \@comments);
-
-generic_parse(\%module, 'module');
-adapt($code, macro => 1);
-
-
-
-#global graph building
-my %source = (module => \%module, kernel => \%kernel);
-
-
-sub add_vertices
-{
-   my $g = shift;
-   my $s = shift;
-   my $a = shift;
-   my $t = shift;
-
-   state %init;
-
-   return if $init{$a}{$t};
-
-   foreach (@$s) {
-      my $id = $_->id;
-
-      if (!$g->has_vertex($id)) {
-         $g->add_vertex($id);
-         $g->set_vertex_attributes($id, { object => $_ });
-      } else {
-         die("Vertex has been already added to the graph.\n");
-      }
-   }
-
-   $init{$a}{$t} = 1;
-}
-
-
-my $g = Graph::Directed->new();
-$g->set_graph_attribute('comments', \@comments);
-
-{
-   my %index;
-   my $dg = Graph::Reader::Dot->new()->read_graph(\*main::DATA);
-
-   foreach ($dg->vertices) {
-      my @keys = split /_/, $_;
-      my $set = $source{$keys[0]}->{$keys[1]};
-      next unless $set;
-
-      add_vertices($g, $set->set, $keys[0], $keys[1]);
-
-      my $ids = $set->ids();
-      while ( my ($i, $id) = each @{$ids} ) {
-         my @id = @{$id};
-
-         foreach (@id) {
-            if (exists $index{$_}) {
-RECHECK:
-               my $o  = $index{$_};
-               my $to = ref($o);
-
-               if ($to eq 'HASH') {
-                  my $n  = $set->get_from_index($i);
-                  my $tn = blessed($n);
-
-                  if (!exists $index{$_}{$tn}) {
-                     $index{$_}{$tn} = $n;
-                  } else {
-                     die("$tn duplicate\n");
-                  }
-               } else {
-                  $index{$_} = {};
-                  $index{$_}{$to} = $o;
-                  goto RECHECK;
-               }
-            } else {
-               $index{$_} = $set->get_from_index($i);
-            }
-         }
-      }
-   }
-
-=cmt
-   #use Data::Dumper;
-   foreach (keys %index) {
-      if (ref($index{$_}) eq 'HASH') {
-         #print join(' ', sort keys $index{$_}) . "\n";
-         my @keys = sort keys $index{$_};
-         #if ('C::Declaration' eq $keys[0] && 'C::Structure' eq $keys[1]) {
-         #   print Dumper $index{$_};
-         #   say '-' x 80;
-         #}
-         say "@keys";
-      }
-   }
-   exit;
-=cut
-
-   foreach ($dg->vertices) {
-      my @keys = split /_/, $_;
-
-      say "TAGS: @keys";
-      my $set = $source{$keys[0]}->{$keys[1]};
-      next unless $set;
-
-      my $tags = $set->tags();
-      while (my ($i, $t) = each @{$tags}) {
-
-         foreach my $tag (@{$t}) {
-            my $s;
-            if (ref $tag eq 'ARRAY') {
-               $s = $tag->[0];
-               $tag = $tag->[1];
-            }
-
-            if (exists $index{$tag}) {
-               sub to_vertex { $_[0]->area . '_' . lcfirst(substr(blessed($_[0]), 3)) };
-               my $from = $index{$tag};
-               my $to = $set->get_from_index($i);
-
-               if (ref($from) eq 'HASH') {
-                  #get all possible "from" objects
-                  my @possible;
-                  foreach (keys %$from) {
-                     push @possible, $from->{$_}
-                        if $dg->has_edge(to_vertex($from->{$_}), to_vertex($to))
-                  }
-                  die('Can\'t find object of appropriate type' . blessed($to) . ' for ' . $to->name . "\n")
-                     unless @possible;
-
-                  my %sort_pr = (
-                     'C::Macro'     => 1,
-                     'C::Structure' => 2,
-                     'C::Enum'      => 3,
-                     'C::Typedef'   => 4,
-                  );
-                  my $sort_sub = sub {
-                     my $pa = $sort_pr{blessed($a)} // 10;
-                     my $pb = $sort_pr{blessed($b)} // 10;
-                     $pa <=> $pb
-                  };
-                  @possible = sort $sort_sub @possible;
-
-                  my @from;
-                  #only one instance of type possible
-                  my $legal = 0;
-                  foreach (@possible) {
-                     my $t = blessed($_);
-                     if ($s) {
-                        if (
-                              $t eq 'C::Macro'
-                              ||
-                              ($s eq 'struct' || $s eq 'union') && ($t eq 'C::Structure' || $t eq 'C::Typedef')
-                              ||
-                              $s eq 'enum' && ($t eq 'C::Enum' || $t eq 'C::Typedef')
-                           ) {
-                           push @from, $_;
-                           $legal = 1;
-                           last
-                        }
-                     } else {
-                        if ($t eq 'C::Macro') {
-                           push @from, $_;
-                           $legal = 1;
-                           last
-                        }
-                        # Should bind them anyway
-                        #if ($t eq 'C::Structure' || $t eq 'C::Enum') {
-                        #   use Data::Dumper;
-                        #   print Dumper $_;
-                        #   print Dumper $to;
-                        #   die('Internal error')
-                        #}
-                     }
-
-                     #bind with all
-                     push @from, $_;
-                  }
-
-                  if ($legal && @from == 1) {
-                     $g->add_edge($from[0]->id, $to->id)
-                  } elsif (!$legal && $s) {
-                     die('Internal error')
-                  } elsif (!$legal && !$s) {
-                     foreach(@from) {
-                        $g->add_edge($_->id, $to->id)
-                     }
-                  } else {
-                     die('Internal error')
-                  }
-
-               } else {
-                  if ($dg->has_edge(to_vertex($from), to_vertex($to))) {
-                     if ($s) {
-                        my $t = blessed($from);
-                        die("Wrong type: want $s, but get $t. Objects:\n" . $from->code . "\n<->\n" . $to->code . "\n")
-                                 unless
-                                    $t eq 'C::Macro'
-                                    ||
-                                    ($s eq 'struct' || $s eq 'union') && ($t eq 'C::Structure' || $t eq 'C::Typedef')
-                                    ||
-                                    $s eq 'enum' && ($t eq 'C::Enum' || $t eq 'C::Typedef')
-                     }
-                     $g->add_edge($from->id, $to->id)
-                  }
-               }
-            }
-         }
-      }
-   }
-}
-
-#exit;
-
-$g->set_graph_attribute('index', $module{function}->index);
 
 CACHED_GRAPH:
-if ($cache_level == 2) {
-   $g = retrieve($cache_file_2);
+if ($use_cache) {
+   $g = retrieve($cache_file)
 } else {
-   store($g, $cache_file_2)
+   store($g, $cache_file)
 }
 
 
 {
    my $id = $g->get_graph_attribute('index')->{$function};
-   die("There is no function $function in module\n") if ! $id;
+   die("There is no function $function in module\n")
+      if ! $id;
 
    $output_dir = "$output_dir/$function";
-   mkdir($output_dir) or
-      die("Can't create output directory for function $output_dir\n")
-         if $output_dir && (! -e $output_dir);
+   create_directory $output_dir;
 
-
-   my @sv = $g->all_predecessors($id);
-   push @sv, $id;
-
-   local $| = 1;
-   print "DELETE UNNEEDED VERTICES";
-      my $g2 = Graph::Directed->new(edges => [ grep { any($_->[0], \@sv) && any($_->[1], \@sv) } $g->edges ]);
-      foreach (@sv) {
-         $g2->set_vertex_attributes($_, $g->get_vertex_attributes($_))
-      }
-      # we do not want to inherit index attribute
-      $g2->set_graph_attribute('comments', $g->get_graph_attribute('comments'));
-
-      $g = $g2;
-   print "\tDONE\n";
+   say "DELETE UNNEEDED VERTICES";
+   $g = get_predecessors_subgraph($g, $id);
 }
 
 
@@ -448,8 +119,6 @@ while ($g->has_a_cycle) {
 
    my $t1 = blessed($o1);
    my $t2 = blessed($o2);
-
-   say "@path";
 
    if ($t1 eq $t2) {
       say "$t1" . " " . $o1->name . " -> " . $o2->name;
@@ -484,257 +153,5 @@ while ($g->has_a_cycle) {
    }
 }
 
-
-{
-   my $module_c_content = '';
-   my $module_h_content = '';
-   my $kernel_h_content = '';
-   my $extern_h_content = '';
-   my $kernel_macro = '';
-   my $module_macro = '';
-
-
-   my @order;
-   my %vertices = map { ($_ => 0) } $g->vertices;
-
-   while (keys %vertices) {
-      my @zv;
-      foreach(keys %vertices) {
-         push @zv, $_ if !$g->in_degree($_);
-      }
-
-      die("Cycle in graph") if !@zv;
-
-      push @order, @zv;
-      delete $vertices{$_} foreach @zv;
-
-      my %i = map {
-                     my $o = $g->get_vertex_attribute($_, 'object');
-                     ( $_ => {
-                              object => $o,
-                              type => blessed($o),
-                              area => $o->area
-                           } )
-                  } @zv;
-
-      my %sp = (
-                   'C::Enum'      => 2,
-                   'C::Typedef'   => 3,
-                   'C::Structure' => 4,
-
-                   'C::Macro'       => 1,
-                   'C::Global'      => 5,
-                   'C::Declaration' => 6,
-                   'C::Function'    => 7
-               );
-      my $sort_sub = sub {
-            $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}}
-         or
-            $i{$a}->{object}->name cmp $i{$b}->{object}->name
-      };
-
-      foreach (sort $sort_sub keys %i) {
-         my $o = $i{$_}->{object};
-         my $a = $i{$_}->{area};
-         my $t = $i{$_}->{type};
-         my $content;
-
-         if ($a eq 'kernel') {
-            if ($t eq 'C::Declaration' || $t eq 'C::Global') {
-               $content = \$extern_h_content
-            } elsif ($t eq 'C::Macro') {
-               $content = \$kernel_macro
-            } else {
-               $content = \$kernel_h_content
-            }
-         } else {
-            if ($t eq 'C::Function') {
-               $content = \$module_c_content
-            } elsif ($t eq 'C::Macro') {
-               $content = \$module_macro
-            } else {
-               $content = \$module_h_content
-            }
-         }
-
-         $$content .= $o->to_string . "\n\n";
-      }
-
-      $g->delete_vertices(@zv);
-   }
-
-   #say "ORDER @order";
-
-
-   {
-      my $c = $g->get_graph_attribute('comments');
-
-      foreach ($module_macro, $module_h_content, $module_c_content) {
-         restore($_, comments => $c)
-      }
-   }
-
-
-   my $module_c = 'parsec.c';
-   my $module_h = 'module.h';
-   my $kernel_h = 'kernel.h';
-   my $extern_h = 'extern.h';
-
-   $module_c = "$output_dir/$module_c"
-      if $output_dir;
-
-   if ($single_file) {
-      $module_c_content = join("\n" . '//' . '-' x 78 . "\n\n",
-                                 (
-                                   $kernel_macro,
-                                   $kernel_h_content,
-                                   $extern_h_content,
-                                   $module_macro,
-                                   $module_h_content,
-                                   $module_c_content
-                                 )
-                          );
-
-      write_file($module_c, $module_c_content);
-   } else {
-      $module_h_content = $module_macro . $module_h_content;
-      $kernel_h_content = $kernel_macro . $kernel_h_content;
-
-      $module_c_content =
-qq(#include "$kernel_h"
-#include "$extern_h"
-#include "$module_h"
-
-) . $module_c_content;
-
-      if ($output_dir) {
-         $module_h = "$output_dir/$module_h";
-         $kernel_h = "$output_dir/$kernel_h";
-         $extern_h = "$output_dir/$extern_h";
-      }
-
-      write_file($module_c, $module_c_content);
-      write_file($module_h, $module_h_content);
-      write_file($kernel_h, $kernel_h_content);
-      write_file($extern_h, $extern_h_content);
-   }
-}
-
-__DATA__
-digraph g
-{
-   subgraph cluster_kernel {
-      kernel_macro;
-      kernel_structure;
-      kernel_declaration;
-      kernel_typedef;
-      kernel_enum;
-      kernel_global;
-
-      // kernel_macro; nothing already preprocessed
-      kernel_macro -> kernel_macro;
-
-      kernel_structure -> kernel_macro;
-      kernel_structure -> kernel_structure;
-      kernel_structure -> kernel_declaration;
-      kernel_structure -> kernel_typedef;
-      kernel_structure -> kernel_enum; //sizeof
-      kernel_structure -> kernel_global;
-
-      kernel_declaration -> kernel_macro;
-
-      kernel_typedef -> kernel_macro;
-      kernel_typedef -> kernel_structure;
-      kernel_typedef -> kernel_declaration;
-      kernel_typedef -> kernel_typedef;
-      kernel_typedef -> kernel_enum;
-      kernel_typedef -> kernel_global;
-
-      kernel_enum -> kernel_macro;
-      kernel_enum -> kernel_structure;
-      kernel_enum -> kernel_declaration;
-      kernel_enum -> kernel_typedef;
-      kernel_enum -> kernel_enum;
-      kernel_enum -> kernel_global;
-
-      kernel_global -> kernel_macro;
-   }
-
-   subgraph cluster_m {
-      module_macro;
-      module_structure;
-      module_function;
-      module_typedef;
-      module_enum;
-      module_global;
-
-      module_macro -> module_macro;
-      module_macro -> module_structure;
-      module_macro -> module_function;
-      module_macro -> module_typedef;
-      module_macro -> module_enum;
-      module_macro -> module_global;
-      //
-      kernel_macro -> module_macro;
-      kernel_macro -> module_structure;
-      kernel_macro -> module_function;
-      kernel_macro -> module_typedef;
-      kernel_macro -> module_enum;
-      kernel_macro -> module_global;
-
-      module_structure -> module_macro;
-      module_structure -> module_structure;
-      module_structure -> module_function;
-      module_structure -> module_typedef;
-      module_structure -> module_enum; //sizeof
-      module_structure -> module_global;
-      //
-      kernel_structure -> module_macro;
-      kernel_structure -> module_structure;
-      kernel_structure -> module_function;
-      kernel_structure -> module_typedef;
-      kernel_structure -> module_enum; //sizeof
-      kernel_structure -> module_global;
-
-      module_function -> module_macro;
-      module_function -> module_function;
-      //
-      kernel_declaration -> module_macro;
-      kernel_declaration -> module_function;
-
-      module_typedef -> module_macro;
-      module_typedef -> module_structure;
-      module_typedef -> module_function;
-      module_typedef -> module_typedef;
-      module_typedef -> module_enum;
-      module_typedef -> module_global;
-      //
-      kernel_typedef -> module_macro;
-      kernel_typedef -> module_structure;
-      kernel_typedef -> module_function;
-      kernel_typedef -> module_typedef;
-      kernel_typedef -> module_enum;
-      kernel_typedef -> module_global;
-
-      module_enum -> module_macro;
-      module_enum -> module_structure;
-      module_enum -> module_function;
-      module_enum -> module_typedef;
-      module_enum -> module_enum;
-      module_enum -> module_global;
-      //
-      kernel_enum -> module_macro;
-      kernel_enum -> module_structure;
-      kernel_enum -> module_function;
-      kernel_enum -> module_typedef;
-      kernel_enum -> module_enum;
-      kernel_enum -> module_global;
-
-      module_global -> module_macro;
-      module_global -> module_function;
-      //
-      kernel_global -> module_macro;
-      kernel_global -> module_function;
-   }
-}
+output_sources_graph($g, $output_dir, $single_file);
 

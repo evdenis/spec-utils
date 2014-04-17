@@ -11,7 +11,7 @@ use warnings;
 our @EXPORT_OK = qw(
       get_macro
       preprocess
-      preprocess_directives_only
+      preprocess_directives
       preprocess_as_kernel_module
       preprocess_as_kernel_module_get_macro
 );
@@ -51,9 +51,9 @@ sub preprocess
    call_gcc('-E -P -nostdinc', $_[0])
 }
 
-sub preprocess_directives_only
+sub preprocess_directives
 {
-   call_gcc('-E -P -CC -fdirectives-only -nostdinc ', $_[0])
+   call_gcc('-E -P -C -fdirectives-only -nostdinc ', $_[0])
 }
 
 
