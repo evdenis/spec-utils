@@ -10,6 +10,7 @@ use Exporter qw(import);
 use Local::File::C::Merge qw(merge_headers merge_sources);
 use Local::C::Transformation qw(adapt);
 use Local::GCC::Preprocess qw(
+      preprocess
       preprocess_directives
       preprocess_as_kernel_module
       preprocess_as_kernel_module_get_macro
@@ -25,7 +26,8 @@ use C::DeclarationSet;
 use C::GlobalSet;
 
 
-our @EXPORT_OK = qw(parse_sources);
+our @EXPORT = qw(parse_sources);
+our @EXPORT_OK = qw(prepare_module_sources preprocess_module_sources);
 
 
 sub _get_module_data
@@ -57,29 +59,31 @@ sub _get_kernel_data
    my $dir = shift;
    my $includes = join("\n", @{$_[0]});
 
-   my $code  = preprocess_as_kernel_module($dir, $includes);
-   my @macro = preprocess_as_kernel_module_get_macro($dir, $includes);
+   my $code  = preprocess_as_kernel_module($dir, \$includes);
+   my $macro = preprocess_as_kernel_module_get_macro($dir, \$includes, 1);
 
-   @macro = grep ! /\A#define __STDC_(HOSTED_)?_\N+\Z/, @macro;
+   @$macro = grep ! /\A#define __STDC_(HOSTED_)?_\N+\Z/, @$macro;
 
 
-   (\$code, \@macro)
+   ($code, $macro)
 }
 
-sub _preprocess_module_code
+sub _preprocess_module_directives
 {
-   my ($module_code, $kernel_macro, $directives) = @_;
+   my ($kernel_macro, $defines, $module_code) = @_;
 
    my $data =  join("\n", @$kernel_macro) .
                "\n//<special_mark>\n"     .
-               join("\n", @$directives)   .
+               join("\n", @$defines)      .
                "\n\n"                     .
                $$module_code;
 
-   my $code = preprocess_directives($data);
+   #returns reference
+   my $code = preprocess_directives(\$data);
 
-   $code = substr($code,
-                  index($code, '//<special_mark>') +
+   #scalar
+   $code = substr($$code,
+                  index($$code, '//<special_mark>') +
                   length('//<special_mark>') +
                   1
            );
@@ -92,9 +96,16 @@ sub _preprocess_module_code
    (\$code, \@macro)
 }
 
-sub _prepare_module_sources
+sub _preprocess_module_code
 {
-   my ($kernel_dir, $module_dir, $directives) = @_;
+   #FIXME: undef instead of \@macro. Unneeded.
+   #May be implemented with get_macro.
+   ( preprocess(\join("\n", @{$_[0]}, @{$_[1]}, ${$_[2]})), undef )
+}
+
+sub _generic_handle_sources
+{
+   my ($kernel_dir, $module_dir, $defines, $pr_handler) = @_;
    my ($kernel_code, $kernel_macro,
        $module_code, $module_macro);
 
@@ -104,11 +115,20 @@ sub _prepare_module_sources
       ($kernel_code, $kernel_macro)    = _get_kernel_data($kernel_dir, $kernel_includes);
    }
 
-   ($module_code, $module_macro) = _preprocess_module_code($module_code, $kernel_macro, $directives);
+   ($module_code, $module_macro) = $pr_handler->($kernel_macro, $defines, $module_code);
 
    ($kernel_macro, $kernel_code, $module_macro, $module_code)
 }
 
+sub prepare_module_sources
+{
+   _generic_handle_sources(@_, \&_preprocess_module_directives)
+}
+
+sub preprocess_module_sources
+{
+   _generic_handle_sources(@_, \&_preprocess_module_code)
+}
 
 sub __generic_parse
 {
@@ -127,7 +147,7 @@ sub __generic_parse
 sub parse_sources
 {
    my ($kernel_macro, $kernel_code, $module_macro, $module_code) =
-      _prepare_module_sources(@_);
+      prepare_module_sources(@_);
 
    #remove attributes
    adapt($$kernel_code, attributes => 1);

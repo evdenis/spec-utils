@@ -18,18 +18,15 @@ our @EXPORT_OK = qw(
 
 sub call_gcc
 {
-   my $gcc_args = shift;
-   my $code = shift;
-   my $type = wantarray();
+   my ($gcc_args, $code, $wantarray) = @_;
    my @res;
    my $res;
 
-
    my $pid = open2(\*GCC_OUT, \*GCC_IN, "gcc $gcc_args -");
-   print GCC_IN $code;
+   print GCC_IN $$code;
    close GCC_IN;
 
-   if ($type) {
+   if ($wantarray) {
       chomp(@res = <GCC_OUT>);
    } else {
       $res .= $_ while <GCC_OUT>;
@@ -38,22 +35,22 @@ sub call_gcc
    close GCC_OUT;
    waitpid($pid, 0);
 
-   return $type ? @res : $res;
+   return $wantarray ? \@res : \$res;
 }
 
 sub get_macro
 {
-   call_gcc('-dM -E -P -nostdinc', $_[0])
+   call_gcc('-dM -E -P -nostdinc', @_)
 }
 
 sub preprocess
 {
-   call_gcc('-E -P -nostdinc', $_[0])
+   call_gcc('-E -P -nostdinc', @_)
 }
 
 sub preprocess_directives
 {
-   call_gcc('-E -P -C -fdirectives-only -nostdinc ', $_[0])
+   call_gcc('-E -P -C -fdirectives-only -nostdinc ', @_)
 }
 
 
@@ -85,12 +82,11 @@ sub form_gcc_kernel_include_path
    $last_path = $kdir_path;
    $gcc_include_path = '';
 
-   foreach (@kernel_include_path) {
-      $gcc_include_path .= "-I ${kdir_path}/${_} "
-   }
+   $gcc_include_path .= "-I ${kdir_path}/${_} "
+      foreach @kernel_include_path;
 
    if (!defined $stdlib) {
-      my @str = split "\n",  `gcc -print-search-dirs`;
+      my @str = split "\n",  qx(gcc -print-search-dirs);
       $stdlib = substr($str[0], index($str[0], ': ') + 2) . 'include/';
    }
 
@@ -112,12 +108,14 @@ sub add_directives
 
 sub preprocess_as_kernel_module
 {
-   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), add_directives($_[1]))
+   my $code = ${$_[1]};
+   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), \add_directives($code), $_[2])
 }
 
 sub preprocess_as_kernel_module_get_macro
 {
-   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), add_directives($_[1]))
+   my $code = ${$_[1]};
+   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), \add_directives($code), $_[2])
 }
 
 
