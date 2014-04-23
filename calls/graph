@@ -7,23 +7,19 @@ use Graph::Writer::Dot;
 
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
-use Env qw(PARSEC_SOURCES_PATH);
 use File::Find;
 
-use Data::Dumper;
 
 my $function;
 my $format = 'png';
 my $out = 'graph';
-my $cscope = 0;
-my $source_dir = $PARSEC_SOURCES_PATH ? $PARSEC_SOURCES_PATH : '.';
+my $source_dir = $ENV{PARSEC_SOURCES_PATH} // '.';
 my $preprocessed;
 
 GetOptions(
    'function|f=s'     =>  \$function,
    'format=s'         =>  \$format,
    'output|o=s'       =>  \$out,
-   'cscope|c!'        =>  \$cscope,
    'preprocessed|p=s' =>  \$preprocessed,
    'sources|s=s'      =>  \$source_dir,
 ) or die "Incorrect usage!\n";
@@ -108,7 +104,6 @@ sub get_list_of_calls
    return @calls;
 }
 
-die("Error: there is no cscope files.\n") if ($cscope && !( -r 'cscope.in.out' && -r 'cscope.out' && -r  'cscope.po.out' ));
 
 # pr list init
 
@@ -155,14 +150,10 @@ while ( $source =~ m/$ret\s*+$name\s*+$args\s*+$body/gmx ) {
    my ($name, $body) = ($+{name}, $+{fbody});
    next if $name =~ m/^((for)|(if)|(while)|(switch))$/x;
 
-   if ($cscope) {
-      ++$cg{$name};
+   if (!exists $cg{$name}) {
+      $cg{$name} = [ get_list_of_calls($body) ];
    } else {
-      if (!exists $cg{$name}) {
-         $cg{$name} = [ get_list_of_calls($body) ];
-      } else {
-         warn "$name already parsed\n";
-      }
+      warn "$name already parsed\n";
    }
 }
 
@@ -171,16 +162,9 @@ my $graph = Graph->new();
 my @funcs = keys %cg;
 
 foreach my $root (@funcs) {
-   my @v;
-   
-   if ($cscope) {
-      @v =  map { my @s = split / /, $_; $s[1] } `cscope -d -L -2$root`;
-   } else {
-      @v = @{ $cg{$root} };
-   }
+   my @v = @{ $cg{$root} };
 
    my %hash;
-   #cscope can return empty string, $_ check
    @v = grep {$_ && !$hash{$_}++} @v;
 
    foreach (@v) {
@@ -256,5 +240,5 @@ push @legenda, qq(  }\n);
 splice @dot, 2, 0, @legenda;
 write_file("$out.dot", @dot);
 
-`dot -T$format $out.dot -o $out.$format`;
+system("dot -T$format $out.dot -o $out.$format");
 
