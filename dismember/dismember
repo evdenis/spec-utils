@@ -15,7 +15,7 @@ use Scalar::Util qw(blessed);
 use Storable;
 
 use FindBin;
-use lib "$FindBin::Bin/lib/";
+use lib "$FindBin::Bin/../lib/";
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
