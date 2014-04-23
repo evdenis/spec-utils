@@ -6,6 +6,8 @@ use Local::File::Merge qw(find_all merge);
 use Local::List::Utils qw(intersection difference);
 use File::Slurp qw(read_file);
 
+use re '/aa';
+
 use strict;
 use warnings;
 
