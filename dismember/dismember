@@ -65,13 +65,13 @@ sub create_directory
          if $_[0] && (! -e $_[0])
 }
 
+create_directory $output_dir;
 
 if ($cache_dir) {
+   create_directory $cache_dir;
    $cache_file = "$cache_dir/$cache_file";
 }
 
-create_directory $cache_dir;
-create_directory $output_dir;
 
 $use_cache = 0 if ! -r $cache_file;
 say "USE_CACHE: $use_cache";
