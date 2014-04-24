@@ -18,7 +18,8 @@ use Local::C::Transformation qw(restore);
 use constant HASH => ref {};
 use constant ARRAY => ref [];
 
-our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph output_sources_graph);
+our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
+
 
 #dependency graph
 my $dg = Graph::Reader::Dot->new()->read_graph(\*Local::Kernel::Module::Graph::DATA);
@@ -255,11 +256,11 @@ sub build_sources_graph
 }
 
 
-sub get_predecessors_subgraph
+sub _generic_get_subgraph
 {
-   my ($graph, $id) = @_;
+   my ($graph, $id, $method) = @_;
 
-   my @pr = $graph->all_predecessors($id);
+   my @pr = $graph->$method($id);
    push @pr, $id;
 
    my $subgraph =
@@ -270,9 +271,21 @@ sub get_predecessors_subgraph
    $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
       foreach @pr;
 
-   $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'));
+   $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'))
+      if $graph->has_graph_attribute('comments');
 
    $subgraph
+
+}
+
+sub get_predecessors_subgraph
+{
+   _generic_get_subgraph(@_, 'all_predecessors')
+}
+
+sub get_successors_subgraph
+{
+   _generic_get_subgraph(@_, 'all_successors')
 }
 
 
