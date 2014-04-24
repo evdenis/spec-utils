@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use common::sense;
+use utf8::all;
 
 use Graph;
 use Graph::Writer::Dot;
@@ -8,6 +9,7 @@ use Graph::Writer::Dot;
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Storable;
+use YAML::XS qw(LoadFile);
 use FindBin;
 
 use lib "$FindBin::Bin/../lib/";
@@ -27,10 +29,12 @@ my $out = 'graph';
 my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
 my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $preprocessed;
-my $priority_list = 'priority_list.txt';
 my $cache = 1;
 my $cache_dir = "$FindBin::Bin/.cache";
 my $cache_file = 'graph_map.cache';
+my $conf_file = '.graph.conf';
+my $done = 1;
+my $priority = 1;
 
 GetOptions(
    'function|f=s'     =>  \$function,
@@ -39,7 +43,9 @@ GetOptions(
    'preprocessed|p=s' =>  \$preprocessed,
    'sources|s=s'      =>  \$parsec_dir,
    'kernel|k=s'       =>  \$kernel_dir,
-   'cache!'           =>  \$cache
+   'cache!'           =>  \$cache,
+   'done!'            =>  \$done,
+   'priority!'        =>  \$priority
 ) or die "Incorrect usage!\n";
 
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
@@ -55,25 +61,10 @@ if ($cache_dir) {
 
 $cache = 0 if ! -r $cache_file;
 
-# pr list init
-my %colormap;
-my $curr_color;
-my $cnt = 0;
-my @colorlist;
+my $conf;
+$conf = LoadFile($conf_file)
+   if -r $conf_file;
 
-my @pr = read_file($priority_list, chomp => 1);
-foreach (@pr) {
-   next if !$_;
-
-   if (m/<(\w+)>/) {
-      $curr_color = $1;
-      ++$cnt;
-      push @colorlist, $curr_color;
-      next;
-   }
-
-   $colormap{$_} = [$cnt, $curr_color];
-}
 
 goto CACHE if $cache;
 
@@ -100,50 +91,84 @@ CACHE: if ($cache) {
 }
 
 
-foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($_)} keys %colormap) {
-   my @subgraph;
-   my $color = $colormap{$_}[1];
+#1
+if ($priority) {
+   foreach my $list (@{ $conf->{priority}{lists} }) {
+      my $color = $conf->{priority}{colors}{$list};
 
-   $graph->set_vertex_attributes($_, { style => 'filled', fillcolor => $color, shape => 'tripleoctagon' } );
+      foreach (@$list) {
+         if ($graph->has_vertex($_)) {
+            $graph->set_vertex_attributes($_, { style => 'filled', fillcolor => $color, shape => 'tripleoctagon' } );
 
-   foreach ($graph->all_successors($_)) {
-      $graph->set_vertex_attributes($_,
-            {
-               style => 'filled',
-               fillcolor => $color
-            } )
-         if !$graph->has_vertex_attribute($_, 'fillcolor')
+            foreach ($graph->all_successors($_)) {
+               $graph->set_vertex_attributes($_,
+                     {
+                        style => 'filled',
+                        fillcolor => $color
+                     } )
+                  if !$graph->has_vertex_attribute($_, 'fillcolor')
+            }
+         } else {
+            warn "Priority list: there is no such function '$_' in sources.\n"
+         }
+      }
    }
 }
 
+#2
 $graph->set_vertex_attribute($_, shape => 'octagon')
    foreach $graph->successorless_vertices();
 
+#3
+if ($done) {
+   #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
+   #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
+   sub label_done { "\N{BALLOT BOX WITH CHECK} " . $_[0] }
+
+   foreach (@{$conf->{done}}) {
+      if ($graph->has_vertex($_)) {
+         $graph->set_vertex_attribute($_, 'label', label_done($_));
+         $graph->set_vertex_attribute($_, style => 'dashed');
+      } else {
+         warn "Thehe is no function: '$_'\n"
+      }
+   }
+}
+
+
 if ($function) {
-   die("There is no such function: '$function'.\n")
-      unless $graph->has_vertex($function);
-   $graph = get_successors_subgraph($graph, $function)
+   if ($graph->has_vertex($function)) {
+      $graph = get_successors_subgraph($graph, $function)
+   } else {
+      warn "There is no such function: '$function'.\n"
+   }
 }
 
-Graph::Writer::Dot->new()->write_graph($graph, "$out.dot");
-
-my @legenda;
-
-my @dot = read_file("$out.dot");
-push @legenda, qq(  subgraph "cluster_legenda" {\n);
-push @legenda, qq(    style = "filled";\n);
-push @legenda, qq(    color = "lightgrey";\n);
-push @legenda, qq(    label = "Legenda";\n);
-push @legenda, qq(    node [shape = "box", style = "filled"];\n);
-push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
-while (my ($idx, $color) = each @colorlist) {
-   ++$idx;
-   push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+{
+   local $SIG{__WARN__} = sub {};
+   Graph::Writer::Dot->new()->write_graph($graph, "$out.dot")
 }
-push @legenda, qq(  }\n);
 
-splice @dot, 2, 0, @legenda;
-write_file("$out.dot", @dot);
+if ($priority) {
+   my @legenda;
+
+   my @dot = read_file("$out.dot");
+   push @legenda, qq(  subgraph "cluster_legenda" {\n);
+   push @legenda, qq(    style = "filled";\n);
+   push @legenda, qq(    color = "lightgrey";\n);
+   push @legenda, qq(    label = "Legenda";\n);
+   push @legenda, qq(    node [shape = "box", style = "filled"];\n);
+   push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
+   my $colors = [ map { $conf->{priority}{colors}{$_} } @{ $conf->{priority}{lists} } ];
+   while (my ($idx, $color) = each $colors) {
+      ++$idx;
+      push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+   }
+   push @legenda, qq(  }\n);
+
+   splice @dot, 2, 0, @legenda;
+   write_file("$out.dot", @dot);
+}
 
 fork and exit;
 exec('dot', "-T${format}", "${out}.dot", "-o${out}.${format}");
