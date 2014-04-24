@@ -7,112 +7,46 @@ use Graph::Writer::Dot;
 
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
-use File::Find;
+use FindBin;
+
+use lib "$FindBin::Bin/../lib/";
+
+use Local::List::Utils qw(uniq);
+use Local::C::Transformation;
+use Local::C::Parsing qw(parse_calls);
+use Local::Kernel::Module qw(preprocess_module_sources);
+use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
+
+use C::FunctionSet;
 
 
 my $function;
 my $format = 'png';
 my $out = 'graph';
-my $source_dir = $ENV{PARSEC_SOURCES_PATH} // '.';
+my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
+my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $preprocessed;
+my $priority_list = 'priority_list.txt';
 
 GetOptions(
    'function|f=s'     =>  \$function,
    'format=s'         =>  \$format,
    'output|o=s'       =>  \$out,
    'preprocessed|p=s' =>  \$preprocessed,
-   'sources|s=s'      =>  \$source_dir,
+   'sources|s=s'      =>  \$parsec_dir,
+   'kernel|k=s'       =>  \$kernel_dir
 ) or die "Incorrect usage!\n";
 
-
-sub remove_strings {
-   $_[0] =~ s/(?<!\\|')"(?:[^\\"]+|\\.)*"/""/mg;
-}
-
-sub remove_comments
-{
-   $_[0] =~ s#/\*[^*]*\*+([^/*][^*]*\*+)*/|//([^\\]|[^\n][\n]?)*?\n|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^/"'\\]*)#defined $3 ? $3 : ""#gse;
-}
-
-sub add_files
-{
-	my @files;
-	my $source = '';
-	my ($path, $mask) = @_;
-
-	find(sub { push @files, $File::Find::name if m/\Q${mask}\E$/ }, $path);
-
-   @files = sort @files;
-
-	foreach (@files) {
-		$source .= read_file($_);
-	}
-	return \$source;
-}
-
-sub get_list_of_calls
-{
-   my @calls;
-
-   while (
-      $_[0] =~
-         m/
-            \b(?<fname>\w+)
-            \s*
-            (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
-            (?!\s*(?:\{|\()) # исключает функции которые ни разу не вызываются
-         /gmx
-   ) {
-      # Просматриваем ещё раз аргументы вызова прошлой функции.
-      # Там могут быть ещё вызовы.
-      # -1 - первая скобка после имени не учитывается.
-      my $offset = pos($_[0]) - (length($+{fargs}) - 1);
-
-      my $call = $+{fname};
-      #$call = $+{fname} . $+{fargs} if length $+{fname} <= 1;
-      $call =~ s/\n/ /mg;
-      $call =~ s/\s+/ /g;
-      $call =~ s/^\s//g;
-      $call =~ s/\s$//g;
-      push @calls, $call;
-
-      pos($_[0]) = $offset;
-   }
-
-   #filter
-   @calls = grep { ! m/^(
-                        (for)|
-                        (if)|
-                        (while)|
-                        (switch)|
-                        (sizeof)|
-                        (return)|
-                        (typeof)|
-                        (case)|
-                        (else)|
-                        (defined)|
-                        (__attribute__)|
-                        (__typeof__)|
-                        (volatile)|
-                        (asm)|
-                        (__builtin_.+)|
-                        (__section__)|
-                        (section)|
-                        (alias)|
-                        (aligned))$/x } @calls;
-
-   return @calls;
-}
+die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
+die("$kernel_dir is not a kernel directory.\n") if ! -f "$kernel_dir/Kbuild";
 
 
 # pr list init
-
 my %colormap;
 my $curr_color;
 my $cnt = 0;
 my @colorlist;
 
-my $priority_list = 'priority_list.txt';
 my @pr = read_file($priority_list, chomp => 1);
 foreach (@pr) {
    next if !$_;
@@ -127,74 +61,21 @@ foreach (@pr) {
    $colormap{$_} = [$cnt, $curr_color];
 }
 
+
 # read sources
 my $source;
 if ($preprocessed) {
-   $source  = read_file($preprocessed);
+   $source = read_file($preprocessed, scalar_ref => 1);
 } else {
-   $source  = ${ add_files $source_dir, '.h' };
-   $source .= ${ add_files $source_dir, '.c' };
+   $source = (preprocess_module_sources($kernel_dir, $parsec_dir, ["#define SPECIFICATION 1\n"]))[3];
 }
-remove_comments($source);
-remove_strings($source);
+adapt($$source, attributes => 1);
 
 #funcs init
-my %cg;
+my %sources;
+$sources{module}{function} = C::FunctionSet->parse($source, 'module');
+my $graph = build_sources_graph(\%sources, 1, 1);
 
-my $ret  = qr'';
-my $name = qr'(?<name>[a-zA-Z]\w*)';
-my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
-
-while ( $source =~ m/$ret\s*+$name\s*+$args\s*+$body/gmx ) {
-   my ($name, $body) = ($+{name}, $+{fbody});
-   next if $name =~ m/^((for)|(if)|(while)|(switch))$/x;
-
-   if (!exists $cg{$name}) {
-      $cg{$name} = [ get_list_of_calls($body) ];
-   } else {
-      warn "$name already parsed\n";
-   }
-}
-
-#graph
-my $graph = Graph->new();
-my @funcs = keys %cg;
-
-foreach my $root (@funcs) {
-   my @v = @{ $cg{$root} };
-
-   my %hash;
-   @v = grep {$_ && !$hash{$_}++} @v;
-
-   foreach (@v) {
-      $graph->add_edge($root, $_) if $_ ~~ @funcs;
-   }
-}
-
-sub get_subgraph_vertices
-{
-   my @vertices;
-   my @edges;
-   my @check;
-
-   @edges = $graph->edges_from($_[0]);
-   push @vertices, map { $$_[1] } @edges;
-   push @check, $_[0];
-
-   while (1) {
-      my $v = shift @vertices;
-
-      last if !$v;
-      next if $v ~~ @check;
-
-      @edges = $graph->edges_from($v);
-      push @vertices, map { $$_[1] } @edges;
-      push @check, $v;
-   }
-
-   @check;
-}
 
 foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($_)} keys %colormap) {
    my @subgraph;
@@ -202,22 +83,21 @@ foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($
 
    $graph->set_vertex_attributes($_, { style => 'filled', fillcolor => $color, shape => 'tripleoctagon' } );
 
-   foreach my $v (get_subgraph_vertices($_)) {
-      if (!$graph->has_vertex_attribute($v, 'fillcolor')) {
-         $graph->set_vertex_attributes($v, { style => 'filled', fillcolor => $color } );
-      }
+   foreach ($graph->all_successors($_)) {
+      $graph->set_vertex_attributes($_,
+            {
+               style => 'filled',
+               fillcolor => $color
+            } )
+         if !$graph->has_vertex_attribute($_, 'fillcolor')
    }
 }
 
-foreach($graph->vertices) {
-   $graph->set_vertex_attribute($_, shape => 'octagon') if !$graph->out_degree($_);
-}
+$graph->set_vertex_attribute($_, shape => 'octagon')
+   foreach $graph->successorless_vertices();
 
-if ($function) {
-   my @svertices = get_subgraph_vertices($function);
-   $graph->delete_vertices( grep { ! ($_ ~~ @svertices) } $graph->vertices );
-}
-
+$graph = get_successors_subgraph($graph, $function)
+   if $function;
 
 my $writer = Graph::Writer::Dot->new();
 $writer->write_graph($graph, "$out.dot");
