@@ -7,6 +7,7 @@ use Graph::Writer::Dot;
 
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
+use Storable;
 use FindBin;
 
 use lib "$FindBin::Bin/../lib/";
@@ -27,6 +28,9 @@ my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
 my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
 my $preprocessed;
 my $priority_list = 'priority_list.txt';
+my $cache = 1;
+my $cache_dir = "$FindBin::Bin/.cache";
+my $cache_file = 'graph_map.cache';
 
 GetOptions(
    'function|f=s'     =>  \$function,
@@ -34,12 +38,22 @@ GetOptions(
    'output|o=s'       =>  \$out,
    'preprocessed|p=s' =>  \$preprocessed,
    'sources|s=s'      =>  \$parsec_dir,
-   'kernel|k=s'       =>  \$kernel_dir
+   'kernel|k=s'       =>  \$kernel_dir,
+   'cache!'           =>  \$cache
 ) or die "Incorrect usage!\n";
 
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
 die("$kernel_dir is not a kernel directory.\n") if ! -f "$kernel_dir/Kbuild";
 
+if ($cache_dir) {
+   mkdir($cache_dir) or
+      die("Can't create directory $cache_dir: $!\n")
+         if ! -e $cache_dir;
+
+   $cache_file = "$cache_dir/$cache_file";
+}
+
+$cache = 0 if ! -r $cache_file;
 
 # pr list init
 my %colormap;
@@ -61,6 +75,8 @@ foreach (@pr) {
    $colormap{$_} = [$cnt, $curr_color];
 }
 
+goto CACHE if $cache;
+
 
 # read sources
 my $source;
@@ -75,6 +91,13 @@ adapt($$source, attributes => 1);
 my %sources;
 $sources{module}{function} = C::FunctionSet->parse($source, 'module');
 my $graph = build_sources_graph(\%sources, 1, 1);
+
+
+CACHE: if ($cache) {
+   $graph = retrieve($cache_file)
+} else {
+   store($graph, $cache_file)
+}
 
 
 foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($_)} keys %colormap) {
@@ -120,5 +143,6 @@ push @legenda, qq(  }\n);
 splice @dot, 2, 0, @legenda;
 write_file("$out.dot", @dot);
 
-system("dot -T$format $out.dot -o $out.$format");
+fork and exit;
+exec('dot', "-T${format}", "${out}.dot", "-o${out}.${format}");
 
