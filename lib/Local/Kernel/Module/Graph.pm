@@ -44,13 +44,13 @@ sub _dependencies_graph_iterator
 #\%sources
 sub __add_vertices
 {
-   my ($graph, $sources) = @_;
+   my ($graph, $sources, $vname) = @_;
 
    my $next = _dependencies_graph_iterator($sources);
    while (my $set = $next->()) {
       $set = $set->set;
       foreach (@$set) {
-         my $id = $_->id;
+         my $id = $_->$vname;
 
          if (!$graph->has_vertex($id)) {
             $graph->add_vertex($id);
@@ -134,9 +134,10 @@ sub __sort_cmp
    $pa <=> $pb
 }
 
+
 sub _create_edges
 {
-   my ($index, $to, $label, $graph) = @_;
+   my ($index, $to, $label, $graph, $vname, $order) = @_;
    
    my @possible;
    foreach (keys %$index) {
@@ -179,25 +180,41 @@ sub _create_edges
    }
 
    if ($legal && @from == 1) {
-      $graph->add_edge($from[0]->id, $to->id)
+      $graph->add_edge($order->($from[0]->$vname, $to->$vname))
    } elsif (!$legal && $label) {
       die('Internal error')
    } elsif (!$legal && !$label) {
       foreach(@from) {
-         $graph->add_edge($_->id, $to->id)
+         $graph->add_edge($order->($_->$vname, $to->$vname))
       }
    }
 }
 
-
+#human_readable:
+# by default uniq ids are used as vertex names
+# hr option will force use of original names of
+# entities, but in this case duplicates are
+# possible, which will lead to errors in graph.
+# This option should be used carefully.
 sub build_sources_graph
 {
-   my $sources = shift;
+   my ($sources, $human_readable, $reverse) = @_;
+
+   my $vname = 'id'; #method for vertex name generation
+   $vname = 'name'
+      if $human_readable;
+
+   my $order;
+   if ($reverse) {
+      $order = sub { ($_[1], $_[0]) }
+   } else {
+      $order = sub { @_ }
+   }
 
    my $graph = Graph::Directed->new();
    my $index = _build_ids_index($sources);
 
-   __add_vertices($graph, $sources);
+   __add_vertices($graph, $sources, $vname);
 
    my $next = _dependencies_graph_iterator($sources);
    while (my $set = $next->()) {
@@ -216,7 +233,7 @@ sub build_sources_graph
                my $to = $set->get_from_index($i);
             
                if (ref $from eq HASH) {
-                  _create_edges($from, $to, $label, $graph)
+                  _create_edges($from, $to, $label, $graph, $vname, $order)
                } else {
                   if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
                      if ($label) {
@@ -226,7 +243,7 @@ sub build_sources_graph
                            unless _allow($label, $type);
                      }
 
-                     $graph->add_edge($from->id, $to->id)
+                     $graph->add_edge($order->($from->$vname, $to->$vname))
                   }
                }
             }
