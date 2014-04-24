@@ -119,8 +119,11 @@ foreach (sort {$colormap{$a}[0] <=> $colormap{$b}[0]} grep {$graph->has_vertex($
 $graph->set_vertex_attribute($_, shape => 'octagon')
    foreach $graph->successorless_vertices();
 
-$graph = get_successors_subgraph($graph, $function)
-   if $function;
+if ($function) {
+   die("There is no such function: '$function'.\n")
+      unless $graph->has_vertex($function);
+   $graph = get_successors_subgraph($graph, $function)
+}
 
 my $writer = Graph::Writer::Dot->new();
 $writer->write_graph($graph, "$out.dot");
