@@ -125,8 +125,7 @@ if ($function) {
    $graph = get_successors_subgraph($graph, $function)
 }
 
-my $writer = Graph::Writer::Dot->new();
-$writer->write_graph($graph, "$out.dot");
+Graph::Writer::Dot->new()->write_graph($graph, "$out.dot");
 
 my @legenda;
 
