@@ -92,21 +92,25 @@ CACHE: if ($cache) {
 
 
 #1
+$graph->set_vertex_attribute($_, shape => 'octagon')
+   foreach $graph->successorless_vertices();
+
+#2
 if ($priority) {
    foreach my $list (@{ $conf->{priority}{lists} }) {
       my $color = $conf->{priority}{colors}{$list};
 
       foreach (@$list) {
          if ($graph->has_vertex($_)) {
-            $graph->set_vertex_attributes($_, { style => 'filled', fillcolor => $color, shape => 'tripleoctagon' } );
+            $graph->set_vertex_attribute($_, style => 'filled' );
+            $graph->set_vertex_attribute($_, fillcolor => $color );
+            $graph->set_vertex_attribute($_, shape => 'tripleoctagon' );
 
             foreach ($graph->all_successors($_)) {
-               $graph->set_vertex_attributes($_,
-                     {
-                        style => 'filled',
-                        fillcolor => $color
-                     } )
-                  if !$graph->has_vertex_attribute($_, 'fillcolor')
+               unless ($graph->has_vertex_attribute($_, 'fillcolor')) {
+                  $graph->set_vertex_attribute($_, style => 'filled' );
+                  $graph->set_vertex_attribute($_, fillcolor => $color );
+               }
             }
          } else {
             warn "Priority list: there is no such function '$_' in sources.\n"
@@ -114,10 +118,6 @@ if ($priority) {
       }
    }
 }
-
-#2
-$graph->set_vertex_attribute($_, shape => 'octagon')
-   foreach $graph->successorless_vertices();
 
 #3
 if ($done) {
