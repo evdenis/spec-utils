@@ -14,7 +14,7 @@ use FindBin;
 
 use lib "$FindBin::Bin/../lib/";
 
-use Local::List::Utils qw(uniq);
+use Local::List::Utils qw(uniq difference);
 use Local::C::Transformation;
 use Local::C::Parsing qw(parse_calls);
 use Local::Kernel::Module qw(preprocess_module_sources);
@@ -35,6 +35,7 @@ my $cache_file = 'graph_map.cache';
 my $conf_file = '.graph.conf';
 my $done = 1;
 my $priority = 1;
+my $issues = 0;
 
 GetOptions(
    'function|f=s'     =>  \$function,
@@ -45,7 +46,8 @@ GetOptions(
    'kernel|k=s'       =>  \$kernel_dir,
    'cache!'           =>  \$cache,
    'done!'            =>  \$done,
-   'priority!'        =>  \$priority
+   'priority!'        =>  \$priority,
+   'issues|i!'        =>  \$issues
 ) or die "Incorrect usage!\n";
 
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
@@ -129,12 +131,43 @@ if ($done) {
       if ($graph->has_vertex($_)) {
          $graph->set_vertex_attribute($_, 'label', label_done($_));
          $graph->set_vertex_attribute($_, style => 'dashed');
+         $graph->set_vertex_attribute($_, done => 1);
       } else {
          warn "Thehe is no function: '$_'\n"
       }
    }
 }
 
+#4
+my %used_issues;
+if ($issues) {
+   foreach (keys %{ $conf->{issues} }) {
+      foreach my $v ($graph->vertices) {
+         if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$conf->{issues}{$_}{re}/) {
+            $used_issues{$_} = undef;
+
+            unless ($graph->has_vertex_attribute($v, 'done')) {
+               unless ($graph->get_vertex_attribute($v, 'shape') eq 'record') {
+                  $graph->set_vertex_attribute($v, shape => 'record');
+                  $graph->set_vertex_attribute($v, style =>
+                     $graph->get_vertex_attribute($v, 'style') . ',bold');
+                  $graph->set_vertex_attribute($v, label => "\N{SALTIRE} $v | $_");
+               } else {
+                  $graph->set_vertex_attribute($v, label =>
+                     $graph->get_vertex_attribute($v, 'label') . " | $_")
+               }
+            } else {
+               warn "Issue $_ in vertex '$v'\n"
+            }
+         }
+      }
+   }
+
+   my @diff = difference([ keys %{ $conf->{issues} } ], [ keys %used_issues ]);
+   if (@diff) {
+      warn "Issues @diff is/are useless, since there is no vertices marked.\n"
+   }
+}
 
 if ($function) {
    if ($graph->has_vertex($function)) {
@@ -149,25 +182,41 @@ if ($function) {
    Graph::Writer::Dot->new()->write_graph($graph, "$out.dot")
 }
 
-if ($priority) {
+if ($priority || $issues) {
    my @legenda;
 
-   my @dot = read_file("$out.dot");
-   push @legenda, qq(  subgraph "cluster_legenda" {\n);
-   push @legenda, qq(    style = "filled";\n);
-   push @legenda, qq(    color = "lightgrey";\n);
-   push @legenda, qq(    label = "Legenda";\n);
-   push @legenda, qq(    node [shape = "box", style = "filled"];\n);
-   push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
-   my $colors = [ map { $conf->{priority}{colors}{$_} } @{ $conf->{priority}{lists} } ];
-   while (my ($idx, $color) = each $colors) {
-      ++$idx;
-      push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+   if ($issues) {
+      push @legenda, qq(  subgraph "cluster_issues_legenda" {\n);
+      push @legenda, qq(    style = "filled";\n);
+      push @legenda, qq(    color = "lightgrey";\n);
+      push @legenda, qq(    label = "Issues legenda";\n);
+      push @legenda, qq(    node [shape = "box", style = "filled"];\n);
+      my $edges = join(' -> ', map { "\"$_\"" } keys %used_issues);
+      push @legenda, qq(    $edges [ style = "invis" ];\n);
+      foreach (keys %used_issues) {
+         push @legenda, qq(    "$_" [label = "$_: $conf->{issues}{$_}{description}", fillcolor = "white"];\n);
+      }
+      push @legenda, qq(  }\n);
    }
-   push @legenda, qq(  }\n);
 
+   if ($priority) {
+      push @legenda, qq(  subgraph "cluster_priority_legenda" {\n);
+      push @legenda, qq(    style = "filled";\n);
+      push @legenda, qq(    color = "lightgrey";\n);
+      push @legenda, qq(    label = "Priorities legenda";\n);
+      push @legenda, qq(    node [shape = "box", style = "filled"];\n);
+      push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
+      my $colors = [ map { $conf->{priority}{colors}{$_} } @{ $conf->{priority}{lists} } ];
+      while (my ($idx, $color) = each $colors) {
+         ++$idx;
+         push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+      }
+      push @legenda, qq(  }\n);
+   }
+
+   my @dot = read_file("$out.dot", { binmode => ':utf8' });
    splice @dot, 2, 0, @legenda;
-   write_file("$out.dot", @dot);
+   write_file("$out.dot", { binmode => ':utf8' }, @dot);
 }
 
 fork and exit;
