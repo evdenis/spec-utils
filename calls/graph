@@ -88,6 +88,8 @@ my %sources;
 $sources{module}{function} = C::FunctionSet->parse($source, 'module');
 my $graph = build_sources_graph(\%sources, 1, 1);
 
+#these are special kernel functions generated after preprocessing
+$graph->delete_vertices( qw(__check_enabled __inittest) );
 
 CACHE: if ($cache) {
    $graph = retrieve($cache_file)
