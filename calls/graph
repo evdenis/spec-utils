@@ -107,7 +107,7 @@ if ($priority) {
    foreach my $list (@{ $conf->{priority}{lists} }) {
       my $color = $conf->{priority}{colors}{$list};
 
-      foreach (@$list) {
+      foreach (uniq @$list) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, style => 'filled' );
             $graph->set_vertex_attribute($_, fillcolor => $color );
@@ -132,7 +132,7 @@ if ($done) {
    #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
    sub label_done { "\N{BALLOT BOX WITH CHECK} " . $_[0] }
 
-   foreach (@{$conf->{done}}) {
+   foreach (uniq @{ $conf->{done} }) {
       if ($graph->has_vertex($_)) {
          $graph->set_vertex_attribute($_, 'label', label_done($_));
          $graph->set_vertex_attribute($_, style => 'dashed');
