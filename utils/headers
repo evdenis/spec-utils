@@ -1,0 +1,237 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use feature qw(say);
+use re '/aa';
+
+use Graph::Directed;
+use Graph::Writer::Dot;
+
+use File::Slurp qw(read_file);
+use File::Find;
+use File::Which;
+use File::Temp qw(tmpnam);
+use File::Spec::Functions qw(catfile splitpath);
+use Cwd qw(realpath);
+
+use Getopt::Long qw(:config gnu_getopt);
+
+use Pod::Usage;
+
+
+=encoding utf8
+
+=pod
+
+=head1 headers
+
+headers - Отображает на карте граф подключений заголовочных файлов, где 'a->b' означает, что файл b подключает файл a.
+
+=head1 SYNOPSIS
+
+ headers [options] [dir]
+
+ dir - директория в которой находятся исходные файлы. По умолчанию
+ задаётся переменной окружения PARSEC_SOURCES или же используется
+ текущая директория.
+
+ Options:
+  -o|--output name     - имя выходного файла
+  -v|--[no-]view       - запускать программу просмотрщик
+  -k|--[no-]keep-dot   - сохранять dot файл
+  -d|--[no-]detailed   - отображать заголовочные файлы, которых нет в dir
+  -f|--format name     - формат выходного файла
+  -w|--open-with name  - имя программы просмотрщика
+  -h|--help            - выводит полное описание программы
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-o|--output name>
+
+Задаёт имя выходного файла. Имя должно быть без расширения, оно добавляется автоматически в зависимости от опции --format. Если опция задаётся, то создаётся временный файл, который впоследствии удаляется.
+
+=item B<-v|--[no-]view>
+
+Опция определяет, будет ли запущена программа просмотрщик после того, как строится карта. По умолчанию опция включена, если X сервер активен. Запускается программа, которая зарегистрирована стандартной для открытия файлов с расширением, которое определяется опцией --format. Изменить программу просмотрщик можно с помощью опции --open-with. 
+
+=item B<-k|--[no-]keep-dot>
+
+Опция определяет, будет ли сохранён dot файл. По умолчанию опция включена, если X сервер не активен.
+
+=item B<-d|--[no-]detailed>
+
+Опция определяет, будет ли на карте отображены заголовочные файлы, которые отсутствуют в директории dir, но подключаются другими заголовочными файлами. По умолчанию опция отключена.
+
+=item B<-f|--format name>
+
+Опция задаёт формат, в котором будет представлена карта. Так как построение карты осуществляется программой dot, список поддерживаемых форматов определяется ей же. По умолчанию формат карты - png.
+
+=item B<-w|--open-with name>
+
+Опция задаёт программу, которая будет использована для просмотра карты, при включённой опции --view.
+
+=item B<-h|--help>
+
+Выводит полное описание программы.
+
+=back
+
+=head1 DESCRIPTION
+
+Программа считывает из директории заголовочные файлы и анализирует, каким образом они друг друга подключают. Строится граф подключений заголовочных файлов, где 'a -> b' означает, что в файле b есть директива '#include <a>'. Все подключаемые файлы, которые не найдены на жёстком диске, в граф не добавляются (можно включить отображение подобных файлов опцией --detailed). После построения граф транслируется в dot формат и подаётся на вход программе dot, которая переводит его в графическое представление. На выходе получается .png файл. Автоматически запускается программа просмотрщик.
+
+=head1 BUGS
+
+Директивы условной компиляции не учитываются при построении графа.
+
+=cut
+
+
+my $help = 0;
+my $detailed = 0;
+my $view;
+my $keep_dot;
+my $dir = $ENV{PARSEC_SOURCES} // '.';
+my $format = 'png';
+my $open_with = 'xdg-open';
+my $fname;
+
+if (defined $ENV{DISPLAY}) {
+   $keep_dot = 0;
+   $view = 1;
+} else {
+   $keep_dot = 1;
+   $view = 0;
+}
+
+GetOptions(
+   'output|o=s'    =>  \$fname,
+   'view|v!'       =>  \$view,
+   'keep-dot|k!'   =>  \$keep_dot,
+   'detailed|d!'   =>  \$detailed,
+   'format|f=s'    =>  \$format,
+   'open-with|w=s' =>  \$open_with,
+   'help|h'        =>  \$help
+) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0}) if $help;
+
+$dir = $ARGV[0] if @ARGV == 1;
+
+pod2usage({ -msg => "Wrong arguments.\n", -exitval => 2 }) if @ARGV > 1;
+pod2usage({ -msg => "Not a directory: $dir\n", -exitval => 2 }) unless -d $dir;
+
+
+exit 0 if !$fname && !$keep_dot && !$view;
+
+
+sub generate_wanted
+{
+   my $dir = $_[0];
+   my $length = length $dir;
+   my %headers;
+
+   return
+      sub {
+         $headers{$File::Find::name} =
+                  [
+                     substr($File::Find::name, $length), #vertex name
+                     read_file($File::Find::name, array_ref => 1)
+                  ]
+               if $_ =~ /\.h\Z/
+      },
+      sub {
+         \%headers
+      }
+}
+
+my ($wanted, $get_result) = generate_wanted($dir);
+
+find($wanted, $dir);
+
+my $headers = &$get_result();
+my $g = Graph::Directed->new();
+foreach my $v (values %$headers) {
+   my $cwd = (splitpath($v->[0]))[1];
+
+   $g->add_vertex($v->[0]);
+
+   foreach ( map { /\A\h*+#\h*+include\h*+[<"]([^">]++)[">]/ ? $1 : () } @{ $v->[1] } ) {
+      my $h = do {
+         if ($cwd) {
+            #my $p = realpath(catfile($dir, $cwd, $_));
+            #$p = realpath(catfile($dir, $_)) unless $p && -f $p;
+            #$p
+
+            realpath(catfile($dir, $cwd, $_))
+         } else {
+            realpath(catfile($dir, $_))
+         }
+      };
+
+
+      if ($h && exists $headers->{$h}) {
+         $g->add_edge($headers->{$h}[0], $v->[0])
+      } elsif ($detailed) {
+         $g->add_edge($_, $v->[0]);
+
+         $g->set_edge_attribute($_, $v->[0], style => 'dashed' );
+         $g->set_vertex_attribute($_, alien => 1);
+         $g->set_vertex_attribute($_, style => 'filled');
+         $g->set_vertex_attribute($_, fillcolor => 'lightgrey');
+      }
+   }
+}
+
+
+$g->set_vertex_attribute($_, shape => 'box')
+   foreach $g->successorless_vertices();
+
+foreach ($g->predecessorless_vertices()) {
+   $g->set_vertex_attribute($_, shape => 'octagon')
+      unless $g->has_vertex_attribute($_, 'alien')
+}
+
+my $keep_output = 1;
+
+unless ($fname) {
+   $keep_output = 0;
+   $fname = tmpnam();
+}
+
+my $fname_dot = "$fname.dot";
+my $output = "$fname.$format";
+Graph::Writer::Dot->new()->write_graph($g, $fname_dot);
+
+if ($view || $keep_output) {
+   system('dot', "-T$format", '-o', $output, $fname_dot) == 0 or exit 2;
+}
+say "Image: $output" if $keep_output;
+
+unless ($keep_dot) {
+   unlink $fname
+} else {
+   say "Dot file: $fname_dot"
+}
+
+
+unless ($view) {
+   unlink $output unless $keep_output;
+   exit
+}
+
+if (which($open_with)) {
+   fork and exit;
+   say "Opening an image ...";
+   close(STDOUT);
+   close(STDERR);
+   system($open_with, $output);
+   unlink $output unless $keep_output;
+} else {
+   die("Can't find $open_with program to view the $output\n");
+}
+
