@@ -31,7 +31,7 @@ sub parse
             (?:(?:.*?)${s}*+(?:$name))
          )${s}*+;
       /gmpx) {
-      carp("Repeated defenition of typedef $+{name}") if (exists $typedefs{$+{name}});
+      warn("Repeated defenition of typedef $+{name}\n") if (exists $typedefs{$+{name}});
       $typedefs{$+{name}} = ${^MATCH}
    }
 
