@@ -7,8 +7,10 @@ use re '/aa';
 
 use Exporter qw(import);
 
-use Local::File::C::Merge qw(merge_headers merge_sources);
+use Local::File::C::Merge qw(merge_headers);
+use Local::File::Merge qw(merge);
 use Local::C::Transformation qw(adapt);
+use Local::Kernel::Makefile qw(get_modules_deps);
 use Local::GCC::Preprocess qw(
       preprocess
       preprocess_directives
@@ -36,18 +38,18 @@ sub _get_module_data
 
    my @kernel_includes;
    my $headers = merge_headers($dir, \@kernel_includes);
-   my $code    = merge_sources($dir);
+   my $code    = merge(map {@{$_}} values get_modules_deps("$dir/Makefile")); # Just use them all
 
    @kernel_includes = map {"#include <$_>"} @kernel_includes;
 
    #getting list of kernel headers from *.c files; and remove others
-   $code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))\h*$/
-               push @kernel_includes, "#include $1\n" if defined $1;''/meg;
+   $code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))/
+               push @kernel_includes, "#include $1" if defined $1;''/meg;
 
 
    #remove includes, because they are already included
    if ($headers) {
-      $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]\h*$//mg;
+      $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]//mg;
       $code = $headers . $code;
    }
 
