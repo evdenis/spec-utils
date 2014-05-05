@@ -9,6 +9,7 @@ use strict;
 use Exporter qw(import);
 
 use Data::Alias;
+use Carp;
 
 use Local::List::Utils qw(uniq);
 
@@ -183,6 +184,8 @@ sub adapt
 
    return undef if !$code;
 
+   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
+
 	my $tmpl = sub {
 		if ($_[0]) {
 			if (ref $_[0] eq 'ARRAY') {
@@ -232,6 +235,10 @@ sub restore
 {
 	alias my $code = shift;
    my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
+
+   return undef if !$code;
+
+   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
 	#The order matters.
 	restore_attributes($code, $opts->{attributes}) if $opts->{attributes};
