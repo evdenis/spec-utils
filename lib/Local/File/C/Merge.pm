@@ -1,15 +1,16 @@
 package Local::File::C::Merge;
 
+use strict;
+use warnings;
+
+use re '/aa';
+
+use Graph::Directed;
 use Exporter qw(import);
 use Carp;
 use Local::File::Merge qw(find_all merge);
 use Local::List::Utils qw(intersection difference);
 use File::Slurp qw(read_file);
-
-use re '/aa';
-
-use strict;
-use warnings;
 
 
 our @EXPORT_OK = qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files);
@@ -32,23 +33,11 @@ sub find_all_files ($)
 
 sub merge_headers ($;$)
 {
-   my $dir = shift;
-   my $unmerged = shift if $#_ == 0;
-
-   eval {
-      require Graph::Directed;
-      Graph::Directed->import();
-      1;
-   } or do {
-      carp("Error: $@. Can't load Graph package. Only simple merge of headers available.");
-      return merge(find_headers($dir));
-   };
-
+   my ($dir, $unmerged) = @_;
 
    my $hg = Graph::Directed->new();
    my @headers = find_headers($dir);
 
-   #
    my @headers_rel = map { substr($_, length $dir) } @headers; 
    my %h;
 
