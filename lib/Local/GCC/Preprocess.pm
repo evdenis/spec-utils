@@ -51,7 +51,28 @@ sub preprocess
 
 sub preprocess_directives
 {
-   call_gcc('-E -P -C -fdirectives-only -nostdinc ', @_)
+   my $code = call_gcc('-E -P -C -fdirectives-only -nostdinc ',
+               \(($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]}),
+               $_[2]);
+
+   if ($_[2]) {
+      my $ind = -1;
+      for (my $i = 0; $i < $#$code; ++$i) {
+         if ($code->[$i] eq '//<special_mark>') {
+            $ind = $i;
+            last
+         }
+      }
+      die("Internal error. Can't find marker") if $ind == -1;
+
+      [ splice(@$code, $ind + 1) ]
+   } else {
+      \substr( $$code,
+               index($$code, '//<special_mark>') +
+               length('//<special_mark>') +
+               1
+            )
+   }
 }
 
 
@@ -96,27 +117,29 @@ sub form_gcc_kernel_include_path
    $gcc_include_path
 }
 
-sub add_directives
+sub _add_kernel_kconfig
 {
-   $_[0] =
-"#include <linux/kconfig.h>
-#define MODULE 1
-#define __KERNEL__ 1\n\n" . $_[0];
+   $_[0] = "#include <linux/kconfig.h>\n\n" . $_[0]
+}
 
-   $_[0]
+sub _add_kernel_defines
+{
+   $_[0] = "#define __KERNEL__ 1\n#define MODULE 1\n\n" . $_[0]
 }
 
 
 sub preprocess_as_kernel_module
 {
-   my $code = ${$_[1]};
-   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), \add_directives($code), $_[2])
+   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]),
+            \_add_kernel_kconfig( _add_kernel_defines(${$_[1]}) ),
+            $_[2])
 }
 
 sub preprocess_as_kernel_module_get_macro
 {
-   my $code = ${$_[1]};
-   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), \add_directives($code), $_[2])
+   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]),
+            \_add_kernel_kconfig( _add_kernel_defines(${$_[1]}) ),
+            $_[2])
 }
 
 

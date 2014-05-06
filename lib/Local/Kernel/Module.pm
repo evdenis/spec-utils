@@ -74,28 +74,18 @@ sub _preprocess_module_directives
 {
    my ($kernel_macro, $defines, $module_code) = @_;
 
-   my $data =  join("\n", @$kernel_macro) .
-               "\n//<special_mark>\n"     .
-               join("\n", @$defines)      .
-               "\n\n"                     .
-               $$module_code;
+   my $include = join("\n", @$kernel_macro) .
+                 "\n\n"                     .
+                 join("\n", @$defines);
 
    #returns reference
-   my $code = preprocess_directives(\$data);
-
-   #scalar
-   $code = substr($$code,
-                  index($$code, '//<special_mark>') +
-                  length('//<special_mark>') +
-                  1
-           );
+   my $code = preprocess_directives($module_code, \$include);
 
    my @macro;
-   $code =~ s/^\h*+(#\h*+define\N*+)\n/push @macro, $1;''/gme;
-   $code =~ s/^\h*+(#\h*+undef\N*+)\n//gm;
+   $$code =~ s/^\h*+(#\h*+define\N*+)\n/push @macro, $1;''/gme;
+   $$code =~ s/^\h*+(#\h*+undef\N*+)\n//gm;
 
-
-   (\$code, \@macro)
+   ($code, \@macro)
 }
 
 sub _preprocess_module_code
