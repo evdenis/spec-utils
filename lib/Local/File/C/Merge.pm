@@ -5,12 +5,15 @@ use warnings;
 
 use re '/aa';
 
-use Graph::Directed;
 use Exporter qw(import);
+use Graph::Directed;
 use Carp;
+use File::Slurp qw(read_file);
+use Cwd qw(realpath);
+use File::Spec::Functions qw(catfile splitpath);
+
 use Local::File::Merge qw(find_all merge);
 use Local::List::Utils qw(intersection difference);
-use File::Slurp qw(read_file);
 
 
 our @EXPORT_OK = qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files);
@@ -35,27 +38,37 @@ sub merge_headers ($;$)
 {
    my ($dir, $unmerged) = @_;
 
-   my $hg = Graph::Directed->new();
-   my @headers = find_headers($dir);
 
-   my @headers_rel = map { substr($_, length $dir) } @headers; 
    my %h;
+   foreach (find_headers($dir)) {
+      $h{$_} = {
+                  name => substr($_, length $dir),
+                  file => read_file($_, array_ref => 1)
+      };
+      $h{$_}{cwd}  = (splitpath($h{$_}{name}))[1];
+   }
 
-   foreach (@headers) {
-      my $v = substr($_, length $dir);
+   my $hg = Graph::Directed->new();
+   while (my ($path, $attrs) = each %h) {
+      $hg->add_vertex($path);
 
-      $hg->add_vertex($v);
+      foreach ( map { /\A\h*+#\h*+include\h*+[<"]([^">]++)[">]/ ? $1 : () } @{ $attrs->{file} } ) {
+         my $file = do {
+            if ($attrs->{cwd}) {
+               my $f = realpath(catfile($dir, $attrs->{cwd}, $_));
+               $f = realpath(catfile($dir, $_)) unless $f && exists $h{$f};
+               $f
+            } else {
+               realpath(catfile($dir, $_))
+            }
+         };
 
-      $h{$v} = [read_file $_];
-      my @includes = map {m/[<"]([^">]++)[">]/; $1} grep {m/^\s*+\#\s*+include\s*+[<"][^">]++[">]/} @{ $h{$v} };
-      # Может быть использовать вместо совпадение по регулярке /\Q$v\E$/ (конец файла)
-      my @local_includes = intersection(\@headers_rel, \@includes);
-
-      $hg->add_edges(map { ($_, $v) } @local_includes);
-      
-      #other includes
-      if (defined $unmerged) {
-         push @$unmerged, difference(\@includes, \@local_includes);
+         #don't test for existatnce, since it is already reded by read_file
+         if ($file && exists $h{$file}) {
+            $hg->add_edge($file, $path)
+         } elsif (defined $unmerged) {
+            push @$unmerged, $_;
+         }
       }
    }
 
@@ -74,7 +87,7 @@ sub merge_headers ($;$)
 
    my $h_code;
    foreach (@order) {
-      $h_code .= join('', @{ $h{$_} })
+      $h_code .= join('', @{ $h{$_}{file} })
    }
 
    $h_code
