@@ -32,7 +32,7 @@ my $preprocessed;
 my $cache = 1;
 my $cache_dir = "$FindBin::Bin/.cache";
 my $cache_file = 'graph_map.cache';
-my $conf_file = '.graph.conf';
+my $conf_file = "$FindBin::Bin/.graph.conf";
 my $done = 1;
 my $priority = 1;
 my $issues = 0;
@@ -69,8 +69,11 @@ if ($cache_dir) {
 $cache = 0 if ! -r $cache_file;
 
 my $conf;
-$conf = LoadFile($conf_file)
-   if -r $conf_file;
+if (-r $conf_file) {
+   $conf = LoadFile($conf_file)
+} else {
+   die("Can't read config file.\n")
+}
 
 
 goto CACHE if $cache;
@@ -109,7 +112,7 @@ my $stat_done = 0;
 if ($done) {
    #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
    #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
-   sub label_done { "\N{BALLOT BOX WITH CHECK} " . $_[0] }
+   sub label_done { state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0] }
 
    foreach (uniq @{ $conf->{done} }) {
       if ($graph->has_vertex($_)) {
@@ -173,6 +176,7 @@ if ($priority) {
 #4
 my %used_issues;
 if ($issues) {
+   my $mark = "\N{SALTIRE}";
    foreach (keys %{ $conf->{issues} }) {
       foreach my $v ($graph->vertices) {
          if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$conf->{issues}{$_}{re}/) {
@@ -183,7 +187,7 @@ if ($issues) {
                   $graph->set_vertex_attribute($v, shape => 'record');
                   $graph->set_vertex_attribute($v, style =>
                      $graph->get_vertex_attribute($v, 'style') . ',bold');
-                  $graph->set_vertex_attribute($v, label => "\N{SALTIRE} $v | $_");
+                  $graph->set_vertex_attribute($v, label => "$mark $v | $_");
                } else {
                   $graph->set_vertex_attribute($v, label =>
                      $graph->get_vertex_attribute($v, 'label') . " | $_")
