@@ -38,28 +38,26 @@ sub merge_headers ($;$)
 {
    my ($dir, $unmerged) = @_;
 
-
    my %h;
-   foreach (find_headers($dir)) {
-      $h{$_} = {
-                  name => substr($_, length $dir),
-                  file => read_file($_, array_ref => 1)
-      };
-      $h{$_}{cwd}  = (splitpath($h{$_}{name}))[1];
+   foreach my $file (find_headers($dir)) {
+      $h{$file}{name} = substr($file, length $dir);
+      $h{$file}{cwd}  = (splitpath($h{$file}{name}))[1];
+      $h{$file}{file} = read_file($file, scalar_ref => 1);
    }
 
    my $hg = Graph::Directed->new();
    while (my ($path, $attrs) = each %h) {
       $hg->add_vertex($path);
 
-      foreach ( map { /\A\h*+#\h*+include\h*+[<"]([^">]++)[">]/ ? $1 : () } @{ $attrs->{file} } ) {
+      while (${ $attrs->{file} } =~ /^\h*+#\h*+include\h*+[<"]([^">]++)[">]/gm) {
+         my $include = $1;
          my $file = do {
             if ($attrs->{cwd}) {
-               my $f = realpath(catfile($dir, $attrs->{cwd}, $_));
-               $f = realpath(catfile($dir, $_)) unless $f && exists $h{$f};
+               my $f = realpath(catfile($dir, $attrs->{cwd}, $include));
+               $f = realpath(catfile($dir, $include)) unless $f && exists $h{$f};
                $f
             } else {
-               realpath(catfile($dir, $_))
+               realpath(catfile($dir, $include))
             }
          };
 
@@ -67,7 +65,7 @@ sub merge_headers ($;$)
          if ($file && exists $h{$file}) {
             $hg->add_edge($file, $path)
          } elsif (defined $unmerged) {
-            push @$unmerged, $_;
+            push @$unmerged, $include;
          }
       }
    }
@@ -87,7 +85,7 @@ sub merge_headers ($;$)
 
    my $h_code;
    foreach (@order) {
-      $h_code .= join('', @{ $h{$_}{file} })
+      $h_code .= ${ $h{$_}{file} }
    }
 
    $h_code

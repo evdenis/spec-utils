@@ -49,6 +49,26 @@ sub preprocess
    call_gcc('-E -P -nostdinc', @_)
 }
 
+use constant ARRAY => ref [];
+my $include_re = qr|#\h*+include\h*+[<"][^">]++[">]|;
+my $include_mark = "//<ci_$$>";
+sub _comment_includes
+{
+   ${$_[0]} =~ s|^\K(?=\h*+${include_re})|$include_mark|mg;
+}
+
+sub _uncomment_includes
+{
+   my $re = qr|^\K\Q${include_mark}\E(?=\h*+${include_re})|m;
+   if ((ref $_[0]) eq ARRAY) {
+      s/$re// foreach @{$_[0]}
+   } else {
+      ${$_[0]} =~ s/$re//g
+   }
+}
+
+
+#excluding include directives
 sub preprocess_directives
 {
    my $code = call_gcc('-E -P -C -fdirectives-only -nostdinc ',
@@ -130,16 +150,16 @@ sub _add_kernel_defines
 
 sub preprocess_as_kernel_module
 {
-   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]),
-            \_add_kernel_kconfig( _add_kernel_defines(${$_[1]}) ),
-            $_[2])
+   _add_kernel_defines(${$_[1]});
+   _add_kernel_kconfig(${$_[1]});
+   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1,2])
 }
 
 sub preprocess_as_kernel_module_get_macro
 {
-   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]),
-            \_add_kernel_kconfig( _add_kernel_defines(${$_[1]}) ),
-            $_[2])
+   _add_kernel_defines(${$_[1]});
+   _add_kernel_kconfig(${$_[1]});
+   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1,2])
 }
 
 
