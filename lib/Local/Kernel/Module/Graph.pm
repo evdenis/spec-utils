@@ -85,9 +85,9 @@ RECHECK:
                   my $tn = blessed($n);
 
                   if (!exists $index{$_}{$tn}) {
-                     $index{$_}{$tn} = $n;
+                     $index{$_}{$tn} = $n
                   } else {
-                     die("Internal error. $tn duplicate");
+                     die("Internal error: $tn duplicate. ID: $_")
                   }
                } else {
                   $index{$_} = {};
