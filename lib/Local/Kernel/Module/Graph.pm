@@ -63,6 +63,10 @@ sub __add_vertices
    }
 }
 
+sub _norm
+{
+   $_[0] =~ s/\s++//gr
+}
 
 sub _build_ids_index
 {
@@ -86,7 +90,13 @@ RECHECK:
 
                   unless (exists $index{$_}{$tn}) {
                      $index{$_}{$tn} = $n
-                  } elsif ($index{$_}{$tn} != $n) {
+                  } elsif ($index{$_}{$tn} == $n) {
+                  } elsif (($tn eq 'C::Macro') || ($tn eq 'C::Typedef')) {
+                     unless (_norm($index{$_}{$tn}->code) eq _norm($n->code)) {
+                        warn("$tn '" . $n->name . "' redefinition\n");
+                        $index{$_}{$tn} = $n if ($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module')
+                     }
+                  } else {
                      die("Internal error: $tn duplicate. ID: $_")
                   }
                } else {
