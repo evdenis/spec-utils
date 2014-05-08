@@ -37,6 +37,7 @@ my $done = 1;
 my $priority = 1;
 my $issues = 0;
 my $stat = 0;
+my $mark_anyway = 0;
 
 GetOptions(
    'function|f=s'            =>  \$function,
@@ -49,7 +50,8 @@ GetOptions(
    'done!'                   =>  \$done,
    'priority!'               =>  \$priority,
    'issues|i!'               =>  \$issues,
-   'statistics|stats|stat!'  =>  \$stat
+   'statistics|stats|stat!'  =>  \$stat,
+   'mark-anyway|m!'          =>  \$mark_anyway
 ) or die "Incorrect usage!\n";
 
 die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
@@ -147,6 +149,10 @@ if ($priority) {
                }
                $graph->set_vertex_attribute($_, priority => $i + 1);
             } else {
+               if ($mark_anyway) {
+                  $graph->set_vertex_attribute($_, fillcolor => $color );
+                  $graph->set_vertex_attribute($_, shape => 'tripleoctagon' );
+               }
                my $lev = $graph->has_vertex_attribute($_, 'priority');
                warn "'$_' has been already marked as $lev priority level function\n";
                next
