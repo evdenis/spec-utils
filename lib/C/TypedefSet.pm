@@ -18,6 +18,7 @@ sub parse
 {
    my $self = shift;
    my $area = $_[1];
+   my $set = $self->new(set => []);
    my %typedefs;
 
    my $name = qr/(?:[\*\s]+)?(?<name>[a-zA-Z_]\w*)(?:\[[^\]]+\])?/;
@@ -30,12 +31,45 @@ sub parse
             |
             (?:(?:.*?)${s}*+(?:$name))
          )${s}*+;
-      /gmpx) {
-      warn("Repeated defenition of typedef $+{name}\n") if (exists $typedefs{$+{name}});
-      $typedefs{$+{name}} = ${^MATCH}
+      /gmpx)
+   {
+      my $name = $+{name};
+      my $o = C::Typedef->new(name => $name, code => ${^MATCH}, area => $area);
+
+      if (exists $typedefs{$name}) {
+         my $norm = sub { $_[0] =~ s/\s+//rg };
+         foreach (@{ $set->set }) {
+            if ($_->name eq $name) {
+               my $i1 = $_->inside;
+               my $i2 = $o->inside;
+               my $warn = "Redefinition of typedef $name\nPrevious: " . $_->code . "\nCurrent: " . $o->code . "\n";
+
+               if ($i1 && $i2) {
+                  if ((@$i1 == 2) && (@$i2 == 2)) {
+                     unless ($i1->[0] eq $i2->[0] && $i1->[1] eq $i2->[1]) {
+                        warn($warn);
+                        $_ = $o;
+                     }
+                  } else {
+                     warn($warn);
+                     $_ = $o;
+                  }
+               } elsif ($i2) {
+                  $_ = $o
+               } elsif ($norm->($_->code) ne $norm->($o->code)) {
+                  warn($warn);
+                  $_ = $o;
+               }
+               last
+            }
+         }
+      } else {
+         $typedefs{$name} = 1;
+         $set->push($o);
+      }
    }
 
-   return $self->new(set => [ map { C::Typedef->new(name => $_, code => $typedefs{$_}, area => $area) } keys %typedefs ]);
+   return $set;
 }
 
 
