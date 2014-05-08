@@ -7,14 +7,17 @@ use Carp;
 use strict;
 use warnings;
 
+use re '/aa';
+
 
 our @EXPORT_OK = qw(
       get_macro
       preprocess
-      preprocess_directives
+      preprocess_directives_noincl
       preprocess_as_kernel_module
       preprocess_as_kernel_module_get_macro
 );
+
 
 sub call_gcc
 {
@@ -69,11 +72,17 @@ sub _uncomment_includes
 
 
 #excluding include directives
-sub preprocess_directives
+sub preprocess_directives_noincl
 {
-   my $code = call_gcc('-E -P -C -fdirectives-only -nostdinc ',
-               \(($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]}),
-               $_[2]);
+   my $code = ($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]};
+
+   _comment_includes(\$code);
+
+   $code = call_gcc('-E -P -C -fdirectives-only -nostdinc ',
+                     \$code,
+                     $_[2]);
+
+   _uncomment_includes($code);
 
    if ($_[2]) {
       my $ind = -1;

@@ -13,7 +13,7 @@ use Local::C::Transformation qw(adapt);
 use Local::Kernel::Makefile qw(get_modules_deps);
 use Local::GCC::Preprocess qw(
       preprocess
-      preprocess_directives
+      preprocess_directives_noincl
       preprocess_as_kernel_module
       preprocess_as_kernel_module_get_macro
 );
@@ -74,12 +74,12 @@ sub _preprocess_module_directives
 {
    my ($kernel_macro, $defines, $module_code) = @_;
 
-   my $include = join("\n", @$kernel_macro) .
-                 "\n\n"                     .
-                 join("\n", @$defines);
+   my $additional = join("\n", @$kernel_macro) .
+                    "\n\n"                     .
+                    join("\n", @$defines);
 
    #returns reference
-   my $code = preprocess_directives($module_code, \$include);
+   my $code = preprocess_directives_noincl($module_code, \$additional);
 
    my @macro;
    $$code =~ s/^\h*+(#\h*+define\N*+)\n/push @macro, $1;''/gme;
