@@ -84,9 +84,9 @@ RECHECK:
                   my $n  = $set->get_from_index($i);
                   my $tn = blessed($n);
 
-                  if (!exists $index{$_}{$tn}) {
+                  unless (exists $index{$_}{$tn}) {
                      $index{$_}{$tn} = $n
-                  } else {
+                  } elsif ($index{$_}{$tn} != $n) {
                      die("Internal error: $tn duplicate. ID: $_")
                   }
                } else {
