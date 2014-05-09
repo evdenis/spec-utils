@@ -1,12 +1,11 @@
 package Local::File::Merge;
 
-use File::Find;
-use File::Slurp qw(read_file);
-
 use strict;
 use warnings;
 
-
+use File::Find;
+use File::Slurp qw(read_file);
+use Cwd qw(realpath);
 use Exporter qw(import);
 
 our @EXPORT_OK = qw(find_all merge merge_all);
@@ -18,7 +17,7 @@ sub find_all ($$)
    my $mask = shift;
    my @files;
 
-   find({ wanted => sub { push @files, $File::Find::name if m/${mask}/ } }, $dir);
+   find({ wanted => sub { push @files, realpath($File::Find::name) if m/${mask}/ } }, $dir);
 
    @files
 }
