@@ -70,6 +70,11 @@ sub get
    $_[0]->get_from_index($_[0]->get_index($_[1]))
 }
 
+sub _norm
+{
+   $_[0] =~ s/\s++//rg
+}
+
 #FIXME: only oneline defines currently allowed
 sub parse
 {
@@ -92,11 +97,13 @@ sub parse
             (?<code>.*)\Z
          /xp) {
          my $name = $+{def};
+         my $code = ${^MATCH};
 
          if (exists $defines{$name}) {
-            warn("Repeated defenition of macro $name\n")
+            unless (_norm($defines{$name}->code) eq _norm($code)) {
+               warn("Redefinition of macro $name:\nPrevious:\n" . $defines{$name}->code . "\nNew:\n$code\n\n")
+            }
          } else {
-            my $code = ${^MATCH};
             my $substitution = $+{code};
             my $args = undef;
 
