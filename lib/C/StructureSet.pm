@@ -41,7 +41,7 @@ sub parse
       /gmpx) {
       my $name = $+{sname};
 
-      carp("Repeated defenition of structure $name")
+      warn("Repeated defenition of structure $name\n")
          if (exists $structures{$name});
 
       $structures{$name} = C::Structure->new(
