@@ -1,21 +1,25 @@
 package Local::GCC::Preprocess;
 
-use Exporter qw(import); 
-use IPC::Open2;
-use Carp;
-
 use strict;
 use warnings;
 
 use re '/aa';
+
+use Exporter qw(import);
+use IPC::Open2;
+use Carp;
+use Cwd qw(realpath);
 
 
 our @EXPORT_OK = qw(
       get_macro
       preprocess
       preprocess_directives_noincl
+      preprocess_directives
       preprocess_as_kernel_module
-      preprocess_as_kernel_module_get_macro
+      preprocess_as_kernel_module_simpl
+      preprocess_as_kernel_module_directives
+      preprocess_as_kernel_module_get_macro_simpl
 );
 
 
@@ -70,7 +74,6 @@ sub _uncomment_includes
    }
 }
 
-
 #excluding include directives
 sub preprocess_directives_noincl
 {
@@ -102,6 +105,59 @@ sub preprocess_directives_noincl
                1
             )
    }
+}
+
+sub _generic_preprocess_directives
+{
+   my %files;
+   my $current_file;
+
+   my $code = call_gcc( shift,
+                        \(($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]}),
+                        1);
+
+   {
+      my $ind = -1;
+      for (my $i = 0; $i < $#$code; ++$i) {
+         if ($code->[$i] eq '//<special_mark>') {
+            $ind = $i;
+            last
+         }
+      }
+      die("Internal error. Can't find marker") if $ind == -1;
+
+      $code = [ splice(@$code, $ind + 1) ];
+   }
+
+   my @order;
+   foreach (@$code) {
+      if (m/#\h++\d++\h++"([^"]++)"/) {
+         $current_file = $1 eq "<stdin>" ? $1 : realpath($1);
+         push @order, $current_file;
+         next
+      }
+
+      push @{ $files{$current_file} }, $_
+   }
+
+   {
+      my %uniq;
+      @order = reverse grep { !$uniq{$_}++ } reverse @order;
+   }
+
+   foreach (keys %files) {
+      $files{$_} = join("\n", @{ $files{$_} })
+   }
+
+   (\@order, \%files)
+}
+
+# directory
+# code
+# additional directives
+sub preprocess_directives
+{
+   _generic_preprocess_directives('-E -CC -fdirectives-only -nostdinc ', @_)
 }
 
 
@@ -156,15 +212,46 @@ sub _add_kernel_defines
    $_[0] = "#define __KERNEL__ 1\n#define MODULE 1\n\n" . $_[0]
 }
 
+# kernel directory
+# include directories
+# code
+# additional defines
+sub preprocess_as_kernel_module_directives
+{
+   my ($kdir, $idir) = (shift, shift);
+
+   _add_kernel_defines(${$_[0]});
+   _add_kernel_kconfig(${$_[0]});
+
+   _generic_preprocess_directives(
+            '-E -CC -fdirectives-only -nostdinc ' .
+            form_gcc_kernel_include_path($kdir)   .
+            " -I " . join(" -I ", @$idir) . " ",
+            @_[0,1])
+}
 
 sub preprocess_as_kernel_module
+{
+   my ($kdir, $idir) = (shift, shift);
+
+   _add_kernel_defines(${$_[0]});
+   _add_kernel_kconfig(${$_[0]});
+
+   _generic_preprocess_directives(
+            '-E -CC -nostdinc ' .
+            form_gcc_kernel_include_path($kdir)   .
+            " -I " . join(" -I ", @$idir) . " ",
+            @_[0,1])
+}
+
+sub preprocess_as_kernel_module_simpl
 {
    _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
    call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1,2])
 }
 
-sub preprocess_as_kernel_module_get_macro
+sub preprocess_as_kernel_module_get_macro_simpl
 {
    _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
