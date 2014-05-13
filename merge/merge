@@ -3,7 +3,10 @@
 use warnings;
 use strict;
 
-use utf8;
+use re '/aa';
+use feature qw(say);
+
+use utf8::all;
 
 use File::Find;
 use File::Slurp qw(read_file write_file);
@@ -13,9 +16,6 @@ use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
-use feature qw(say);
-
-binmode STDOUT, ':utf8';
 
 =encoding utf8
 
@@ -83,7 +83,7 @@ merge - Переложение спецификаций с одной верси
 =cut
 
 my $help = 0;
-my $parsec_dir = defined $ENV{PARSEC_SOURCES} ? $ENV{PARSEC_SOURCES} : '';
+my $parsec_dir = $ENV{PARSEC_SOURCES} // '';
 my $specs_dir = '.';
 my $strict = 1;
 my $mode = 1;
@@ -99,7 +99,7 @@ GetOptions(
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({ -msg => "Wrong arguments.\n", -exitval => 2 }) if !( -d $parsec_dir && -d $specs_dir);
+pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) if !( -d $parsec_dir && -d $specs_dir);
 
 my ($array, $pattern);
 
@@ -269,7 +269,7 @@ foreach(0 .. $#comments) {
 #funcs init
 my %f;
 my $ret  = qr'(?<ret>[\w\s\*\$]+)';
-my $name = qr'(?<name>[a-zA-Z]\w*)';
+my $name = qr'(?<name>[a-zA-Z_]\w*+)';
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 my $spacer = qr"(?:\s++|$comment_regexp)*";
