@@ -88,7 +88,7 @@ if ($preprocessed) {
 } else {
    $source = (preprocess_module_sources($kernel_dir, $parsec_dir, ["#define SPECIFICATION 1\n"]))[1];
 }
-adapt($$source, attributes => 1);
+adapt($$source, attributes => 1, comments => 1);
 
 #funcs init
 my %sources;
