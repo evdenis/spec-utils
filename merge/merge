@@ -330,26 +330,24 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
                   my @intervals;
 
                   $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
-=unnecessary
 # This code remove simple comments from new_code. Not very useful.
-                  while ($fbody =~ m/^[ \t]*$comment_regexp(?:[ \t]*+|$comment_regexp)*\n/gm){
-                     my ($b, $e) = ($-[0], $+[0]);
-                     my @m = $& =~ m/$comment_regexp/g;
-                     my $cond = 0;
-
-                     foreach (@m) {
-                        $cond = 1 if exists $specs{$_}
-                     }
-                     if (!$cond) {
-                        push @intervals, ($b, $e)
-                     }
-                  }
-                  while (@intervals) {
-                     my $e = pop @intervals;
-                     my $b = pop @intervals;
-                     substr($fbody, $b, $e - $b, '');
-                  }
-=cut
+#                  while ($fbody =~ m/^[ \t]*$comment_regexp(?:[ \t]*+|$comment_regexp)*\n/gm){
+#                     my ($b, $e) = ($-[0], $+[0]);
+#                     my @m = $& =~ m/$comment_regexp/g;
+#                     my $cond = 0;
+#
+#                     foreach (@m) {
+#                        $cond = 1 if exists $specs{$_}
+#                     }
+#                     if (!$cond) {
+#                        push @intervals, ($b, $e)
+#                     }
+#                  }
+#                  while (@intervals) {
+#                     my $e = pop @intervals;
+#                     my $b = pop @intervals;
+#                     substr($fbody, $b, $e - $b, '');
+#                  }
                   $fbody =~ s/$comment_regexp/if (exists $specs{$1}) {$&} else {$comments[$1]}/eg;
 
                   $nbody =~ s/\@(\d+)\@/@{ $parsec{$_}{m} }[$1]/g;
