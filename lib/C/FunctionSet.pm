@@ -39,7 +39,7 @@ sub parse
    #get list of all module functions
    while ( ${$_[0]} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/gp ) {
       my $name = $+{name};
-      my $code = ${^MATCH}; 
+      my $code = ${^MATCH};
 
       if (any($name, \@keywords)) {
          carp("Parsing error; function name: '$name'. Skipping.");
@@ -50,10 +50,10 @@ sub parse
          carp("Repeated defenition of function $name")
       }
 
-      $functions{$name} = $code
+      @{ $functions{$name} }{qw/code ret args body/} = ($code, @+{qw/ret args fbody/});
    }
    
-   return $self->new(set => [ map { C::Function->new(name => $_, code => $functions{$_}, area => $area) } keys %functions ]);
+   return $self->new(set => [ map { C::Function->new(name => $_, %{ $functions{$_} }, area => $area) } keys %functions ]);
 }
 
 __PACKAGE__->meta->make_immutable;

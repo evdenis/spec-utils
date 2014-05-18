@@ -24,6 +24,12 @@ has 'forward_declaration' => (
    }
 );
 
+has [qw/ret args body/] => (
+   is => 'ro',
+   isa => 'Str',
+   required => 1
+);
+
 
 sub get_code_tags
 {
