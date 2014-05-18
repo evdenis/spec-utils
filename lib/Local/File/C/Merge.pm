@@ -16,7 +16,7 @@ use Local::File::Merge qw(find_all merge);
 use Local::List::Utils qw(intersection difference);
 
 
-our @EXPORT_OK = qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files);
+our @EXPORT_OK = qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files_simple merge_all_files);
 
 
 sub find_headers ($)
@@ -94,6 +94,11 @@ sub merge_headers ($;$)
 sub merge_sources ($)
 {
    merge(find_sources($_[0]))
+}
+
+sub merge_all_files_simple ($)
+{
+   merge(find_all_files($_[0]))
 }
 
 sub merge_all_files ($)

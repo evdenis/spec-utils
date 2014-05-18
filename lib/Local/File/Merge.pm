@@ -17,7 +17,7 @@ sub find_all ($$)
    my $mask = shift;
    my @files;
 
-   find({ wanted => sub { push @files, realpath($File::Find::name) if m/${mask}/ } }, $dir);
+   find({ wanted => sub { push @files, realpath($File::Find::name) if m/${mask}/ } }, realpath($dir));
 
    @files
 }

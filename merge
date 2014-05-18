@@ -11,7 +11,6 @@ use lib "$FindBin::Bin/lib/";
 
 use utf8::all;
 
-use File::Find;
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Pod::Usage;
@@ -20,6 +19,10 @@ use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
 use Local::Terminal qw(window_size);
+use Local::C::Transformation qw(adapt restore :RE :TYPES);
+use Local::File::Merge qw(merge);
+use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
+
 
 =encoding utf8
 
@@ -103,78 +106,8 @@ GetOptions(
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) if !( -d $parsec_dir && -d $specs_dir);
+pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $parsec_dir && -d $specs_dir;
 
-my ($array, $pattern);
-
-sub wanted
-{
-	push @$array, $File::Find::name if m/${pattern}/;
-}
-
-my @parsec;
-$array = \@parsec;
-$pattern = qr(\.[ch]$);
-find(\&wanted, $parsec_dir);
-
-my @current;
-$array = \@current;
-find(\&wanted, $specs_dir);
-
-sub remove_macro
-{
-   my @macro;
-
-   $_[0] =~ s/
-      ^
-      [ \t]*
-      \#
-      [ \t]*
-      (?:
-           (?:
-               e(?:lse|ndif)
-               |
-               line
-               |
-               include
-               |
-               undef
-            )
-            .*
-         |
-            (?:
-            define
-            |
-            elif
-            |
-            ifn?(?:def)?
-            )
-            [ \t]+
-            (?<mbody>
-               .*(?=\\\n)
-               \\\n
-               (?&mbody)?
-            )?
-            .+
-      )
-      $
-   /push @macro, $&;"\@$#macro\@"/gmxe;
-   
-   \@macro
-}
-
-sub remove_comments
-{
-   my @comments;
-
-   $_[0] =~ s!
-               /\*[^*]*\*+(?:[^/*][^*]*\*+)*/|
-               //(?:[^\\]|[^\n][\n]?)*?(?=\n)|
-               ("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.[^/"'\\]*)
-            !if (defined $1) { $1 } else { push @comments, $&; "\$$#comments\$"}!gsxe;
-
-   \@comments
-}
 
 sub call_meld
 {
@@ -203,62 +136,72 @@ sub call_meld
 }
 
 
-die(RED . "Can't find specifications sources." . RESET ."\n") if (!@current);
-die(RED . "Can't find parsec sources." . RESET . "\n") if (!@parsec);
+my @parsec  = find_all_files($parsec_dir);
+my $code = merge_all_files_simple($specs_dir);
 
-my $code;
-foreach(@current) {
-   $code .= read_file($_);
-}
+die(RED . "Can't find specifications sources." . RESET ."\n") unless $code;
+die(RED . "Can't find parsec sources." . RESET . "\n") unless @parsec;
+
 
 my %parsec;
 foreach my $f (@parsec) {
    $parsec{$f}{code} = read_file($f);
-   $parsec{$f}{c} = remove_comments($parsec{$f}{code});
+   adapt($parsec{$f}{code},
+         comments => \@{ $parsec{$f}{c} },
+         macro    => \@{ $parsec{$f}{m} }
+   );
+
    my %i;
    foreach (0 .. $#{ $parsec{$f}{c} }) {
       $i{$_} = 1 if @{ $parsec{$f}{c} }[$_] =~ m!^(?:/\*\@|//\@)!
    }
    $parsec{$f}{i} = \%i;
-   $parsec{$f}{m} = remove_macro($parsec{$f}{code});
 }
 
-my @comments = @{ remove_comments($code) };
-my @macro = @{ remove_macro($code) };
+adapt($code,
+      comments => \my @comments,
+      macro    => \my @macro
+);
 
-my $comment_regexp = qr'(?:\$(\d++)\$)';
+
+my $comment_re = $comment_t{pattern};
+my $macro_re   = $macro_t{pattern};
 
 #simple preprocess
-my $skip = 0;
-my $ifdef_rec = 0;
-my ($begin, $end) = (undef, undef);
-foreach my $i (0 .. $#macro)
 {
-   if (!$skip) {
-      if ($macro[$i] =~ m/^\s*+#\s*+if\s*+0/) {
-         $skip = 1;
-         $begin = $i;
-         $ifdef_rec = 0;
-      }
-   } else {
-      if ($macro[$i] =~ m/^\s*+#\s*+if(?:(?:n)?def)?/) {
-         ++$ifdef_rec;
-      } elsif ($macro[$i] =~ m/^\s*+#\s*+endif/) {
-         if ($ifdef_rec == 0) {
-            $skip = 0;
-            $end = $i;
+   my $skip = 0;
+   my $ifdef_rec = 0;
+   my ($begin, $end) = (undef, undef);
+   my ($ML, $MR) = @macro_t{qw(L R)};
 
-            #remove part of the code
-            $code =~ m/\@\Q$begin\E\@/;
-            $begin = $-[0];
-            $code =~ m/\@\Q$end\E\@/;
-            $end = $+[0];
-            my $remove = substr($code, $begin, $end - $begin, '');
+   foreach my $i (0 .. $#macro)
+   {
+      if (!$skip) {
+         if ($macro[$i] =~ m/^\h*+#\h*+if\h*+0/) {
+            $skip = 1;
+            $begin = $i;
+            $ifdef_rec = 0;
+         }
+      } else {
+         if ($macro[$i] =~ m/^\h*+#\h*+if(?:(?:n)?def)?/) {
+            ++$ifdef_rec;
+         } elsif ($macro[$i] =~ m/^\h*+#\h*+endif/) {
+            if ($ifdef_rec == 0) {
+               $skip = 0;
+               $end = $i;
 
-            #exclude comments from
-            $comments[$_] = '' foreach ($remove =~ m/$comment_regexp/g);
-         } else {
-            --$ifdef_rec;
+               #remove part of the code
+               $code =~ m/$ML${begin}$MR/;
+               $begin = $-[0];
+               $code =~ m/$ML${end}$MR/;
+               $end = $+[0];
+               my $remove = substr($code, $begin, $end - $begin, '');
+
+               #exclude comments from
+               $comments[$_] = '' foreach ($remove =~ m/$comment_re/g);
+            } else {
+               --$ifdef_rec;
+            }
          }
       }
    }
@@ -272,21 +215,20 @@ foreach(0 .. $#comments) {
 
 #funcs init
 my %f;
-my $ret  = qr'(?<ret>[\w\s\*\$]+)';
+my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
 my $name = qr'(?<name>[a-zA-Z_]\w*+)';
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
-my $spacer = qr"(?:\s++|$comment_regexp)*";
 
-while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
-   my ($fret, $fname, $fargs, $fbody) = ($+{ret}, $+{name}, $+{args}, $+{fbody});
+while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
+   my ($fret, $fname, $fargs, $fbody) = @+{qw/ret name args fbody/};
   
-   if ($fret =~ m/^\s*($comment_regexp(\s*$comment_regexp)*).*$/s) {
+   if ($fret =~ m/^\s*($comment_re(\s*$comment_re)*).*$/s) {
       my $spec = $1;
       my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
       my @exclude_specs;
 
-      $spec =~ s/$comment_regexp/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
+      $spec =~ s/$comment_re/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
       $spec =~ s/^\s+//s;
       $spec =~ s/\s+$//s;
       $spec .= "\n";
@@ -297,10 +239,11 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
       my $done = 0;
       foreach(keys %parsec) {
          #only one function in one file
-         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${spacer}$args${spacer}$body/) {
-            my ($bbegin, $bend) = ($-[5], $+[5]);
+         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${s}*+$args${s}*+$body/) {
             my ($sbegin, $send) = ($-[1], $+[1]);
-            my ($fret, $fargs, $nbody) = ($+{ret}, $+{args}, $+{fbody});
+            my ($bbegin, $bend) = ($-[3], $+[3]);
+            my ($fret, $fargs, $nbody) = @+{qw/ret args fbody/};
+
 
             #additional checks
             if ($strict) {
@@ -317,7 +260,7 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
             }
 
             my $specs_exists = 0;
-            while ($fbody =~ m/$comment_regexp/g) {
+            while ($fbody =~ m/$comment_re/g) {
                if (exists $specs{$1}) {
                   $specs_exists = 1;
                   last
@@ -325,19 +268,19 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
             }
             if ($specs_exists) {
                if (!$mode) {
-                  $fbody =~ s/$comment_regexp/delete $specs{$1}; "$comments[$1]"/eg;
-                  $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
+                  $fbody =~ s/$comment_re/delete $specs{$1}; "$comments[$1]"/eg;
+                  $fbody =~ s/$macro_re/$macro[$1]/g;
                   substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
                } else {
                   my $fbody_saved = $fbody;
                   my @exclude_specs;
                   my @intervals;
 
-                  $fbody =~ s/\@(\d+)\@/$macro[$1]/g;
+                  $fbody =~ s/$macro_re/$macro[$1]/g;
 # This code remove simple comments from new_code. Not very useful.
-#                  while ($fbody =~ m/^[ \t]*$comment_regexp(?:[ \t]*+|$comment_regexp)*\n/gm){
+#                  while ($fbody =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
 #                     my ($b, $e) = ($-[0], $+[0]);
-#                     my @m = $& =~ m/$comment_regexp/g;
+#                     my @m = ${^MATCH} =~ m/$comment_re/g;
 #                     my $cond = 0;
 #
 #                     foreach (@m) {
@@ -352,13 +295,13 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
 #                     my $b = pop @intervals;
 #                     substr($fbody, $b, $e - $b, '');
 #                  }
-                  $fbody =~ s/$comment_regexp/if (exists $specs{$1}) {$&} else {$comments[$1]}/eg;
+                  $fbody =~ s/$comment_re/if (exists $specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
 
-                  $nbody =~ s/\@(\d+)\@/@{ $parsec{$_}{m} }[$1]/g;
-                  $nbody =~ s/$comment_regexp/if (exists $parsec{$_}{i}{$1}) {$&} else {@{$parsec{$_}{c}}[$1]}/eg;
+                  $nbody =~ s/$macro_re/$parsec{$_}{m}->[$1]/g;
+                  $nbody =~ s/$comment_re/if (exists $parsec{$_}{i}{$1}) {${^MATCH}} else {$parsec{$_}{c}->[$1]}/egp;
 
-                  my @new_code = map { split(/^/m, $_) } $fbody;
-                  my @old_code = map { split(/^/m, $_) } $nbody;
+                  my @new_code = map { split(/^/, $_) } $fbody;
+                  my @old_code = map { split(/^/, $_) } $nbody;
                   my @code;
 
                   my $cant_resolve = 0;
@@ -367,38 +310,38 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
                      \@old_code,
                      \@new_code,
                      {
-                        MATCH => sub {push @code, $new_code[$_[1]]},
-                        DISCARD_A => sub {push @code, $old_code[$_[0]]},
+                        MATCH     => sub { push @code, $new_code[$_[1]] },
+                        DISCARD_A => sub { push @code, $old_code[$_[0]] },
                         DISCARD_B => sub {
-                           if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_regexp)*$/) {
-                              push @code, $new_code[$_[1]]
-                           } elsif ($new_code[$_[1]] =~ m/$comment_regexp/) {
+                           if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
+                              push @code, $new_code[$_[1]];
+                           } elsif ($new_code[$_[1]] =~ m/$comment_re/) {
                               $cant_resolve = 1;
-                              push @code, $new_code[$_[1]]
+                              push @code, $new_code[$_[1]];
                            } else {
-                              $cant_resolve = 1
+                              $cant_resolve = 1;
                            }
                         }
                      },
-                     sub {$_[0] =~ s/\s+|[(){}\[\];]|$comment_regexp//gr}
+                     sub { $_[0] =~ s/\s+|[(){}\[\];]|$comment_re//gr }
                   );
 
-                  @code = split(/^/, join('', @code) =~ s/$comment_regexp/push @exclude_specs, $1;$comments[$1]/ger);
+                  @code = split(/^/, join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
 
                   if ($cant_resolve) {
                      my $function = $fret . ' ' . $fname . $fargs;
-                     $function =~ s/$comment_regexp//g;
+                     $function =~ s/$comment_re//g;
                      $function =~ s/\s+/ /g;
                      $function =~ s/^\s+//g;
                      $function =~ s/\n//g;
                      $function .= "\n";
 
-                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_regexp/@{$parsec{$_}{c}}[$1]/gr);
-                     @new_code = split(/^/, $fbody_saved =~ s/$comment_regexp/$comments[$1]/gr);
+                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$parsec{$_}{c}->[$1]/gr);
+                     @new_code = split(/^/, $fbody_saved =~ s/$comment_re/$comments[$1]/gr);
 
                      unshift @old_code, $function;
                      unshift @new_code, $function;
-                     unshift @code, $function;
+                     unshift @code,     $function;
 
                      warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
                         ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
@@ -420,7 +363,7 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
             my @interval;
             my $continue = 0;
             my ($cb, $ce) = (0, 0);
-            while ($fret =~ m/$comment_regexp/g) {
+            while ($fret =~ m/$comment_re/g) {
                my ($b, $e) = ($-[0], $+[0]);
                if (exists $parsec{$_}{i}{$1}) {
                   if ($continue) {
@@ -454,15 +397,15 @@ while ($code =~ m/$ret${spacer}\b$name${spacer}$args${spacer}$body/g) {
       if (!$done) {
          warn "Can't find function " . GREEN . "$fname" . RESET "\n"
       } else {
-         delete $specs{$_} foreach @exclude_specs;
+         delete $specs{$_} foreach @exclude_specs
       }
    }
 }
 
 
 foreach my $f (keys %parsec) {
-   $parsec{$f}{code} =~ s/\@(\d+)\@/@{ $parsec{$f}{m} }[$1]/g;
-   $parsec{$f}{code} =~ s/$comment_regexp/@{ $parsec{$f}{c} }[$1]/g;
+   $parsec{$f}{code} =~ s/$macro_re/$parsec{$f}{m}->[$1]/g;
+   $parsec{$f}{code} =~ s/$comment_re/$parsec{$f}{c}->[$1]/g;
    write_file($f, $parsec{$f}{code});
 }
 
@@ -471,6 +414,6 @@ if (keys %specs) {
    my (undef, $col) = window_size();
 
    say STDERR RED,"Can't merge following specifications:\n", RESET;
-   say STDERR join("\n" . BLUE . '-' x $col . RESET, map {$comments[$_]} sort keys %specs);
+   say STDERR join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs);
 }
 
