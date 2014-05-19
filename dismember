@@ -37,8 +37,8 @@ use C::GlobalSet;
 
 
 my $function;
-my $parsec_dir = $ENV{PARSEC_SOURCES} // '.';
-my $kernel_dir = $ENV{PARSEC_KERNEL_SOURCES} // '.';
+my $parsec_dir = $ENV{CURRENT_PROJECT} // '.';
+my $kernel_dir = $ENV{CURRENT_KERNEL} // '.';
 my $use_cache = 1;
 my $output_dir = "$FindBin::Bin/result";
 my $cache_dir  = "$FindBin::Bin/.cache";

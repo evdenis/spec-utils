@@ -11,7 +11,7 @@ use utf8;
 use File::Slurp qw(read_file read_dir write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use File::Find;
-use Env qw(PATH_TO_LINUX_KERNEL_STABLE_SOURCES);
+use Env qw(CURRENT_KERNEL);
 use File::Basename qw(dirname);
 use List::MoreUtils qw(uniq);
 use Cwd qw(abs_path);
@@ -80,8 +80,8 @@ exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
 if (!$kdir) {
    if ( -f "./Kbuild") {
       $kdir = ".";
-   } elsif ( defined($PATH_TO_LINUX_KERNEL_STABLE_SOURCES) && -f "$PATH_TO_LINUX_KERNEL_STABLE_SOURCES/Kbuild" ) {
-      $kdir = "$PATH_TO_LINUX_KERNEL_STABLE_SOURCES";
+   } elsif ( defined($CURRENT_KERNEL) && -f "$CURRENT_KERNEL/Kbuild" ) {
+      $kdir = "$CURRENT_KERNEL";
    }
 }
 

@@ -10,7 +10,7 @@ use warnings;
 use diagnostics;
 use utf8;
 
-use Env qw(PATH_TO_LINUX_KERNEL_SOURCES PARSEC_SOURCES);
+use Env qw(CURRENT_KERNEL CURRENT_PROJECT);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Text::ANSITable;
@@ -48,8 +48,8 @@ die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdi
 if (!$kdir) {
    if ( -r $kfile) {
       $kdir = "."; 
-   } elsif ( -r "$PATH_TO_LINUX_KERNEL_SOURCES/$kfile" ) {
-      $kdir = $PATH_TO_LINUX_KERNEL_SOURCES;
+   } elsif ( -r "$CURRENT_KERNEL/$kfile" ) {
+      $kdir = $CURRENT_KERNEL;
    }
 }
 
@@ -58,8 +58,8 @@ die "Can't find path to linux kernel sources directory.\n" if (!$kdir);
 if (!$pdir) {
    if ( -r $pfile) {
       $pdir = "."; 
-   } elsif ( -r "$PARSEC_SOURCES/$pfile" ) {
-      $pdir = $PARSEC_SOURCES;
+   } elsif ( -r "$CURRENT_PROJECT/$pfile" ) {
+      $pdir = $CURRENT_PROJECT;
    }
 }
 

@@ -95,7 +95,7 @@ my $help = 0;
 my $detailed = 0;
 my $view;
 my $keep_dot;
-my $dir = $ENV{PARSEC_SOURCES} // '.';
+my $dir = $ENV{CURRENT_PROJECT} // '.';
 my $format = 'png';
 my $open_with = 'xdg-open';
 my $fname;

@@ -10,7 +10,7 @@ use warnings;
 use diagnostics;
 
 
-use Env qw(PATH_TO_LINUX_KERNEL_SOURCES);
+use Env qw(CURRENT_KERNEL);
 use File::Slurp qw(read_file);
 use Getopt::Long qw(:config gnu_getopt);
 
@@ -34,8 +34,8 @@ GetOptions(
 if (!$kdir) {
    if ( -r "./$file") {
       $kdir = "."; 
-   } elsif ( -r "$PATH_TO_LINUX_KERNEL_SOURCES/$file" ) {
-      $kdir = "$PATH_TO_LINUX_KERNEL_SOURCES"; 
+   } elsif ( -r "$CURRENT_KERNEL/$file" ) {
+      $kdir = "$CURRENT_KERNEL";
    }
 }
 
