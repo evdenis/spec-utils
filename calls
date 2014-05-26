@@ -59,7 +59,7 @@ my $only_macro = 0;
 GetOptions(
    'ksources|s=s'     =>  sub { if ( -f "$_[1]/Kbuild" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: '$_[1]'\n)) } },
    'directory|d=s'    =>  \$moduledir,
-   'preprocessed|p:s' =>  \$preprocessed,
+   'preprocessed|p=s' =>  \$preprocessed,
    'kernel|k!'        =>  \$kernel_sw,
    'modules|m!'       =>  \$modules_sw,
    'unknown|u!'       =>  \$unknown_sw,
@@ -363,7 +363,7 @@ my $source;
 unless ($preprocessed) {
    $source = merge_all_files_simple($moduledir);
 } else {
-   $source = read_file($preprocessed || "$moduledir/sources.PREPROCESSED");
+   $source = read_file($preprocessed);
 }
 die("Can't find *.[ch] files.\n") unless $source;
 
