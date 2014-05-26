@@ -1,28 +1,23 @@
 #!/usr/bin/env perl
 
-use utf8;
-use 5.10.1;
-
-use feature qw(say);
 
 use strict;
 use warnings;
-use diagnostics;
-use utf8;
+use feature qw(say);
+use re '/aa';
 
+use utf8::all;
 use Env qw(CURRENT_KERNEL CURRENT_PROJECT);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Text::ANSITable;
-
 use Class::CSV;
 
-use open ':std', ':encoding(UTF-8)';
+use FindBin;
+use lib "$FindBin::Bin/lib";
 
-sub remove_comments
-{
-   $_[0] =~ s#/\*[^*]*\*+([^/*][^*]*\*+)*/|//([^\\]|[^\n][\n]?)*?\n|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^/"'\\]*)#defined $3 ? $3 : ""#gse;
-}
+use Local::C::Transformation;
+
 
 ##############################################################
 
@@ -47,7 +42,7 @@ die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdi
 
 if (!$kdir) {
    if ( -r $kfile) {
-      $kdir = "."; 
+      $kdir = '.';
    } elsif ( -r "$CURRENT_KERNEL/$kfile" ) {
       $kdir = $CURRENT_KERNEL;
    }
@@ -57,7 +52,7 @@ die "Can't find path to linux kernel sources directory.\n" if (!$kdir);
 
 if (!$pdir) {
    if ( -r $pfile) {
-      $pdir = "."; 
+      $pdir = '.';
    } elsif ( -r "$CURRENT_PROJECT/$pfile" ) {
       $pdir = $CURRENT_PROJECT;
    }
@@ -74,8 +69,8 @@ close MAKEFILE;
 my $sec_file = read_file("$kdir/$kfile");
 my $hooks_file = read_file("$pdir/$pfile");
 
-remove_comments($sec_file);
-remove_comments($hooks_file);
+adapt($sec_file, comments => 1);
+adapt($hooks_file, comments => 1);
 
 sub argname {
    $_[0] =~ m/(\w+)$/;
