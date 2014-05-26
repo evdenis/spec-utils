@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+
+use FindBin;
+use lib "$FindBin::Bin/lib/";
+
+
+package TS {
+
+   use MooseX::App::Simple qw(Color Env);
+
+   use Local::Kernel::Module qw(prepare_module_sources preprocess_module_sources);
+   use Local::C::Transformation;
+
+   option 'preprocess' => (
+      is  => 'rw',
+      isa => 'Bool',
+      cmd_aliases => [qw(p)],
+      documentation => 'switches on full preprocessing of module sources'
+   );
+
+   option 'kernel' => (
+      is         => 'rw',
+      isa        => 'Str',
+      required   => 1,
+      cmd_env    => 'CURRENT_KERNEL',
+      cmd_aliases => [qw(k kdir)],
+      documentation => 'kernel directory'
+   );
+
+   option 'module' => (
+      is         => 'rw',
+      isa        => 'Str',
+      required   => 1,
+      cmd_env    => 'CURRENT_PROJECT',
+      cmd_aliases => [qw(m mdir)],
+      documentation => 'module directory'
+   );
+
+
+   sub run {
+      my ($self) = @_;
+      my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
+
+      my $source = ($func->($self->kernel, $self->module, ["#define SPECIFICATION 1\n"]))[1];
+
+      adapt($$source, comments => 1, strings => 1, attributes => 1);
+
+      print $$source;
+   }
+
+   1;
+}
+
+TS->new_with_options->run();
+
