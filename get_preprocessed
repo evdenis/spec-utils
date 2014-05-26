@@ -12,14 +12,14 @@ package TS {
    use Local::C::Transformation;
 
    option 'preprocess' => (
-      is  => 'rw',
+      is  => 'ro',
       isa => 'Bool',
       cmd_aliases => [qw(p)],
       documentation => 'switches on full preprocessing of module sources'
    );
 
    option 'kernel' => (
-      is         => 'rw',
+      is         => 'ro',
       isa        => 'Str',
       required   => 1,
       cmd_env    => 'CURRENT_KERNEL',
@@ -28,12 +28,40 @@ package TS {
    );
 
    option 'module' => (
-      is         => 'rw',
+      is         => 'ro',
       isa        => 'Str',
       required   => 1,
       cmd_env    => 'CURRENT_PROJECT',
       cmd_aliases => [qw(m mdir)],
       documentation => 'module directory'
+   );
+
+   option 'strings' => (
+      is         => 'ro',
+      isa        => 'Bool',
+      default    => 0,
+      documentation => 'remove strings; default: off'
+   );
+
+   option 'comments' => (
+      is         => 'ro',
+      isa        => 'Bool',
+      default    => 1,
+      documentation => 'remove comments; default: on'
+   );
+
+   option 'macro' => (
+      is         => 'ro',
+      isa        => 'Bool',
+      default    => 0,
+      documentation => 'remove macro; default: off'
+   );
+
+   option 'attributes' => (
+      is         => 'ro',
+      isa        => 'Bool',
+      default    => 1,
+      documentation => 'remove attributes; default: on'
    );
 
 
@@ -43,7 +71,11 @@ package TS {
 
       my $source = ($func->($self->kernel, $self->module, ["#define SPECIFICATION 1\n"]))[1];
 
-      adapt($$source, comments => 1, strings => 1, attributes => 1);
+      {
+         my %param;
+         $param{$_} = $self->$_ foreach qw/strings comments macro attributes/;
+         adapt($$source, %param);
+      }
 
       print $$source;
    }
