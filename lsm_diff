@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
 
-
 use strict;
 use warnings;
 use feature qw(say);
@@ -17,9 +16,8 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 
 use Local::C::Transformation;
+use Local::String::Utils qw(normalize);
 
-
-##############################################################
 
 my $kfile = 'include/linux/security.h';
 my $pfile = 'sec-hooks.c';
@@ -48,7 +46,7 @@ if (!$kdir) {
    }
 }
 
-die "Can't find path to linux kernel sources directory.\n" if (!$kdir);
+die "Can't find path to linux kernel sources directory.\n" unless $kdir;
 
 if (!$pdir) {
    if ( -r $pfile) {
@@ -58,7 +56,7 @@ if (!$pdir) {
    }
 }
 
-die "Can't find path to parsec sources directory.\n" if (!$pdir);
+die "Can't find path to parsec sources directory.\n" unless $pdir;
 
 
 open MAKEFILE, "< $kdir/Makefile";
@@ -82,22 +80,14 @@ sub argtype {
    return $1 eq '' ? 'void' : $1;
 }
 
-sub remove_spaces {
-   my $str = $_[0];
-   $str =~ s/\s+/ /g;
-   $str =~ s/^\s+//;
-   $str =~ s/\s+$//;
-   return $str;
-}
-
 sub parse_structure_defition_ops_fields {
    my $conf = $_[1];
-   map { remove_spaces($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
+   map { normalize($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
 }
 
 sub parse_structure_declaration_ops_fields {
    my $conf = $_[1];
-   my @fields = map { remove_spaces($_) } split /;/, $_[0];
+   my @fields = map normalize($_), split(/;/, $_[0]);
 
    # filter non-functions
    @fields = grep { m/\(\*\w+\)\s*\(/ } @fields;
@@ -120,19 +110,19 @@ sub parse_security_operations_structure {
          if ($_ =~ m/^\s*\#\s*if\s+(?<cond>.+)$/) {
             %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
             $buf = '';
-            push @ifdefs, remove_spaces($+{cond});
+            push @ifdefs, normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*ifdef\s+(?<cond>\w+)\s*$/) {
             %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
             $buf = '';
-            push @ifdefs, remove_spaces($+{cond});
+            push @ifdefs, normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*ifndef\s+(?<cond>\w+)\s*$/) {
             %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
             $buf = '';
-            push @ifdefs, '! ' . remove_spaces($+{cond});
+            push @ifdefs, '! ' . normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*else/) {
@@ -282,3 +272,4 @@ if (keys %str_parsec) {
       print "\r\n" . $str;
    }
 }
+
