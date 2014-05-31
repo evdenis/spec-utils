@@ -7,7 +7,7 @@ use Graph;
 use Graph::Writer::Dot;
 
 use File::Slurp qw(read_file write_file);
-use Getopt::Long qw(:config gnu_getopt);
+use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use Storable;
 use YAML::XS qw(LoadFile);
 use FindBin;
@@ -23,7 +23,7 @@ use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph)
 use C::FunctionSet;
 
 
-my $function;
+my @functions;
 my $format = 'png';
 my $out = 'graph';
 my $parsec_dir = $ENV{CURRENT_PROJECT} // '.';
@@ -40,7 +40,7 @@ my $stat = 0;
 my $mark_anyway = 0;
 
 GetOptions(
-   'function|f=s'            =>  \$function,
+   'functions|f=s{1,}'       =>  \@functions,
    'format=s'                =>  \$format,
    'output|o=s'              =>  \$out,
    'preprocessed|p=s'        =>  \$preprocessed,
@@ -53,6 +53,8 @@ GetOptions(
    'statistics|stats|stat!'  =>  \$stat,
    'mark-anyway|m!'          =>  \$mark_anyway
 ) or die "Incorrect usage!\n";
+
+@functions = split(/,/,join(',',@functions));
 
 die("$parsec_dir is not a directory.\n") unless -d $parsec_dir;
 die("$kernel_dir is not a kernel directory.\n") unless -f "$kernel_dir/Kbuild";
@@ -240,15 +242,20 @@ if ($stat) {
    say "Всего сделано: " . $stat_done if $done;
 }
 
-if ($function) {
-   if ($graph->has_vertex($function)) {
-      $graph = get_successors_subgraph($graph, $function);
-
-      say "Количество функций в подграфе $function: " . $graph->vertices
-         if $stat;
-   } else {
-      warn "There is no such function: '$function'.\n"
+if (@functions) {
+   my @e;
+   foreach (@functions) {
+      unless ($graph->has_vertex($_)) {
+         warn "There is no such function: '$_'.\n"
+      } else {
+         push @e, $_
+      }
    }
+
+   $graph = get_successors_subgraph($graph, @e);
+
+   say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
+      if $stat;
 }
 
 

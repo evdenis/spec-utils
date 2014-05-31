@@ -268,10 +268,10 @@ sub build_sources_graph
 
 sub _generic_get_subgraph
 {
-   my ($graph, $id, $method) = @_;
+   my ($method, $graph, @id) = @_;
 
-   my @pr = $graph->$method($id);
-   push @pr, $id;
+   my @pr = $graph->$method(@id);
+   push @pr, @id;
 
    my $subgraph =
       Graph::Directed->new(edges =>
@@ -290,12 +290,12 @@ sub _generic_get_subgraph
 
 sub get_predecessors_subgraph
 {
-   _generic_get_subgraph(@_, 'all_predecessors')
+   _generic_get_subgraph('all_predecessors', @_)
 }
 
 sub get_successors_subgraph
 {
-   _generic_get_subgraph(@_, 'all_successors')
+   _generic_get_subgraph('all_successors', @_)
 }
 
 
