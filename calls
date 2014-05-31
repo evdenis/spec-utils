@@ -454,11 +454,11 @@ foreach (keys %status) {
    my ($num, $own, $type) = @{ $status{$_} };
 
    if ($own eq 'UNKNOWN') {
-      delete $status{$_} if !$unknown_sw;
+      delete $status{$_} unless $unknown_sw;
    } elsif ($own eq 'kernel') {
-      delete $status{$_} if !$kernel_sw;
+      delete $status{$_} unless $kernel_sw;
    } else {
-      delete $status{$_} if !$modules_sw;
+      delete $status{$_} unless $modules_sw;
    }
 
    if ($type eq 'kM' or $type eq 'mM') {

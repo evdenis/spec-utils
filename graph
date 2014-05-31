@@ -54,8 +54,8 @@ GetOptions(
    'mark-anyway|m!'          =>  \$mark_anyway
 ) or die "Incorrect usage!\n";
 
-die("$parsec_dir is not a directory.\n") if ! -d $parsec_dir;
-die("$kernel_dir is not a kernel directory.\n") if ! -f "$kernel_dir/Kbuild";
+die("$parsec_dir is not a directory.\n") unless -d $parsec_dir;
+die("$kernel_dir is not a kernel directory.\n") unless -f "$kernel_dir/Kbuild";
 
 
 $cache = 0 if $preprocessed;
@@ -63,12 +63,12 @@ $cache = 0 if $preprocessed;
 if ($cache_dir) {
    mkdir($cache_dir) or
       die("Can't create directory $cache_dir: $!\n")
-         if ! -e $cache_dir;
+         unless -e $cache_dir;
 
    $cache_file = "$cache_dir/$cache_file";
 }
 
-$cache = 0 if ! -r $cache_file;
+$cache = 0 unless -r $cache_file;
 
 my $conf;
 if (-r $conf_file) {

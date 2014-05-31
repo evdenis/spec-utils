@@ -182,7 +182,8 @@ sub adapt
 	alias my $code = shift;
    my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
 
-   return undef if !$code;
+   return undef
+      unless $code;
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
@@ -236,7 +237,8 @@ sub restore
 	alias my $code = shift;
    my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
 
-   return undef if !$code;
+   return undef
+      unless $code;
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 

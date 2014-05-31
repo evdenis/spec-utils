@@ -74,10 +74,12 @@ sub merge_headers ($;$)
    while ($hg->vertices) {
       my @zv;
       foreach($hg->vertices) {
-         push @zv, $_ if !$hg->in_degree($_);
+         push @zv, $_
+            unless $hg->in_degree($_);
       }
 
-      croak("Cycle in include graph. Can't handle in current version.") if !@zv;
+      croak("Cycle in include graph. Can't handle in current version.")
+         unless @zv;
 
       $hg->delete_vertices( @zv );
       push @order, @zv;

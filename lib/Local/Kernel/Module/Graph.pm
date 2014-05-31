@@ -368,10 +368,10 @@ sub output_sources_graph
    while (keys %vertices) {
       my @zv;
       foreach(keys %vertices) {
-         push @zv, $_ if !$graph->in_degree($_);
+         push @zv, $_ unless $graph->in_degree($_);
       }
 
-      die("Cycle in graph") if !@zv;
+      die("Cycle in graph") unless @zv;
 
       delete $vertices{$_} foreach @zv;
 

@@ -128,7 +128,7 @@ sub call_meld
       $ret = system('meld', @f)
    }
 
-   @{$_[$#_]} = read_file($f[$#f]) if !$ret;
+   @{$_[$#_]} = read_file($f[$#f]) unless $ret;
 
    unlink $f[$_] for 0 .. $#_;
 
