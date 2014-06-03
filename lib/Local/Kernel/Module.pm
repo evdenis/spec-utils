@@ -214,13 +214,15 @@ sub parse_sources
 
    adapt($$module_code, macro => 1);
 
-   my %kernel = map { $_ => $kernel_code } qw(typedef enum structure global declaration)
+   my (%kernel, %module);
+
+   %kernel = map { $_ => $kernel_code } qw(typedef enum structure global declaration)
       if $$kernel_code;
 
    $kernel{macro} = $kernel_macro
       if @$kernel_macro;
 
-   my %module = map { $_ => $module_code } qw(typedef enum structure global function)
+   %module = map { $_ => $module_code } qw(typedef enum structure global function)
       if $$module_code;
 
    $module{macro} = \@module_macro

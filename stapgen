@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 
 use utf8;
-use 5.10.0;
 
 use feature qw(say);
 
@@ -67,9 +66,9 @@ if ($security_c =~ m/security_fixup_ops\s*\(\s*struct\s+security_operations\s*\*
 	my $contents = $1;
 	while ($contents =~ s/#ifdef\s+(?<conf>\w+)\s+(?<funcs>[^\#]+)\s*#endif//m) {
 		my $conf = $+{conf};
-		$configuration{ $conf } = [ map { $_ = "cap_$_" } ($+{funcs} =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
+		$configuration{ $conf } = [ map { "cap_$_" } ($+{funcs} =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
 	}
-	$configuration{'DEFAULT'} = [ map { $_ = "cap_$_" } ($contents =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
+	$configuration{'DEFAULT'} = [ map { "cap_$_" } ($contents =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
 } else {
 	die("Can't find security_fixup_ops.\n");
 }
@@ -186,8 +185,8 @@ PROBE
 
 my $footer = '';
 
-$footer .= ($syscall_probe . "\n" . $syscall_return_probe . "\n")           if ($trace_syscalls);
-$footer .= ($process_functions .	"\n" . $process_functions_return . "\n")   if ($trace_functions);
+$footer .= ($syscall_probe . "\n" . $syscall_return_probe . "\n")           if $trace_syscalls;
+$footer .= ($process_functions .	"\n" . $process_functions_return . "\n")   if $trace_functions;
 
 
 #print $header . "\n\n" . $body . "\n\n" . $footer;

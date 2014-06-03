@@ -2,10 +2,13 @@
 
 use strict;
 use warnings;
+
+use v5.6;
 use feature qw(say);
 use re '/aa';
 
 use utf8::all;
+use IO::Interactive;
 use Env qw(CURRENT_KERNEL CURRENT_PROJECT);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
@@ -59,11 +62,11 @@ unless ($pdir) {
 
 die "Can't find path to parsec sources directory.\n" unless $pdir;
 
+my $kernel_version = do {
+   open my $MK, '<', "$kdir/Makefile";
+   join('.', map { <$MK> =~ m/=\s*(\d+)/ } (1 .. 3))
+};
 
-open MAKEFILE, "< $kdir/Makefile";
-my @kver = map { <MAKEFILE> =~ m/=\s*(\d+)/ } (1 .. 3);
-my $kernel_version = join('.', @kver);
-close MAKEFILE;
 
 my $sec_file = read_file("$kdir/$kfile");
 my $hooks_file = read_file("$pdir/$pfile");
@@ -168,7 +171,7 @@ my $retfunc;
 unless ($csvout) {
    my $t1 = Text::ANSITable->new;
    $t1->border_style('Default::bold');
-   if ( -t STDOUT && !$output ) {
+   if ( IO::Interactive::is_interactive() && !$output ) {
       $t1->color_theme('Default::default_gradation');
    } else {
       $t1->color_theme('Default::no_color');
@@ -228,7 +231,7 @@ if (keys %str_parsec) {
    unless ($csvout) {
       my $t2 = Text::ANSITable->new;
       $t2->border_style('Default::bold');
-      if ( -t STDOUT && !$output ) {
+      if ( IO::Interactive::is_interactive() && !$output ) {
          $t2->color_theme('Default::default_gradation');
       } else {
          $t2->color_theme('Default::no_color');

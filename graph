@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 
-use common::sense;
+use warnings;
+use strict;
+
 use utf8::all;
 
 use Graph;

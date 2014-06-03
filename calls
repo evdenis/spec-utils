@@ -8,6 +8,7 @@ use FindBin;
 use lib "$FindBin::Bin/lib/";
 
 use utf8::all;
+use IO::Interactive;
 use File::Slurp qw(read_file read_dir write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use File::Find;
@@ -105,7 +106,7 @@ sub get_list_of_kernel_functions {
       my @map = read_file("$kdir/System.map");
 
       @map = grep { m/^[0-9a-fA-F]+\s+[tT]/ } @map;
-      return sort map { chomp; m/(\S+)\s*$/; $_ = $1; } @map;
+      return sort map { m/(\S++)\s*+$/; $1 } @map;
    } else {
       warn "Can't find '$kdir/System.map'\n";
       return ();
@@ -180,7 +181,7 @@ sub find_modules
 sub get_list_of_module_functions {
    my @ret = ();
    if (-r $_[0]) {
-      @ret = sort map { chomp; m/(\S+)\s*$/; $_ = $1; } grep { m/^[0-9a-fA-F]+\s+[tT]/ } qx/nm $_[0]/;
+      @ret = sort map { m/(\S++)\s*+$/; $1 } grep { m/^[0-9a-fA-F]+\s+[tT]/ } qx/nm $_[0]/;
    } else {
       warn "File '$_[0]' is not readable.\n"
    }
@@ -502,7 +503,7 @@ my $retfunc;
 unless ($csvout) {
    my $t = Text::ANSITable->new;
    $t->border_style('Default::bold');
-   if ( -t STDOUT && !$output ) {
+   if ( IO::Interactive::is_interactive() && !$output ) {
       $t->color_theme('Default::default_gradation');
    } else {
       $t->color_theme('Default::no_color');

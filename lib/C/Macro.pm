@@ -31,9 +31,9 @@ sub _build_substitution
       $code =~ m/\b$name\b(?:\(\h*+[^)]*+\))?\s*+/;
 
       return substr($code, $+[0]);
-   } else {
-      return undef;
    }
+
+   undef
 }
 
 

@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+use warnings;
+use strict;
+
 use FindBin;
 use lib "$FindBin::Bin/lib/";
 
@@ -77,7 +80,7 @@ package TS {
          adapt($$source, %param);
       }
 
-      print $$source;
+      print $$source
    }
 
    1;
