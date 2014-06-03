@@ -22,9 +22,10 @@ sub uniq
 
 sub any_ref
 {
-	foreach (@{$_[1]}) {
-		return 1 if $_ eq $_[0]
-	}
+   foreach (@{$_[1]}) {
+      return 1
+         if $_ eq $_[0]
+   }
    0
 }
 
@@ -32,9 +33,10 @@ sub any_l
 {
    my $str = shift;
 
-	foreach (@_) {
-		return 1 if $_ eq $str
-	}
+   foreach (@_) {
+      return 1
+         if $_ eq $str
+   }
    0
 }
 
@@ -76,7 +78,8 @@ sub difference_symmetric ($$)
    my @res;
 
    foreach (@{$_[0]}, @{$_[1]}) {
-      push @res, $_ if (!exists $f{$_}) || (!exists $s{$_});
+      push @res, $_
+         if (!exists $f{$_}) || (!exists $s{$_})
    }
 
    @res
@@ -88,7 +91,8 @@ sub difference ($$)
    my @res;
 
    foreach (@{$_[0]}) {
-      push @res, $_ if (!exists $s{$_});
+      push @res, $_
+         unless exists $s{$_}
    }
 
    @res

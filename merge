@@ -176,7 +176,7 @@ my $macro_re   = $macro_t{pattern};
 
    foreach my $i (0 .. $#macro)
    {
-      if (!$skip) {
+      unless ($skip) {
          if ($macro[$i] =~ m/^\h*+#\h*+if\h*+0/) {
             $skip = 1;
             $begin = $i;
@@ -267,7 +267,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
                }
             }
             if ($specs_exists) {
-               if (!$mode) {
+               unless ($mode) {
                   $fbody =~ s/$comment_re/delete $specs{$1}; "$comments[$1]"/eg;
                   $fbody =~ s/$macro_re/$macro[$1]/g;
                   substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
@@ -286,7 +286,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
 #                     foreach (@m) {
 #                        $cond = 1 if exists $specs{$_}
 #                     }
-#                     if (!$cond) {
+#                     unless ($cond) {
 #                        push @intervals, ($b, $e)
 #                     }
 #                  }
@@ -394,7 +394,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
             last;
          }
       }
-      if (!$done) {
+      unless ($done) {
          warn "Can't find function " . GREEN . "$fname" . RESET "\n"
       } else {
          delete $specs{$_} foreach @exclude_specs

@@ -41,9 +41,9 @@ sub prepare_tags
          push @tokens, $1
       } else {
          my $special = $1;
-         if ($code =~ m/\G\s*+$name/gc) {
-            push @tokens, [$special, $1]
-         }
+
+         push @tokens, [$special, $1]
+            if $code =~ m/\G\s*+$name/gc
       }
    }
 
@@ -58,9 +58,8 @@ sub prepare_tags
          $id = $_
       }
 
-      if (!$uniq{$id}++ && !exists $filter{$id}) {
-         push @tags, $_
-      }
+      push @tags, $_
+         if !$uniq{$id}++ && !exists $filter{$id}
    }
 
    \@tags

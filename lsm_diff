@@ -38,7 +38,8 @@ GetOptions(
 
 die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdir/$pfile" );
 
-if (!$kdir) {
+
+unless ($kdir) {
    if ( -r $kfile) {
       $kdir = '.';
    } elsif ( -r "$CURRENT_KERNEL/$kfile" ) {
@@ -48,7 +49,7 @@ if (!$kdir) {
 
 die "Can't find path to linux kernel sources directory.\n" unless $kdir;
 
-if (!$pdir) {
+unless ($pdir) {
    if ( -r $pfile) {
       $pdir = '.';
    } elsif ( -r "$CURRENT_PROJECT/$pfile" ) {
@@ -164,7 +165,7 @@ my $obj;
 my $addfunc;
 my $retfunc;
 
-if (!$csvout) {
+unless ($csvout) {
    my $t1 = Text::ANSITable->new;
    $t1->border_style('Default::bold');
    if ( -t STDOUT && !$output ) {
@@ -224,7 +225,7 @@ if (keys %str_parsec) {
    $columns = ['Idx', 'Указатель на функцию', 'Функция parsec', 'Конфигурация parsec'];
 
    #TODO: добавить аргументы
-   if (!$csvout) {
+   unless ($csvout) {
       my $t2 = Text::ANSITable->new;
       $t2->border_style('Default::bold');
       if ( -t STDOUT && !$output ) {

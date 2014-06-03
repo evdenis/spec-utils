@@ -35,7 +35,7 @@ sub parse
       my $code = $1 . ';';
       $code = normalize($code);
 
-      if (!exists $declarations{$name}) {
+      unless (exists $declarations{$name}) {
          $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $_[1])
       }
    }

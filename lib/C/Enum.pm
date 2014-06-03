@@ -28,7 +28,7 @@ around BUILDARGS => sub {
    my $class = shift;
    my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
 
-   if (!defined $opts->{name}) {
+   unless (defined $opts->{name}) {
       $opts->{name} = ''; #Will be set to first constant in BUILD
       $opts->{has_name} = 0;
    }

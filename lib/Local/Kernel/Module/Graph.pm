@@ -53,7 +53,7 @@ sub __add_vertices
       foreach (@$set) {
          my $id = $_->$vname;
 
-         if (!$graph->has_vertex($id)) {
+         unless ($graph->has_vertex($id)) {
             $graph->add_vertex($id);
             $graph->set_vertex_attributes($id, { object => $_ });
          } else {

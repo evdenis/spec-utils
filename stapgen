@@ -24,14 +24,14 @@ my $trace_functions = 0;
 my $trace_syscalls = 1;
 
 GetOptions(
-   'kdir|k=s' => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$file" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
-   'verbose|v+' => \$verbose,
-   'caller|c' => sub { if (!$caller_set) { $caller_set = 1; $caller_lev = 1 } else { ++$caller_lev } },
-   'syscalls|s!' => \$trace_syscalls,
+   'kdir|k=s'     => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$file" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'verbose|v+'   => \$verbose,
+   'caller|c'     => sub { unless ($caller_set) { $caller_set = 1; $caller_lev = 1 } else { ++$caller_lev } },
+   'syscalls|s!'  => \$trace_syscalls,
    'functions|f!' => \$trace_functions
 ) or die "Incorrect usage!\n";
 
-if (!$kdir) {
+unless ($kdir) {
    if ( -r "./$file") {
       $kdir = "."; 
    } elsif ( -r "$CURRENT_KERNEL/$file" ) {
@@ -39,7 +39,7 @@ if (!$kdir) {
    }
 }
 
-die "Can't find path to linux kernel sources directory.\n" if (!$kdir);
+die "Can't find path to linux kernel sources directory.\n" unless $kdir;
 
 
 sub generate_caller_func

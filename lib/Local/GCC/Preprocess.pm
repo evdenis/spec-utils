@@ -193,7 +193,7 @@ sub form_gcc_kernel_include_path
    $gcc_include_path .= "-I ${kdir_path}/${_} "
       foreach @kernel_include_path;
 
-   if (!defined $stdlib) {
+   unless (defined $stdlib) {
       my @str = split "\n",  qx(gcc -print-search-dirs);
       $stdlib = substr($str[0], index($str[0], ': ') + 2) . 'include/';
    }

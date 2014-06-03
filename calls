@@ -80,7 +80,7 @@ GetOptions(
 
 exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
 
-if (!$kdir) {
+unless ($kdir) {
    if ( -f "./Kbuild") {
       $kdir = ".";
    } elsif ( defined($CURRENT_KERNEL) && -f "$CURRENT_KERNEL/Kbuild" ) {
@@ -95,7 +95,7 @@ if (index(abs_path($moduledir), abs_path($kdir)) != -1) {
    warn "Warning: '$moduledir' is a part of a kernel sources '$kdir'.\n"
 }
 
-if (!defined $modulename) {
+unless (defined $modulename) {
    abs_path($moduledir) =~ m!/((?:[^/]+|\\/)+)/?$!;
    $modulename = $1;
 }
@@ -211,7 +211,7 @@ sub collect_macro {
    my ($file, $name) = @_;
    my @ret;
    #FIXME: Maybe only match
-   if (!defined $name) {
+   unless (defined $name) {
       $file =~
             s/
                \#[ \t]*define
@@ -303,7 +303,7 @@ sub check_module_function {
 sub get_grep_cmdline {
    state @cmdline;
 
-   if (!@cmdline) {
+   unless (@cmdline) {
       $cmdline[0] = q(grep);
       $cmdline[1] = qq(--include='$_[0]');
       push @cmdline, q(--exclude-dir=') . "$kdir/$_" . q(') for ('Documentation', 'samples', 'scripts', 'tools');
@@ -369,7 +369,7 @@ die("Can't find *.[ch] files.\n") unless $source;
 
 adapt($source, comments => 1, strings => 1);
 my @macro;
-if (!defined $preprocessed) {
+unless (defined $preprocessed) {
    @macro = @{ collect_macro($source) };
    adapt($source, macro => 1);
 }
@@ -499,7 +499,7 @@ my $obj;
 my $addfunc;
 my $retfunc;
 
-if (!$csvout) {
+unless ($csvout) {
    my $t = Text::ANSITable->new;
    $t->border_style('Default::bold');
    if ( -t STDOUT && !$output ) {
@@ -548,7 +548,7 @@ if (!$csvout) {
 }
 
 my $counter = 1;
-foreach (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; if (!$cmp) { return $a cmp $b; } else { return $cmp; } } keys %status) {
+foreach (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; unless ($cmp) { return $a cmp $b; } else { return $cmp; } } keys %status) {
    $addfunc->($$obj, [$counter++, $_, @{ $status{$_} }]);
 }
 
