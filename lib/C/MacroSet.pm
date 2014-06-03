@@ -61,7 +61,7 @@ sub tags
 
 sub delete
 {
-		delete $_[0]->set->[ $_[0]->get_index($_[1]) ];
+      delete $_[0]->set->[ $_[0]->get_index($_[1]) ];
       delete $_[0]->index->{ $_[1] };
 }
 
