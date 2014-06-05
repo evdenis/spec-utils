@@ -6,16 +6,19 @@ use feature qw(say);
 
 use strict;
 use warnings;
-use diagnostics;
+use re '/aa';
 
-
-use Env qw(CURRENT_KERNEL);
+use File::Spec::Functions qw(catfile);
 use File::Slurp qw(read_file);
 use Getopt::Long qw(:config gnu_getopt);
+use FindBin;
+use lib catfile($FindBin::Bin, '/lib');
 
-my $file = 'security/capability.c';
+use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
-my $kdir = '';
+use constant CAPABILITY_C => catfile('security', 'capability.c');
+
+my $kdir;
 my $verbose = 0;
 my $caller_lev = 2;
 my $caller_set = 0;
@@ -23,23 +26,17 @@ my $trace_functions = 0;
 my $trace_syscalls = 1;
 
 GetOptions(
-   'kdir|k=s'     => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$file" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'kdir|k=s'     => sub { if (check_kernel_files_readable($_[1], CAPABILITY_C)) { $kdir = $_[1] } else { die('Incorrect path to kernel (required files ' . CAPABILITY_C . "): '$_[1]'\n") } },
    'verbose|v+'   => \$verbose,
    'caller|c'     => sub { unless ($caller_set) { $caller_set = 1; $caller_lev = 1 } else { ++$caller_lev } },
    'syscalls|s!'  => \$trace_syscalls,
    'functions|f!' => \$trace_functions
 ) or die "Incorrect usage!\n";
 
-unless ($kdir) {
-   if ( -r "./$file") {
-      $kdir = "."; 
-   } elsif ( -r "$CURRENT_KERNEL/$file" ) {
-      $kdir = "$CURRENT_KERNEL";
-   }
-}
+$kdir //= autodetect_kernel_directory(files => [CAPABILITY_C]);
 
-die "Can't find path to linux kernel sources directory.\n" unless $kdir;
-
+die "Can't find path to linux kernel sources directory (required files " . CAPABILITY_C . ").\n"
+   unless $kdir;
 
 sub generate_caller_func
 {
@@ -60,7 +57,7 @@ sub generate_caller_func
 
 my %configuration;
 
-my $security_c = read_file("$kdir/$file");
+my $security_c = read_file(catfile($kdir, CAPABILITY_C));
 
 if ($security_c =~ m/security_fixup_ops\s*\(\s*struct\s+security_operations\s*\*ops\s*\)\s*\{([^}]+)\}/m) {
 	my $contents = $1;

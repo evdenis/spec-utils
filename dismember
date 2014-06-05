@@ -19,6 +19,7 @@ use lib "$FindBin::Bin/lib/";
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
+use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Kernel::Module qw(parse_sources);
 use Local::Kernel::Module::Graph qw(
    build_sources_graph
@@ -38,7 +39,7 @@ use C::GlobalSet;
 
 my $function;
 my $parsec_dir = $ENV{CURRENT_PROJECT} // '.';
-my $kernel_dir = $ENV{CURRENT_KERNEL} // '.';
+my $kernel_dir;
 my $use_cache = 1;
 my $output_dir = "$FindBin::Bin/result";
 my $cache_dir  = "$FindBin::Bin/.cache";
@@ -54,9 +55,11 @@ GetOptions(
    'single|s!'             =>  \$single_file
 ) or die "Incorrect usage!\n";
 
+$kernel_dir //= autodetect_kernel_directory();
+
 die("You should provide function name.\n")      unless $function;
 die("$parsec_dir is not a directory.\n")        unless -d $parsec_dir;
-die("$kernel_dir is not a kernel directory.\n") unless -f "$kernel_dir/Kbuild";
+die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kernel_dir);
 
 sub create_directory
 {

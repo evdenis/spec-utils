@@ -22,6 +22,7 @@ use lib "$FindBin::Bin/lib/";
 use Local::List::Utils qw(uniq difference);
 use Local::C::Transformation;
 use Local::C::Parsing qw(parse_calls);
+use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Kernel::Module qw(preprocess_module_sources);
 use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
 
@@ -185,14 +186,13 @@ GetOptions(
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
 unless ($preprocessed) {
    $parsec_dir //= $ENV{CURRENT_PROJECT} // '.';
-   $kernel_dir //= $ENV{CURRENT_KERNEL}  // '../';
+   $kernel_dir //= autodetect_kernel_directory(dirs => ['..']);
 
    pod2usage({ -msg => "$parsec_dir is not a directory.\n",        -exitval => 2 }) unless -d $parsec_dir;
-   pod2usage({ -msg => "$kernel_dir is not a kernel directory.\n", -exitval => 2 }) unless -f "$kernel_dir/Kbuild";
+   pod2usage({ -msg => "$kernel_dir is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($kernel_dir);
 } else {
    pod2usage({ -msg => "$preprocessed file is not readable.\n",    -exitval => 2 }) unless -r $preprocessed;
-   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 })
-      if $parsec_dir;
+   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $parsec_dir;
 }
 
 

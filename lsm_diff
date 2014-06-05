@@ -3,13 +3,12 @@
 use strict;
 use warnings;
 
-use v5.6;
 use feature qw(say);
 use re '/aa';
 
 use utf8::all;
 use IO::Interactive;
-use Env qw(CURRENT_KERNEL CURRENT_PROJECT);
+use File::Spec::Functions qw(catfile);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Text::ANSITable;
@@ -20,19 +19,20 @@ use lib "$FindBin::Bin/lib";
 
 use Local::C::Transformation;
 use Local::String::Utils qw(normalize);
+use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
 
-my $kfile = 'include/linux/security.h';
+use constant SECURITY_H => catfile(qw(include linux security.h));
 my $pfile = 'sec-hooks.c';
 
-my $kdir = '';
+my $kdir;
 my $pdir = '';
 
 my $output = '';
 my $csvout = 0;
 
 GetOptions(
-   'kdir|k=s'      => sub { if ( -f "$_[1]/Kbuild" && -r "$_[1]/$kfile" ) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'kdir|k=s'      => sub { if (check_kernel_files_readable($_[1], SECURITY_H)) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
    'parsec|p=s'    => \$pdir,
    'file|f=s'      => \$pfile,
    'output|o=s'    => \$output,
@@ -41,26 +41,21 @@ GetOptions(
 
 die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdir/$pfile" );
 
+$kdir //= autodetect_kernel_directory(files => [SECURITY_H]);
 
-unless ($kdir) {
-   if ( -r $kfile) {
-      $kdir = '.';
-   } elsif ( -r "$CURRENT_KERNEL/$kfile" ) {
-      $kdir = $CURRENT_KERNEL;
-   }
-}
-
-die "Can't find path to linux kernel sources directory.\n" unless $kdir;
+die "Can't find path to linux kernel sources directory.\n"
+   unless $kdir;
 
 unless ($pdir) {
    if ( -r $pfile) {
       $pdir = '.';
-   } elsif ( -r "$CURRENT_PROJECT/$pfile" ) {
-      $pdir = $CURRENT_PROJECT;
+   } elsif ( defined $ENV{CURRENT_PROJECT} && -r catfile($ENV{CURRENT_PROJECT}, $pfile) ) {
+      $pdir = $ENV{CURRENT_PROJECT};
    }
 }
 
-die "Can't find path to parsec sources directory.\n" unless $pdir;
+die "Can't find path to parsec sources directory.\n"
+   unless $pdir;
 
 my $kernel_version = do {
    open my $MK, '<', "$kdir/Makefile";
@@ -68,10 +63,10 @@ my $kernel_version = do {
 };
 
 
-my $sec_file = read_file("$kdir/$kfile");
-my $hooks_file = read_file("$pdir/$pfile");
+my $sec_file   = read_file(catfile($kdir, SECURITY_H));
+my $hooks_file = read_file(catfile($pdir, $pfile));
 
-adapt($sec_file, comments => 1);
+adapt($sec_file,   comments => 1);
 adapt($hooks_file, comments => 1);
 
 sub argname {
