@@ -414,7 +414,7 @@ foreach my $f (keys %parsec) {
 if (keys %specs) {
    my (undef, $col) = window_size();
 
-   say STDERR RED,"Can't merge following specifications:\n", RESET;
-   say STDERR join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs);
+   warn RED,"Can't merge following specifications:\n\n", RESET;
+   warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs) . "\n";
 }
 
