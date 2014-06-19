@@ -19,7 +19,7 @@ use FindBin;
 
 use lib "$FindBin::Bin/lib/";
 
-use Local::List::Utils qw(uniq difference);
+use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;
 use Local::C::Parsing qw(parse_calls);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
@@ -249,6 +249,8 @@ $graph->set_vertex_attribute($_, shape => 'octagon')
 
 #2
 my $stat_done = 0;
+my @marked_as_done;
+
 if ($done) {
    #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
    #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
@@ -260,11 +262,19 @@ if ($done) {
          $graph->set_vertex_attribute($_, style   => 'dashed');
          $graph->set_vertex_attribute($_, done    => 1);
          $stat_done++;
+         push @marked_as_done, $_;
       } else {
          warn "Done: there is no function: '$_'\n"
       }
    }
+
+   #check @marked_as_done
+   foreach($graph->all_successors(@marked_as_done)) {
+      warn "Predecessor of '$_' is marked as done, but '$_' doesn't.\n"
+         unless any($_, @marked_as_done);
+   }
 }
+
 
 #3
 my @stat_priority;
