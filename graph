@@ -151,7 +151,7 @@ graph - построить граф вызовов функций модуля �
 my @functions;
 my $format = 'svg';
 my $out = 'graph';
-my $parsec_dir;
+my $module_dir;
 my $kernel_dir;
 my $preprocessed;
 my $cache = 1;
@@ -170,7 +170,7 @@ GetOptions(
    'format=s'                =>  \$format,
    'output|o=s'              =>  \$out,
    'preprocessed|p=s'        =>  \$preprocessed,
-   'sources|s=s'             =>  \$parsec_dir,
+   'sources|s=s'             =>  \$module_dir,
    'kernel|k=s'              =>  \$kernel_dir,
    'cache!'                  =>  \$cache,
    'done!'                   =>  \$done,
@@ -185,14 +185,14 @@ GetOptions(
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
 unless ($preprocessed) {
-   $parsec_dir //= $ENV{CURRENT_PROJECT} // '.';
+   $module_dir //= $ENV{CURRENT_PROJECT} // '.';
    $kernel_dir //= autodetect_kernel_directory(dirs => ['..']);
 
-   pod2usage({ -msg => "$parsec_dir is not a directory.\n",        -exitval => 2 }) unless -d $parsec_dir;
+   pod2usage({ -msg => "$module_dir is not a directory.\n",        -exitval => 2 }) unless -d $module_dir;
    pod2usage({ -msg => "$kernel_dir is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($kernel_dir);
 } else {
    pod2usage({ -msg => "$preprocessed file is not readable.\n",    -exitval => 2 }) unless -r $preprocessed;
-   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $parsec_dir;
+   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $module_dir;
 }
 
 
@@ -224,7 +224,7 @@ my $source;
 if ($preprocessed) {
    $source = read_file($preprocessed, scalar_ref => 1);
 } else {
-   $source = (preprocess_module_sources($kernel_dir, $parsec_dir, ["#define SPECIFICATION 1\n"]))[1];
+   $source = (preprocess_module_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];
 }
 adapt($$source, attributes => 1, comments => 1);
 

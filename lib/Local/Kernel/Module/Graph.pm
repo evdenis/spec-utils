@@ -303,7 +303,7 @@ sub _write_to_files
 {
    my ($output_dir, $single_file, $content) = @_;
 
-   my $module_c = 'parsec.c';
+   my $module_c = 'module.c';
    my $module_h = 'module.h';
    my $kernel_h = 'kernel.h';
    my $extern_h = 'extern.h';

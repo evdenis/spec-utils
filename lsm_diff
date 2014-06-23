@@ -23,39 +23,39 @@ use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_direc
 
 
 use constant SECURITY_H => catfile(qw(include linux security.h));
-my $pfile = 'sec-hooks.c';
+my $sec_hooks_file = 'sec-hooks.c';
 
 my $kdir;
-my $pdir = '';
+my $mdir = '';
 
 my $output = '';
 my $csvout = 0;
 
 GetOptions(
    'kdir|k=s'      => sub { if (check_kernel_files_readable($_[1], SECURITY_H)) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
-   'parsec|p=s'    => \$pdir,
-   'file|f=s'      => \$pfile,
+   'module|m=s'    => \$mdir,
+   'file|f=s'      => \$sec_hooks_file,
    'output|o=s'    => \$output,
    'csv-output|c!' => \$csvout,
 ) or die "Incorrect usage!\n";
 
-die(qq(Incorrect path to parsec: "$pdir"\n)) if $pdir && !( -d $pdir && -r "$pdir/$pfile" );
+die(qq(Incorrect path to module: "$mdir"\n)) if $mdir && !( -d $mdir && -r "$mdir/$sec_hooks_file" );
 
 $kdir //= autodetect_kernel_directory(files => [SECURITY_H]);
 
 die "Can't find path to linux kernel sources directory.\n"
    unless $kdir;
 
-unless ($pdir) {
-   if ( -r $pfile) {
-      $pdir = '.';
-   } elsif ( defined $ENV{CURRENT_PROJECT} && -r catfile($ENV{CURRENT_PROJECT}, $pfile) ) {
-      $pdir = $ENV{CURRENT_PROJECT};
+unless ($mdir) {
+   if ( -r $sec_hooks_file) {
+      $mdir = '.';
+   } elsif ( defined $ENV{CURRENT_PROJECT} && -r catfile($ENV{CURRENT_PROJECT}, $sec_hooks_file) ) {
+      $mdir = $ENV{CURRENT_PROJECT};
    }
 }
 
-die "Can't find path to parsec sources directory.\n"
-   unless $pdir;
+die "Can't find path to module sources directory.\n"
+   unless $mdir;
 
 my $kernel_version = do {
    open my $MK, '<', "$kdir/Makefile";
@@ -64,7 +64,7 @@ my $kernel_version = do {
 
 
 my $sec_file   = read_file(catfile($kdir, SECURITY_H));
-my $hooks_file = read_file(catfile($pdir, $pfile));
+my $hooks_file = read_file(catfile($mdir, $sec_hooks_file));
 
 adapt($sec_file,   comments => 1);
 adapt($hooks_file, comments => 1);
@@ -147,18 +147,18 @@ sub parse_security_operations_structure {
 }
 
 my %str_kernel = parse_security_operations_structure $sec_file, \&parse_structure_declaration_ops_fields;
-my %str_parsec = parse_security_operations_structure $hooks_file, \&parse_structure_defition_ops_fields;
+my %str_module = parse_security_operations_structure $hooks_file, \&parse_structure_defition_ops_fields;
 
 
 foreach (keys %str_kernel) {
-   if (defined $str_parsec{$_}) {
-      $str_kernel{$_}{parsec} = $str_parsec{$_};
-      delete $str_parsec{$_};
+   if (defined $str_module{$_}) {
+      $str_kernel{$_}{module} = $str_module{$_};
+      delete $str_module{$_};
    }
 }
 
 
-my $columns = ['Idx', 'Указатель на функцию', 'Аргументы', 'Функция parsec', 'Конфигурация ядра', 'Конфигурация parsec'];
+my $columns = ['Idx', 'Указатель на функцию', 'Функция', 'Аргументы', 'Конфигурация ядра', 'Конфигурация модуля'];
 my $obj;
 my $addfunc;
 my $retfunc;
@@ -176,10 +176,10 @@ unless ($csvout) {
 
    $t1->set_column_style('Idx',                  pad  => 0);
    $t1->set_column_style('Указатель на функцию', align  => 'left');
+   $t1->set_column_style('Функция',              align  => 'middle');
    $t1->set_column_style('Аргументы',            align  => 'middle');
-   $t1->set_column_style('Функция parsec',       align  => 'middle');
    $t1->set_column_style('Конфигурация ядра',    align  => 'middle');
-   $t1->set_column_style('Конфигурация parsec',  align  => 'middle');
+   $t1->set_column_style('Конфигурация модуля',  align  => 'middle');
 
    #$t1->column_filter(sub { $_ ne'Аргументы' });
    $obj = \$t1;
@@ -202,12 +202,12 @@ unless ($csvout) {
 
 my $counter = 1;
 
-foreach (reverse sort {defined $str_kernel{$a}{parsec} <=> defined $str_kernel{$b}{parsec}} keys %str_kernel) {
-   my $init  = defined $str_kernel{$_}{parsec} ? $str_kernel{$_}{parsec}{init} : undef;
+foreach (reverse sort {defined $str_kernel{$a}{module} <=> defined $str_kernel{$b}{module}} keys %str_kernel) {
+   my $init  = defined $str_kernel{$_}{module} ? $str_kernel{$_}{module}{init} : undef;
    my $args  = $str_kernel{$_}{args};
    my $kconf = $str_kernel{$_}{conf};
-   my $pconf = defined $str_kernel{$_}{parsec} ? $str_kernel{$_}{parsec}{conf} : undef;
-   my $line = [$counter++, $_, $args, $init, $kconf, $pconf];
+   my $mconf = defined $str_kernel{$_}{module} ? $str_kernel{$_}{module}{conf} : undef;
+   my $line  = [$counter++, $_, $init, $args, $kconf, $mconf];
    $addfunc->($$obj, $line)
 }
 
@@ -219,8 +219,8 @@ if ($output) {
    print $str;
 }
 
-if (keys %str_parsec) {
-   $columns = ['Idx', 'Указатель на функцию', 'Функция parsec', 'Конфигурация parsec'];
+if (keys %str_module) {
+   $columns = ['Idx', 'Указатель на функцию', 'Функция', 'Конфигурация модуля'];
 
    #TODO: добавить аргументы
    unless ($csvout) {
@@ -237,8 +237,8 @@ if (keys %str_parsec) {
 
       $t2->set_column_style('Idx',                  pad  => 0);
       $t2->set_column_style('Указатель на функцию', align  => 'left');
-      $t2->set_column_style('Функция parsec',       align  => 'middle');
-      $t2->set_column_style('Конфигурация parsec',  align  => 'middle');
+      $t2->set_column_style('Функция',              align  => 'middle');
+      $t2->set_column_style('Конфигурация модуля',  align  => 'middle');
 
       $obj = \$t2;
    } else {
@@ -256,10 +256,10 @@ if (keys %str_parsec) {
 
    $counter = 1;
 
-   foreach (keys %str_parsec) {
-      my $init  = $str_parsec{$_}{init};
-      my $pconf = $str_parsec{$_}{conf};
-      my $line = [$counter++, $_, $init, $pconf];
+   foreach (keys %str_module) {
+      my $init  = $str_module{$_}{init};
+      my $mconf = $str_module{$_}{conf};
+      my $line = [$counter++, $_, $init, $mconf];
 
       $addfunc->($$obj, $line);
    }
