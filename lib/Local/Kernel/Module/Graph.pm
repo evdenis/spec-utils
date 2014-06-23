@@ -326,6 +326,13 @@ sub _write_to_files
       $content->{module_c} =
          qq(#include "$kernel_h"\n#include "$extern_h"\n#include "$module_h"\n\n) .
          $content->{module_c};
+      $content->{module_h} =
+         qq(#include "$kernel_h"\n#include "$extern_h"\n\n) .
+         $content->{module_h};
+      $content->{extern_h} =
+         qq(#include "$kernel_h"\n\n) .
+         $content->{extern_h};
+
 
       if ($output_dir) {
          $module_h = "$output_dir/$module_h";
