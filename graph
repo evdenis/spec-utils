@@ -431,7 +431,7 @@ if ($priority || $issues) {
       push @legenda, qq(  subgraph "cluster_priority_legenda" {\n);
       push @legenda, qq(    style = "filled";\n);
       push @legenda, qq(    color = "lightgrey";\n);
-      push @legenda, qq(    label = "Priorities legenda";\n);
+      push @legenda, qq(    label = "Priority levels";\n);
       push @legenda, qq(    node [shape = "box", style = "filled"];\n);
       push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
       my $colors = [ map { $conf->{priority}{colors}{$_} } @{ $conf->{priority}{lists} } ];
