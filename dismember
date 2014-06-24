@@ -36,7 +36,12 @@ use C::FunctionSet;
 use C::DeclarationSet;
 use C::GlobalSet;
 
-use Smart::Comments;
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
 
 my $function;
 my $module_dir = $ENV{CURRENT_PROJECT} // '.';
