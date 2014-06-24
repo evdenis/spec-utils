@@ -90,7 +90,7 @@ merge - Переложение спецификаций с одной верси
 =cut
 
 my $help = 0;
-my $parsec_dir = $ENV{CURRENT_PROJECT} // '';
+my $module_dir = $ENV{CURRENT_PROJECT} // '';
 my $specs_dir = '.';
 my $strict = 1;
 my $mode = 1;
@@ -98,7 +98,7 @@ my $kdiff = 0;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
-   'to|t=s'       =>  \$parsec_dir,
+   'to|t=s'       =>  \$module_dir,
    'detailed|d!'  =>  \$mode,
    'strict|s!'    =>  \$strict,
    'kdiff|k!'     =>  \$kdiff,
@@ -106,7 +106,7 @@ GetOptions(
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $parsec_dir && -d $specs_dir;
+pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $module_dir && -d $specs_dir;
 
 
 sub call_meld
@@ -137,26 +137,26 @@ sub call_meld
 }
 
 
-my @parsec  = find_all_files($parsec_dir);
+my @module  = find_all_files($module_dir);
 my $code = merge_all_files_simple($specs_dir);
 
-die(RED . "Can't find specifications sources." . RESET ."\n") unless $code;
-die(RED . "Can't find parsec sources." . RESET . "\n") unless @parsec;
+die(RED . "Can't find specifications sources." . RESET . "\n") unless $code;
+die(RED . "Can't find module sources."         . RESET . "\n") unless @module;
 
 
-my %parsec;
-foreach my $f (@parsec) {
-   $parsec{$f}{code} = read_file($f);
-   adapt($parsec{$f}{code},
-         comments => \@{ $parsec{$f}{c} },
-         macro    => \@{ $parsec{$f}{m} }
+my %module;
+foreach my $f (@module) {
+   $module{$f}{code} = read_file($f);
+   adapt($module{$f}{code},
+         comments => \@{ $module{$f}{c} },
+         macro    => \@{ $module{$f}{m} }
    );
 
    my %i;
-   foreach (0 .. $#{ $parsec{$f}{c} }) {
-      $i{$_} = 1 if @{ $parsec{$f}{c} }[$_] =~ m!^(?:/\*\@|//\@)!
+   foreach (0 .. $#{ $module{$f}{c} }) {
+      $i{$_} = 1 if @{ $module{$f}{c} }[$_] =~ m!^(?:/\*\@|//\@)!
    }
-   $parsec{$f}{i} = \%i;
+   $module{$f}{i} = \%i;
 }
 
 adapt($code,
@@ -238,9 +238,9 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
       my $args_pattern = $fargs =~ s/\s+//gr;
 
       my $done = 0;
-      foreach(keys %parsec) {
+      foreach(keys %module) {
          #only one function in one file
-         if ($parsec{$_}{code} =~ m/$ret\b\Q$fname\E${s}*+$args${s}*+$body/) {
+         if ($module{$_}{code} =~ m/$ret\b\Q$fname\E${s}*+$args${s}*+$body/) {
             my ($sbegin, $send) = ($-[1], $+[1]);
             my ($bbegin, $bend) = ($-[3], $+[3]);
             my ($fret, $fargs, $nbody) = @+{qw/ret args fbody/};
@@ -271,7 +271,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
                unless ($mode) {
                   $fbody =~ s/$comment_re/delete $specs{$1}; "$comments[$1]"/eg;
                   $fbody =~ s/$macro_re/$macro[$1]/g;
-                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
+                  substr($module{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
                } else {
                   my $fbody_saved = $fbody;
                   my @exclude_specs;
@@ -298,8 +298,8 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
 #                  }
                   $fbody =~ s/$comment_re/if (exists $specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
 
-                  $nbody =~ s/$macro_re/$parsec{$_}{m}->[$1]/g;
-                  $nbody =~ s/$comment_re/if (exists $parsec{$_}{i}{$1}) {${^MATCH}} else {$parsec{$_}{c}->[$1]}/egp;
+                  $nbody =~ s/$macro_re/$module{$_}{m}->[$1]/g;
+                  $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
 
                   my @new_code = map { split(/^/, $_) } $fbody;
                   my @old_code = map { split(/^/, $_) } $nbody;
@@ -337,7 +337,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
                      $function =~ s/\n//g;
                      $function .= "\n";
 
-                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$parsec{$_}{c}->[$1]/gr);
+                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
                      @new_code = split(/^/, $fbody_saved =~ s/$comment_re/$comments[$1]/gr);
 
                      unshift @old_code, $function;
@@ -356,7 +356,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
                   }
 
                   delete $specs{$_} foreach @exclude_specs;
-                  substr($parsec{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
+                  substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
                }
             }
 
@@ -366,7 +366,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
             my ($cb, $ce) = (0, 0);
             while ($fret =~ m/$comment_re/g) {
                my ($b, $e) = ($-[0], $+[0]);
-               if (exists $parsec{$_}{i}{$1}) {
+               if (exists $module{$_}{i}{$1}) {
                   if ($continue) {
                      $ce = $e + 1;
                   } else {
@@ -389,7 +389,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
             }
             $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
-            substr($parsec{$_}{code}, $sbegin, $send - $sbegin, $fret);
+            substr($module{$_}{code}, $sbegin, $send - $sbegin, $fret);
 
             $done = 1;
             last;
@@ -404,17 +404,17 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
 }
 
 
-foreach my $f (keys %parsec) {
-   $parsec{$f}{code} =~ s/$macro_re/$parsec{$f}{m}->[$1]/g;
-   $parsec{$f}{code} =~ s/$comment_re/$parsec{$f}{c}->[$1]/g;
-   write_file($f, $parsec{$f}{code});
+foreach my $f (keys %module) {
+   $module{$f}{code} =~ s/$macro_re/$module{$f}{m}->[$1]/g;
+   $module{$f}{code} =~ s/$comment_re/$module{$f}{c}->[$1]/g;
+   write_file($f, $module{$f}{code});
 }
 
 
 if (keys %specs) {
    my (undef, $col) = window_size();
 
-   warn RED,"Can't merge following specifications:\n\n", RESET;
+   warn RED, "Can't merge following specifications:\n\n", RESET;
    warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs) . "\n";
 }
 

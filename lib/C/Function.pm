@@ -3,8 +3,10 @@ use Moose;
 
 use Local::C::Parsing qw(_argname_exists);
 use C::Keywords qw(prepare_tags);
-use Local::C::Transformation qw(:RE);
+use Local::C::Transformation qw(:RE %comment_t);
 use Local::List::Utils qw(difference);
+use ACSL::Common qw(is_acsl_spec);
+
 use namespace::autoclean;
 
 use re '/aa';
@@ -58,12 +60,30 @@ sub get_code_tags
 
 sub to_string
 {
-   my $str;
+   my $str = '';
+   my $comments = $_[1];
+   my $code = $_[0]->code;
 
-   $str = join("\n", @{ $_[0]->forward_declaration }) . "\n\n";
-   $str .= $_[0]->code;
+   my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
-   $str
+   #crop to first spec comment
+   foreach (@cmnt) {
+      if (is_acsl_spec($comments->[$_])) {
+         $code = substr($code, index($code, $comment_t{L} . $_ . $comment_t{R}));
+         goto FW_DECL
+      }
+   }
+   $code =~ s/^${s}++//;
+
+
+FW_DECL:
+
+   my $fw_decl = $_[0]->forward_declaration;
+   if (@$fw_decl) {
+      $str = join("\n", @$fw_decl) . "\n\n";
+   }
+
+   $str .= $code;
 }
 
 

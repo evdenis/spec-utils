@@ -303,7 +303,7 @@ sub _write_to_files
 {
    my ($output_dir, $single_file, $content) = @_;
 
-   my $module_c = 'parsec.c';
+   my $module_c = 'module.c';
    my $module_h = 'module.h';
    my $kernel_h = 'kernel.h';
    my $extern_h = 'extern.h';
@@ -326,6 +326,13 @@ sub _write_to_files
       $content->{module_c} =
          qq(#include "$kernel_h"\n#include "$extern_h"\n#include "$module_h"\n\n) .
          $content->{module_c};
+      $content->{module_h} =
+         qq(#include "$kernel_h"\n#include "$extern_h"\n\n) .
+         $content->{module_h};
+      $content->{extern_h} =
+         qq(#include "$kernel_h"\n\n) .
+         $content->{extern_h};
+
 
       if ($output_dir) {
          $module_h = "$output_dir/$module_h";
@@ -356,12 +363,15 @@ sub output_sources_graph
 {
    my ($graph, $output_dir, $single_file) = @_;
 
-   my $module_c_content = '';
-   my $module_h_content = '';
-   my $kernel_h_content = '';
-   my $extern_h_content = '';
-   my $kernel_macro = '';
-   my $module_macro = '';
+   my %out = map { $_ => [] } qw/
+      kernel_h
+      extern_h
+      module_h
+      module_c
+      kernel_macro
+      module_macro
+   /;
+
 
    my %vertices = map { ($_ => 0) } $graph->vertices;
 
@@ -399,48 +409,55 @@ sub output_sources_graph
 
          if ($a eq 'kernel') {
             if ($t eq 'C::Declaration' || $t eq 'C::Global') {
-               $content = \$extern_h_content
+               $content = $out{extern_h}
             } elsif ($t eq 'C::Macro') {
-               $content = \$kernel_macro
+               $content = $out{kernel_macro}
             } else {
-               $content = \$kernel_h_content
+               $content = $out{kernel_h}
             }
          } else {
             if ($t eq 'C::Function') {
-               $content = \$module_c_content
+               $content = $out{module_c}
             } elsif ($t eq 'C::Macro') {
-               $content = \$module_macro
+               $content = $out{module_macro}
             } else {
-               $content = \$module_h_content
+               $content = $out{module_h}
             }
          }
 
-         $$content .= $o->to_string . "\n\n";
+         push @$content, $o;
       }
 
       $graph->delete_vertices(@zv);
    }
 
-   $module_h_content = $module_macro . $module_h_content;
-   $kernel_h_content = $kernel_macro . $kernel_h_content;
+   unshift @{ $out{kernel_h} }, @{ $out{kernel_macro} };
+   unshift @{ $out{module_h} }, @{ $out{module_macro} };
+   delete @out{qw/kernel_macro module_macro/};
 
    {
       my $c = $graph->get_graph_attribute('comments');
 
-      foreach ($module_macro, $module_h_content, $module_c_content) {
-         restore($_, comments => $c)
+      foreach (keys %out) {
+         my $a = $out{$_};
+         my $len = @$a;
+         for (my $i = 0; $i < $len; ++$i) {
+            $a->[$i] = $a->[$i]->to_string($c)
+         }
+      }
+
+      %out = map { $_ => join("\n\n", @{ $out{$_} } ) } keys %out;
+
+      foreach (qw/module_h module_c/) {
+         restore($out{$_}, comments => $c)
       }
    }
+
 
    _write_to_files(
       $output_dir,
       $single_file,
-      {
-         kernel_h => $kernel_h_content,
-         extern_h => $extern_h_content,
-         module_h => $module_h_content,
-         module_c => $module_c_content
-      }
+      \%out
    )
 }
 

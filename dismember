@@ -36,10 +36,13 @@ use C::FunctionSet;
 use C::DeclarationSet;
 use C::GlobalSet;
 
+use Smart::Comments;
 
 my $function;
-my $parsec_dir = $ENV{CURRENT_PROJECT} // '.';
+my $module_dir = $ENV{CURRENT_PROJECT} // '.';
 my $kernel_dir;
+
+#cache options
 my $use_cache = 1;
 my $output_dir = "$FindBin::Bin/result";
 my $cache_dir  = "$FindBin::Bin/.cache";
@@ -49,7 +52,7 @@ my $single_file = 0;
 
 GetOptions(
    'function|f=s'          =>  \$function,
-   'parsec|d=s'            =>  \$parsec_dir,
+   'module|m=s'            =>  \$module_dir,
    'kernel|k=s'            =>  \$kernel_dir,
    'cache|c!'              =>  \$use_cache,
    'single|s!'             =>  \$single_file
@@ -58,8 +61,11 @@ GetOptions(
 $kernel_dir //= autodetect_kernel_directory();
 
 die("You should provide function name.\n")      unless $function;
-die("$parsec_dir is not a directory.\n")        unless -d $parsec_dir;
+die("$module_dir is not a directory.\n")        unless -d $module_dir;
 die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kernel_dir);
+
+### KERNEL DIRECTORY: $kernel_dir
+### MODULE DIRECTORY: $module_dir
 
 sub create_directory
 {
@@ -76,13 +82,19 @@ if ($cache_dir) {
 }
 
 
-$use_cache = 0 unless -r $cache_file;
-say "USE_CACHE: $use_cache";
-goto CACHED_GRAPH if $use_cache;
+$use_cache = 0
+   unless -r $cache_file;
 
+### CACHE OPTIONS:
+###   level: $use_cache
+###   file:  $cache_file
+goto CACHED_GRAPH
+   if $use_cache;
 
-my %sources = parse_sources($kernel_dir, $parsec_dir, ["#define SPECIFICATION 1\n"]);
+### PARSING SOURCES...
+my %sources = parse_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]);
 
+### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources);
 $g->set_graph_attribute('comments', $sources{comments});
 $g->set_graph_attribute('index', $sources{module}{function}->index);
@@ -104,12 +116,11 @@ if ($use_cache) {
    $output_dir = "$output_dir/$function";
    create_directory $output_dir;
 
-   say "DELETE UNNEEDED VERTICES";
+   ### GENERATING SUBGRAPH FOR FUNCTION: $function
    $g = get_predecessors_subgraph($g, $id);
 }
 
-
-#resolve cycles
+### RESOLVING CYCLES...
 while ($g->has_a_cycle) {
    my @path = $g->find_a_cycle;
    if (@path == 1) {
@@ -156,5 +167,8 @@ while ($g->has_a_cycle) {
    }
 }
 
+### WRITING RESULTS TO DISK
+###   SINGLE FILE: $single_file
+###   OUTPUT DIRECTORY: $output_dir
 output_sources_graph($g, $output_dir, $single_file);
 

@@ -30,6 +30,10 @@ sub get_code_tags
    prepare_tags($code, $filter)
 }
 
+sub to_string
+{
+   $_[0]->code =~ s/}\s+;$/};/r
+}
 
 __PACKAGE__->meta->make_immutable;
 
