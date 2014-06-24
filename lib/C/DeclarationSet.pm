@@ -27,7 +27,7 @@ sub parse
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 
-   while ( ${$_[0]} =~ m/($ret${s}*+\b$name${s}*+$args${s}*+)(?:;|$body)/g ) {
+   while ( ${$_[0]} =~ m/($ret${s}*+\b$name${s}*+$args)${s}*+(?:;|$body)/g ) {
       my $name = $+{name};
       next if index($+{ret}, 'typedef') != -1;
       next if (any($name, \@keywords));
