@@ -194,18 +194,11 @@ sub __generic_parse
    }
 }
 
-sub parse_sources
+sub _parse_module_part
 {
-   my ($kernel_code, $module_code) =
-      prepare_module_sources(@_);
+   my $module_code = $_[0];
+   my (%module, @comments);
 
-   #FIXME: Maybe not?
-   my $kernel_macro = get_macro($kernel_code, 1);
-   $kernel_code = preprocess($kernel_code);
-
-   #remove attributes
-   adapt($$kernel_code, attributes => 1);
-   my @comments;
    adapt($$module_code, comments => \@comments);
 
    my @module_macro;
@@ -214,7 +207,27 @@ sub parse_sources
 
    adapt($$module_code, macro => 1);
 
-   my (%kernel, %module);
+   %module = map { $_ => $module_code } qw(typedef enum structure global function)
+      if $$module_code;
+
+   $module{macro} = \@module_macro
+      if @module_macro;
+
+   __generic_parse(\%module, 'module');
+
+   (\%module, \@comments)
+}
+
+sub _parse_kernel_part
+{
+   my $kernel_code = $_[0];
+   my %kernel;
+
+   my $kernel_macro = get_macro($kernel_code, 1);
+   $kernel_code = preprocess($kernel_code);
+
+   #remove attributes
+   adapt($$kernel_code, attributes => 1);
 
    %kernel = map { $_ => $kernel_code } qw(typedef enum structure global declaration)
       if $$kernel_code;
@@ -222,16 +235,25 @@ sub parse_sources
    $kernel{macro} = $kernel_macro
       if @$kernel_macro;
 
-   %module = map { $_ => $module_code } qw(typedef enum structure global function)
-      if $$module_code;
+    __generic_parse(\%kernel, 'kernel');
 
-   $module{macro} = \@module_macro
-      if @module_macro;
+    \%kernel
+}
 
-   __generic_parse(\%kernel, 'kernel');
-   __generic_parse(\%module, 'module');
+sub parse_sources
+{
+   my $kernel_parse = pop @_;
+   my ($kernel_code, $module_code) =
+      prepare_module_sources(@_);
 
-   (module => \%module, kernel => \%kernel, comments => \@comments)
+   my %ret;
+   @ret{qw/kernel module comments/} =
+      (
+         ($kernel_parse ? _parse_kernel_part($kernel_code) : undef),
+         _parse_module_part($module_code)
+      );
+
+   %ret
 }
 
 

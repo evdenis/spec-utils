@@ -231,7 +231,7 @@ adapt($$source, attributes => 1, comments => 1);
 #funcs init
 my %sources;
 $sources{module}{function} = C::FunctionSet->parse($source, 'module');
-my $graph = build_sources_graph(\%sources, 1, 1);
+my $graph = build_sources_graph(\%sources, human_readable => 1, reverse => 1);
 
 #these are special kernel functions generated after preprocessing
 $graph->delete_vertices( qw(__check_enabled __inittest) );

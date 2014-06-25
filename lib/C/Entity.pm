@@ -13,16 +13,17 @@ use re '/aa';
 has 'id' => (
    is => 'ro',
    isa => 'Str',
+   lazy => 1,
    required => 1,
    builder => '_compose_id',
    init_arg => undef
 );
 
+our $_NEXT_ID = 0;
+
 sub _compose_id
 {
-   state $i = 0;
-
-   $i++
+   $_NEXT_ID++
 }
 
 

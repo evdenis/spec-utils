@@ -12,10 +12,11 @@ use Graph::Reader::Dot;
 use Data::Alias qw(alias deref);
 use Getopt::Long qw(:config gnu_getopt);
 use Scalar::Util qw(blessed);
+use File::Spec::Functions qw(catfile);
 use Storable;
 
 use FindBin;
-use lib "$FindBin::Bin/lib/";
+use lib catfile $FindBin::Bin, 'lib';
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
@@ -27,6 +28,7 @@ use Local::Kernel::Module::Graph qw(
    output_sources_graph
 );
 
+use C::Entity;
 use C::Macro;
 use C::MacroSet;
 use C::TypedefSet;
@@ -49,9 +51,10 @@ my $kernel_dir;
 
 #cache options
 my $use_cache = 1;
-my $output_dir = "$FindBin::Bin/result";
-my $cache_dir  = "$FindBin::Bin/.cache";
-my $cache_file = "graph.cache";
+my $cache_level = 0;
+my $output_dir = catfile $FindBin::Bin, 'result';
+my $cache_dir  = catfile $FindBin::Bin, '.cache';
+my @cache_file = qw/kernel.cache kernel_module.cache/;
 
 my $single_file = 0;
 
@@ -60,6 +63,7 @@ GetOptions(
    'module|m=s'            =>  \$module_dir,
    'kernel|k=s'            =>  \$kernel_dir,
    'cache|c!'              =>  \$use_cache,
+   'cache-level|cl|l=i'    =>  \$cache_level,
    'single|s!'             =>  \$single_file
 ) or die "Incorrect usage!\n";
 
@@ -83,33 +87,42 @@ create_directory $output_dir;
 
 if ($cache_dir) {
    create_directory $cache_dir;
-   $cache_file = "$cache_dir/$cache_file";
+   @cache_file = map { catfile($cache_dir, $_) } @cache_file;
 }
 
+$cache_level = undef
+   unless $use_cache;
 
-$use_cache = 0
-   unless -r $cache_file;
+$use_cache = 0, $cache_level = undef
+   if $use_cache && ! -r $cache_file[$cache_level];
 
 ### CACHE OPTIONS:
-###   level: $use_cache
-###   file:  $cache_file
+###   use:   $use_cache
+###   level: $cache_level
+###   file:  @cache_file
 goto CACHED_GRAPH
-   if $use_cache;
+   if $use_cache && $cache_level == 1;
 
 ### PARSING SOURCES...
-my %sources = parse_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]);
+my %sources = parse_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"], !$use_cache);
+
+#if ($use_cache && $cache_level == 0) {
+#   ($sources{kernel}, $C::Entity::_NEXT_ID) = @{ retrieve($cache_file[0]) }
+#} else {
+#   store([$sources{kernel}, $C::Entity::_NEXT_ID], $cache_file[0])
+#}
 
 ### BUILDING SOURCES GRAPH...
-my $g = build_sources_graph(\%sources);
+my $g = build_sources_graph(\%sources, {cache => {use => $use_cache, file => $cache_file[0]}});
 $g->set_graph_attribute('comments', $sources{comments});
 $g->set_graph_attribute('index', $sources{module}{function}->index);
 
 
 CACHED_GRAPH:
-if ($use_cache) {
-   $g = retrieve($cache_file)
+if ($use_cache && $cache_level == 1) {
+   $g = retrieve($cache_file[1])
 } else {
-   store($g, $cache_file)
+   store($g, $cache_file[1])
 }
 
 

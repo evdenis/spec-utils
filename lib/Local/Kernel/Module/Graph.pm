@@ -11,6 +11,8 @@ use Graph::Directed;
 use Graph::Reader::Dot;
 use Scalar::Util qw(blessed);
 use File::Slurp qw(write_file);
+use Storable qw(store retrieve dclone);
+use File::Spec::Functions qw(catfile);
 
 use Local::List::Utils qw(any);
 use Local::C::Transformation qw(restore);
@@ -25,10 +27,10 @@ our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors
 my $dg = Graph::Reader::Dot->new()->read_graph(\*Local::Kernel::Module::Graph::DATA);
 
 
-sub _dependencies_graph_iterator
+sub __dependencies_graph_iterator_generic
 {
    my $sources = shift;
-   my @vertices = $dg->vertices;
+   my @vertices = @_ ? grep { m/$_[0]/ } $dg->vertices : $dg->vertices;
    my $l = $#vertices;
 
    return sub {
@@ -42,13 +44,30 @@ sub _dependencies_graph_iterator
    };
 }
 
+sub _dependencies_graph_iterator
+{
+   goto &__dependencies_graph_iterator_generic
+}
+
+sub _dependencies_graph_iterator_kernel
+{
+   push @_, qr/\Akernel_/;
+   goto &__dependencies_graph_iterator_generic
+}
+
+sub _dependencies_graph_iterator_module
+{
+   push @_, qr/\Amodule_/;
+   goto &__dependencies_graph_iterator_generic
+}
+
+
 #\%sources
 sub __add_vertices
 {
-   my ($graph, $sources, $vname) = @_;
+   my ($graph, $sources, $vname, $iterator) = @_;
 
-   my $next = _dependencies_graph_iterator($sources);
-   while (my $set = $next->()) {
+   while (my $set = $iterator->()) {
       $set = $set->set;
       foreach (@$set) {
          my $id = $_->$vname;
@@ -57,7 +76,7 @@ sub __add_vertices
             $graph->add_vertex($id);
             $graph->set_vertex_attributes($id, { object => $_ });
          } else {
-            die("Internal Error. Vertex has been already added to the graph");
+            die("Internal Error. Vertex has been already added to the graph: " . $_->name);
          }
       }
    }
@@ -68,12 +87,12 @@ sub _norm
    $_[0] =~ s/\s++//gr
 }
 
-sub _build_ids_index
+sub _update_ids_index
 {
-   my %index;
+   my %index = %{ $_[0] };
+   my $iterator = $_[1];
 
-   my $next = _dependencies_graph_iterator($_[0]);
-   while (my $set = $next->()) {
+   while (my $set = $iterator->()) {
       my $ids = $set->ids();
       while ( my ($i, $id) = each @{$ids} ) {
          my @id = @{$id};
@@ -201,35 +220,12 @@ sub _create_edges
    }
 }
 
-#human_readable:
-# by default uniq ids are used as vertex names
-# hr option will force use of original names of
-# entities, but in this case duplicates are
-# possible, which will lead to errors in graph.
-# This option should be used carefully.
-sub build_sources_graph
+sub _form_graph
 {
-   my ($sources, $human_readable, $reverse) = @_;
+   my ($graph, $index, $vname, $order, $iterator) = @_;
 
-   my $vname = 'id'; #method for vertex name generation
-   $vname = 'name'
-      if $human_readable;
-
-   my $order;
-   if ($reverse) {
-      $order = sub { ($_[1], $_[0]) }
-   } else {
-      $order = sub { @_ }
-   }
-
-   my $graph = Graph::Directed->new();
-   my $index = _build_ids_index($sources);
-
-   __add_vertices($graph, $sources, $vname);
-
-   my $next = _dependencies_graph_iterator($sources);
-   while (my $set = $next->()) {
-      print "TAGS: " . blessed($set) ."\n";
+   while (my $set = $iterator->()) {
+      print "TAGS: " . blessed($set) . "\n";
 
       my $tags = $set->tags();
       while (my ($i, $t) = each @{$tags}) {
@@ -257,10 +253,72 @@ sub build_sources_graph
                      $graph->add_edge($order->($from->$vname, $to->$vname))
                   }
                }
+            } else {
+               warn "Can't bind tag: $tag\n" if $ENV{DEBUG};
             }
          }
       }
    }
+
+   $graph
+}
+
+#human_readable:
+# by default uniq ids are used as vertex names
+# hr option will force use of original names of
+# entities, but in this case duplicates are
+# possible, which will lead to errors in graph.
+# This option should be used carefully.
+sub build_sources_graph
+{
+   my $sources = shift;
+   my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
+   $opts->{reverse} ||= 0;
+   $opts->{human_readable} ||= 0;
+
+   my $vname = $opts->{human_readable} ? 'name' : 'id';
+
+   my $order;
+   if ($opts->{reverse}) {
+      $order = sub { ($_[1], $_[0]) }
+   } else {
+      $order = sub { @_ }
+   }
+
+   my $index;
+   my $graph;
+   if ($opts->{cache}{use}) {
+      my ($hr, $rev);
+      ($index, $graph, $C::Entity::_NEXT_ID, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
+      die("Internal error. Corrupted cache.\n")
+         unless $hr == $opts->{reverse} && $rev == $opts->{human_readable};
+   } else {
+      $index = _update_ids_index({},
+                  _dependencies_graph_iterator_kernel($sources)
+               );
+
+      $graph = Graph::Directed->new();
+
+      __add_vertices($graph, $sources, $vname, _dependencies_graph_iterator_kernel($sources));
+
+      $graph = _form_graph($graph, $index, $vname, $order,
+         _dependencies_graph_iterator_kernel($sources)
+      );
+
+      store([ $index, $graph, $C::Entity::_NEXT_ID, $opts->{human_readable}, $opts->{reverse} ], $opts->{cache}{file})
+         if $opts->{cache}{file};
+   }
+
+   $index = _update_ids_index($index,
+               _dependencies_graph_iterator_module($sources)
+            );
+
+   __add_vertices($graph, $sources, $vname, _dependencies_graph_iterator_module($sources));
+
+
+   $graph = _form_graph($graph, $index, $vname, $order,
+               _dependencies_graph_iterator_module($sources)
+            );
 
    $graph
 }
@@ -335,9 +393,9 @@ sub _write_to_files
 
 
       if ($output_dir) {
-         $module_h = "$output_dir/$module_h";
-         $kernel_h = "$output_dir/$kernel_h";
-         $extern_h = "$output_dir/$extern_h";
+         $module_h = catfile $output_dir, $module_h;
+         $kernel_h = catfile $output_dir, $kernel_h;
+         $extern_h = catfile $output_dir, $extern_h;
       }
 
       write_file($module_c, $content->{module_c});
