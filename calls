@@ -26,6 +26,13 @@ use Local::File::C::Merge qw(merge_all_files_simple);
 use Local::C::Parsing qw(parse_calls);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
+
 #TODO:
 #check simultaniosly for macro and function; kernel! module?
 #parallel processing
@@ -94,6 +101,10 @@ unless (defined $modulename) {
    abs_path($moduledir) =~ m!/((?:[^/]+|\\/)+)/?$!;
    $modulename = $1;
 }
+
+### KERNEL DIRECTORY: $kdir
+### MODULE DIRECTORY: $moduledir
+### PREPROCESSED SOURCES: $preprocessed
 
 sub get_list_of_kernel_functions {
    if ( -r "$kdir/System.map" ) {
@@ -353,7 +364,7 @@ sub check_kernel_function {
    return 0;
 }
 
-
+### READING SOURCES...
 my $source;
 unless ($preprocessed) {
    $source = merge_all_files_simple($moduledir);
@@ -378,7 +389,9 @@ my @calls = @{ parse_calls($source) };
 my %status;
 @calls = grep { ! $status{$_}[0]++ } @calls;
 
+### GETTING LIST OF KERNEL FUNCTIONS...
 my @kernel_functions = get_list_of_kernel_functions();
+### GETTING LIST OF MODULE FUNCTIONS...
 my %modules_functions = get_list_of_modules_functions();
 
 my $max = keys %status;
