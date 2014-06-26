@@ -118,7 +118,7 @@ sub call_meld
       my (undef, $name) = tempfile(SUFFIX => '.c');
       push @f, $name;
 
-      write_file $name, @{$_[$i]}
+      write_file($name, {binmode => ':utf8'}, @{$_[$i]})
    }
 
    my $ret;
@@ -128,7 +128,7 @@ sub call_meld
       $ret = system('meld', @f)
    }
 
-   @{$_[-1]} = read_file($f[-1])
+   @{$_[-1]} = read_file($f[-1], binmode => ':utf8')
       unless $ret;
 
    unlink $f[$_] for 0 .. $#_;
@@ -146,7 +146,7 @@ die(RED . "Can't find module sources."         . RESET . "\n") unless @module;
 
 my %module;
 foreach my $f (@module) {
-   $module{$f}{code} = read_file($f);
+   $module{$f}{code} = read_file($f, binmode => ':utf8');
    adapt($module{$f}{code},
          comments => \@{ $module{$f}{c} },
          macro    => \@{ $module{$f}{m} }
@@ -221,7 +221,7 @@ my $name = qr'(?<name>[a-zA-Z_]\w*+)';
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 
-while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
+while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
    my ($fret, $fname, $fargs, $fbody) = @+{qw/ret name args fbody/};
   
    if ($fret =~ m/^\s*($comment_re(\s*$comment_re)*).*$/s) {
@@ -238,7 +238,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
       my $args_pattern = $fargs =~ s/\s+//gr;
 
       my $done = 0;
-      foreach(keys %module) {
+      foreach (keys %module) {
          #only one function in one file
          if ($module{$_}{code} =~ m/$ret\b\Q$fname\E${s}*+$args${s}*+$body/) {
             my ($sbegin, $send) = ($-[1], $+[1]);
@@ -261,10 +261,12 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
             }
 
             my $specs_exists = 0;
-            while ($fbody =~ m/$comment_re/g) {
-               if (exists $specs{$1}) {
-                  $specs_exists = 1;
-                  last
+            if ($fbody) {
+               while ($fbody =~ m/$comment_re/g) {
+                  if (exists $specs{$1}) {
+                     $specs_exists = 1;
+                     last
+                  }
                }
             }
             if ($specs_exists) {
@@ -396,7 +398,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
          }
       }
       unless ($done) {
-         warn "Can't find function " . GREEN . "$fname" . RESET "\n"
+         warn "Can't find function " . GREEN . $fname . RESET "\n"
       } else {
          delete $specs{$_} foreach @exclude_specs
       }
@@ -407,14 +409,14 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
 foreach my $f (keys %module) {
    $module{$f}{code} =~ s/$macro_re/$module{$f}{m}->[$1]/g;
    $module{$f}{code} =~ s/$comment_re/$module{$f}{c}->[$1]/g;
-   write_file($f, $module{$f}{code});
+   write_file($f, {binmode => ':utf8'}, $module{$f}{code});
 }
 
 
 if (keys %specs) {
    my (undef, $col) = window_size();
 
-   warn RED, "Can't merge following specifications:\n\n", RESET;
+   warn RED, "Can't merge following specifications:" . RESET . "\n\n";
    warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs) . "\n";
 }
 
