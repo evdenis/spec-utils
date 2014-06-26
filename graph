@@ -398,10 +398,14 @@ if (@functions) {
       }
    }
 
-   $graph = get_successors_subgraph($graph, @e);
+   if (@e) {
+      $graph = get_successors_subgraph($graph, @e);
 
-   say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
-      if $stat;
+      say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
+         if $stat;
+   } else {
+      warn "--functions parameter will not be taken into account.\n"
+   }
 }
 
 
