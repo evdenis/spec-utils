@@ -1,35 +1,43 @@
-kfree p
-memcpy y
-copy_from_user p
-memset y
-printk p
-kmalloc p
-strcmp y
-strlen y
-copy_to_user p
-strcpy y
-strncmp y
-strncpy_from_user p
-atomic_dec y
-atomic_inc y
-kzalloc p
+function:
+   partial:
+      - kfree
+      - copy_from_user
+      - printk
+      - kmalloc
+      - copy_to_user
+      - strncpy_from_user
+      - kzalloc
+   yes:
+      - memcpy
+      - memset
+      - strcmp
+      - strlen
+      - strcpy
+      - strncmp
+      - atomic_dec
+      - atomic_inc
 
-unlikely n
-EXPORT_SYMBOL n
-S_ISSOCK r
-MINOR r
-MAJOR r
-S_ISCHR r
-S_ISDIR r
-S_ISFIFO r
-S_ISREG r
-IS_RDONLY r
-IS_ROOT r
-DEFINE_RWLOCK n
-LIST_HEAD_INIT n
-__SPIN_LOCK_UNLOCKED n
-__SEMAPHORE_INITIALIZER n
-likely n
-MODULE_LICENSE n
-MODULE_PARM_DESC n
-ATOMIC_INIT n
+
+macro:
+   not_required:
+      - unlikely
+      - EXPORT_SYMBOL
+      - DEFINE_RWLOCK
+      - LIST_HEAD_INIT
+      - __SPIN_LOCK_UNLOCKED
+      - __SEMAPHORE_INITIALIZER
+      - likely
+      - MODULE_LICENSE
+      - MODULE_PARM_DESC
+      - ATOMIC_INIT
+   reusable:
+      - S_ISSOCK
+      - MINOR
+      - MAJOR
+      - S_ISCHR
+      - S_ISDIR
+      - S_ISFIFO
+      - S_ISREG
+      - IS_RDONLY
+      - IS_ROOT
+

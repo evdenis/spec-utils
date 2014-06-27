@@ -17,6 +17,7 @@ use List::MoreUtils qw(uniq);
 use Cwd qw(abs_path);
 use Term::ProgressBar 2.00;
 use Text::ANSITable;
+use YAML::XS qw(LoadFile);
 
 use Class::CSV;
 
@@ -481,11 +482,15 @@ my $specs_column = 0;
 if (defined $specs) {
    if (-r $specs) {
       $specs_column = 1;
-      my @lines = read_file($specs);
+
+      my $specs = LoadFile($specs);
       my %specs_status;
-      foreach (@lines) {
-         if ( $_ =~ m/^\s*(?<func>\w+)\s+(?<status>\S+)\s*$/ ) {
-            $specs_status{$+{func}} = $+{status};
+      foreach my $a (keys %{ $specs }) {
+         foreach my $s (keys %{ $specs->{$a} }) {
+            my $st = uc(substr($s, 0, 1));
+            foreach (@{ $specs->{$a}{$s} }) {
+               $specs_status{$_} = $st
+            }
          }
       }
 
