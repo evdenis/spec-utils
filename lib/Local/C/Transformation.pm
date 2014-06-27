@@ -180,7 +180,7 @@ sub remove_macro
 sub adapt
 {
    alias my $code = shift;
-   my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
+   my $opts = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
 
    return undef
       unless $code;
@@ -235,7 +235,7 @@ sub restore_macro
 sub restore
 {
    alias my $code = shift;
-   my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
+   my $opts = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
 
    return undef
       unless $code;
