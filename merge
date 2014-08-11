@@ -6,8 +6,10 @@ use strict;
 use re '/aa';
 use feature qw(say);
 
+use File::Spec::Functions qw(catfile);
+
 use FindBin;
-use lib "$FindBin::Bin/lib/";
+use lib catfile $FindBin::Bin, 'lib';
 
 use utf8::all;
 
