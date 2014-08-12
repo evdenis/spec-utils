@@ -278,10 +278,6 @@ sub move_specs
    substr($module->{$file}{code}, $sbegin, $send - $sbegin, $fret);
 }
 
-sub move_body_specs
-{
-}
-
 
 ### Fetching module sources from dir: $module_dir
 my %module = fetch_module_sources($module_dir);
@@ -293,7 +289,7 @@ my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
    unless %specs;
 
-
+### simple preprocessing step--> done
 simple_preprocess(\%specs);
 
 my @comments = @{ $specs{comments} };
@@ -302,7 +298,7 @@ my $code     = ${ $specs{specs}    };
 
 
 my %acsl_specs;
-
+### detecting specifications
 foreach(0 .. $#comments) {
    $acsl_specs{$_} = 1 if is_acsl_spec($comments[$_]);
 }
