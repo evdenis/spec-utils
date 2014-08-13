@@ -125,7 +125,6 @@ if ($use_cache && $cache_level == 1) {
    store($g, $cache_file[1])
 }
 
-
 {
    my $id = $g->get_graph_attribute('index')->{$function};
    die("There is no function $function in module\n")
@@ -138,52 +137,6 @@ if ($use_cache && $cache_level == 1) {
    $g = get_predecessors_subgraph($g, $id);
 }
 
-### RESOLVING CYCLES...
-while ($g->has_a_cycle) {
-   my @path = $g->find_a_cycle;
-   if (@path == 1) {
-      $g->delete_edge($path[0], $path[0]);
-      next
-   }
-
-   my $o1 = $g->get_vertex_attribute($path[0], 'object');
-   my $o2 = $g->get_vertex_attribute($path[1], 'object');
-
-   my $t1 = blessed($o1);
-   my $t2 = blessed($o2);
-
-   if ($t1 eq $t2) {
-      say "$t1" . " " . $o1->name . " -> " . $o2->name;
-
-      if ($t1 eq 'C::Function') {
-         $o2->code =~ m/(\w.*?)\{/s;
-         $o1->add_fw_decl(normalize($1) . ';');
-
-         $g->delete_edge($path[0], $path[1])
-      } elsif ($t1 eq 'C::Structure') {
-         $g->delete_edge($path[0], $path[1])
-      } elsif ($t1 eq 'C::Macro') {
-         $g->delete_edge($path[0], $path[1])
-      } elsif ($t1 eq 'C::Typedef') {
-         $g->delete_edge($path[0], $path[1])
-      } else {
-         say "@path";
-         exit;
-      }
-   } else {
-      say "$t1" . " " . $o1->name . " -> " . "$t2" . " " . $o2->name;
-
-      if ($t1 eq 'C::Typedef' && $t2 eq 'C::Structure') {
-         $g->delete_edge($path[1], $path[0]) ; # FIXME: Is it right?
-      } elsif ($t1 eq 'C::Structure' && $t2 eq 'C::Typedef') {
-         $g->delete_edge($path[0], $path[1]);
-      } else {
-         say "ERROR: @path";
-         exit;
-      }
-
-   }
-}
 
 ### WRITING RESULTS TO DISK
 ###   SINGLE FILE: $single_file

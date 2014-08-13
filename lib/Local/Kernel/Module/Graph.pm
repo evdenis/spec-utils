@@ -13,9 +13,11 @@ use Scalar::Util qw(blessed);
 use File::Slurp qw(write_file);
 use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
+use List::Util qw(min);
 
 use Local::List::Utils qw(any);
 use Local::C::Transformation qw(restore);
+use Local::C::Cycle qw(resolve);
 
 use constant HASH => ref {};
 use constant ARRAY => ref [];
@@ -433,10 +435,27 @@ sub output_sources_graph
 
    my %vertices = map { ($_ => 0) } $graph->vertices;
 
-   while (keys %vertices) {
+CE:   while (%vertices) {
+      my @vertices = keys %vertices;
       my @zv;
-      foreach(keys %vertices) {
-         push @zv, $_ unless $graph->in_degree($_);
+      my %vd  = map { ($_, $graph->in_degree($_)) } @vertices;
+      my $min = min values %vd;
+
+      # keys %vd == @vertices
+      foreach(@vertices) {
+         push @zv, $_ if $min == $vd{$_};
+      }
+
+      if ($min) {
+         my $g = Graph::Directed->new(edges =>
+               [ grep { any($_->[0], \@zv) && any($_->[1], \@zv) } $graph->edges ]
+         );
+
+         if ($g->has_a_cycle) {
+            resolve($graph, $g->find_a_cycle);
+
+            redo CE
+         }
       }
 
       die("Cycle in graph") unless @zv;
