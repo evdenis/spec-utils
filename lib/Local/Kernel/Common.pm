@@ -13,12 +13,13 @@ our @EXPORT_OK = qw(check_kernel_dir check_kernel_files_readable autodetect_kern
 
 sub check_kernel_dir ($)
 {
+   my $res = 0;
    state %kerneldir_cache;
 
+   return 0 unless $_[0];
    return $kerneldir_cache{$_[0]}
       if exists $kerneldir_cache{$_[0]};
 
-   my $res = 0;
 
    if ( -d $_[0] ) {
       opendir my $kdir, $_[0] or goto OUT;

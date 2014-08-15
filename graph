@@ -188,6 +188,7 @@ unless ($preprocessed) {
    $module_dir //= $ENV{CURRENT_PROJECT} // '.';
    $kernel_dir //= autodetect_kernel_directory(dirs => ['..']);
 
+   pod2usage({ -msg => "You should provide kernel directory with -k option.\n", -exitval => 2 }) unless defined $kernel_dir;
    pod2usage({ -msg => "$module_dir is not a directory.\n",        -exitval => 2 }) unless -d $module_dir;
    pod2usage({ -msg => "$kernel_dir is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($kernel_dir);
 } else {
