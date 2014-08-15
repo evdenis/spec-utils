@@ -6,8 +6,10 @@ use strict;
 use re '/aa';
 use feature qw(say);
 
+use File::Spec::Functions qw(catfile);
+
 use FindBin;
-use lib "$FindBin::Bin/lib/";
+use lib catfile $FindBin::Bin, 'lib';
 
 use utf8::all;
 
@@ -18,10 +20,19 @@ use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
+use Local::String::Utils qw(trim);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
 use Local::File::Merge qw(merge);
 use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
+use ACSL::Common qw(is_acsl_spec);
+
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
 
 
 =encoding utf8
@@ -109,6 +120,11 @@ pod2usage({-verbose => 2, -exitval => 0}) if $help;
 pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $module_dir && -d $specs_dir;
 
 
+#Global variables from Local::C::Transformation
+my $comment_re = $comment_t{pattern};
+my $macro_re   = $macro_t{pattern};
+
+
 sub call_meld
 {
    return 1 if $#_ > 2;
@@ -136,70 +152,87 @@ sub call_meld
    $ret
 }
 
+# dir
+# returns hash ref
+sub fetch_module_sources
+{
+   my @module  = find_all_files($_[0]);
 
-my @module  = find_all_files($module_dir);
-my $code = merge_all_files_simple($specs_dir);
+   return {}
+      unless @module;
 
-die(RED . "Can't find specifications sources." . RESET . "\n") unless $code;
-die(RED . "Can't find module sources."         . RESET . "\n") unless @module;
+   my %module;
+   foreach my $f (@module) {
+      $module{$f}{code} = read_file($f, binmode => ':utf8');
+      adapt($module{$f}{code},
+            comments => \@{ $module{$f}{c} },
+            macro    => \@{ $module{$f}{m} }
+      );
 
-
-my %module;
-foreach my $f (@module) {
-   $module{$f}{code} = read_file($f, binmode => ':utf8');
-   adapt($module{$f}{code},
-         comments => \@{ $module{$f}{c} },
-         macro    => \@{ $module{$f}{m} }
-   );
-
-   my %i;
-   foreach (0 .. $#{ $module{$f}{c} }) {
-      $i{$_} = 1 if @{ $module{$f}{c} }[$_] =~ m!^(?:/\*\@|//\@)!
+      my %i;
+      foreach (0 .. $#{ $module{$f}{c} }) {
+         $i{$_} = 1 if is_acsl_spec(@{ $module{$f}{c} }[$_])
+      }
+      $module{$f}{i} = \%i;
    }
-   $module{$f}{i} = \%i;
+
+   %module
 }
 
-adapt($code,
-      comments => \my @comments,
-      macro    => \my @macro
-);
-
-
-my $comment_re = $comment_t{pattern};
-my $macro_re   = $macro_t{pattern};
-
-#simple preprocess
+sub fetch_specifications
 {
+   my $code = merge_all_files_simple($_[0]);
+
+   return {}
+      unless $code;
+
+   adapt($code,
+         comments => \my @comments,
+         macro    => \my @macro
+   );
+
+   (
+      specs    => \$code,
+      comments => \@comments,
+      macro    => \@macro
+   )
+}
+
+sub simple_preprocess
+{
+   my $cntx = $_[0];
+   my ($code, $comments, $macro) = @{$cntx}{qw/code comments macro/};
+
    my $skip = 0;
    my $ifdef_rec = 0;
    my ($begin, $end) = (undef, undef);
    my ($ML, $MR) = @macro_t{qw(L R)};
 
-   foreach my $i (0 .. $#macro)
+   foreach my $i (0 .. $#$macro)
    {
       unless ($skip) {
-         if ($macro[$i] =~ m/^\h*+#\h*+if\h*+0/) {
+         if ($macro->[$i] =~ m/^\h*+#\h*+if\h*+0/) {
             $skip = 1;
             $begin = $i;
             $ifdef_rec = 0;
          }
       } else {
-         if ($macro[$i] =~ m/^\h*+#\h*+if(?:(?:n)?def)?/) {
+         if ($macro->[$i] =~ m/^\h*+#\h*+if(?:(?:n)?def)?/) {
             ++$ifdef_rec;
-         } elsif ($macro[$i] =~ m/^\h*+#\h*+endif/) {
+         } elsif ($macro->[$i] =~ m/^\h*+#\h*+endif/) {
             if ($ifdef_rec == 0) {
                $skip = 0;
                $end = $i;
 
                #remove part of the code
-               $code =~ m/$ML${begin}$MR/;
+               $$code =~ m/$ML${begin}$MR/;
                $begin = $-[0];
-               $code =~ m/$ML${end}$MR/;
+               $$code =~ m/$ML${end}$MR/;
                $end = $+[0];
-               my $remove = substr($code, $begin, $end - $begin, '');
+               my $remove = substr($$code, $begin, $end - $begin, '');
 
                #exclude comments from
-               $comments[$_] = '' foreach ($remove =~ m/$comment_re/g);
+               $comments->[$_] = '' foreach ($remove =~ m/$comment_re/g);
             } else {
                --$ifdef_rec;
             }
@@ -208,10 +241,66 @@ my $macro_re   = $macro_t{pattern};
    }
 }
 
-my %specs;
 
+sub move_specs
+{
+   my ($fret, $spec, $file, $module, $sbegin, $send) = @_;
+
+   my @interval;
+   my $continue = 0;
+   my ($cb, $ce) = (0, 0);
+
+   while ($fret =~ m/$comment_t{pattern}/g) {
+      my ($b, $e) = ($-[0], $+[0]);
+      if (exists $module->{$file}{i}{$1}) {
+         if ($continue) {
+            $ce = $e + 1;
+         } else {
+            $cb = $b;
+            $ce = $e + 1;
+         }
+
+         $continue = 1;
+      } else {
+         push @interval, ($cb, $ce);
+         $continue = 0;
+      }
+   }
+   push @interval, ($cb, $ce);
+
+   while (@interval) {
+      $ce = pop @interval;
+      $cb = pop @interval;
+      substr($fret, $cb, $ce - $cb, '');
+   }
+   $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
+
+   substr($module->{$file}{code}, $sbegin, $send - $sbegin, $fret);
+}
+
+
+### Fetching module sources from dir: $module_dir
+my %module = fetch_module_sources($module_dir);
+die(RED . "Can't find module sources." . RESET . "\n")
+   unless %module;
+
+### Fetching specifications from dir: $specs_dir
+my %specs = fetch_specifications($specs_dir);
+die(RED . "Can't find specifications sources." . RESET . "\n")
+   unless %specs;
+
+### simple preprocessing step--> done
+simple_preprocess(\%specs);
+
+my @comments = @{ $specs{comments} };
+my @macro    = @{ $specs{macro}    };
+my $code     = ${ $specs{specs}    };
+
+
+my %acsl_specs;
+### detecting specifications
 foreach(0 .. $#comments) {
-   $specs{$_} = 1 if $comments[$_] =~ m!^(?:/\*\@|//\@)!;
+   $acsl_specs{$_} = 1 if is_acsl_spec($comments[$_]);
 }
 
 #funcs init
@@ -229,11 +318,10 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
       my @exclude_specs;
 
-      $spec =~ s/$comment_re/if (exists $specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
-      $spec =~ s/^\s+//s;
-      $spec =~ s/\s+$//s;
+      $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
+      next if $spec =~ m/^\s++$/s;
+      $spec = trim $spec;
       $spec .= "\n";
-      next if $spec =~ m/^\s+$/s;
 
       my $args_pattern = $fargs =~ s/\s+//gr;
 
@@ -244,7 +332,6 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
             my ($sbegin, $send) = ($-[1], $+[1]);
             my ($bbegin, $bend) = ($-[3], $+[3]);
             my ($fret, $fargs, $nbody) = @+{qw/ret args fbody/};
-
 
             #additional checks
             if ($strict) {
@@ -263,7 +350,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
             my $specs_exists = 0;
             if ($fbody) {
                while ($fbody =~ m/$comment_re/g) {
-                  if (exists $specs{$1}) {
+                  if (exists $acsl_specs{$1}) {
                      $specs_exists = 1;
                      last
                   }
@@ -271,7 +358,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
             }
             if ($specs_exists) {
                unless ($mode) {
-                  $fbody =~ s/$comment_re/delete $specs{$1}; "$comments[$1]"/eg;
+                  $fbody =~ s/$comment_re/delete $acsl_specs{$1}; "$comments[$1]"/eg;
                   $fbody =~ s/$macro_re/$macro[$1]/g;
                   substr($module{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
                } else {
@@ -287,7 +374,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 #                     my $cond = 0;
 #
 #                     foreach (@m) {
-#                        $cond = 1 if exists $specs{$_}
+#                        $cond = 1 if exists $acsl_specs{$_}
 #                     }
 #                     unless ($cond) {
 #                        push @intervals, ($b, $e)
@@ -298,7 +385,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 #                     my $b = pop @intervals;
 #                     substr($fbody, $b, $e - $b, '');
 #                  }
-                  $fbody =~ s/$comment_re/if (exists $specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
+                  $fbody =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
 
                   $nbody =~ s/$macro_re/$module{$_}{m}->[$1]/g;
                   $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
@@ -357,41 +444,12 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                         if $check ne $function;
                   }
 
-                  delete $specs{$_} foreach @exclude_specs;
+                  delete $acsl_specs{$_} foreach @exclude_specs;
                   substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
                }
             }
 
-            #remove previous specifications
-            my @interval;
-            my $continue = 0;
-            my ($cb, $ce) = (0, 0);
-            while ($fret =~ m/$comment_re/g) {
-               my ($b, $e) = ($-[0], $+[0]);
-               if (exists $module{$_}{i}{$1}) {
-                  if ($continue) {
-                     $ce = $e + 1;
-                  } else {
-                     $cb = $b;
-                     $ce = $e + 1;
-                  }
-
-                  $continue = 1;
-               } else {
-                  push @interval, ($cb, $ce);
-                  $continue = 0;
-               }
-            }
-            push @interval, ($cb, $ce);
-
-            while (@interval) {
-               $ce = pop @interval;
-               $cb = pop @interval;
-               substr($fret, $cb, $ce - $cb, '');
-            }
-            $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
-
-            substr($module{$_}{code}, $sbegin, $send - $sbegin, $fret);
+            move_specs($fret, $spec, $_, \%module, $sbegin, $send);
 
             $done = 1;
             last;
@@ -400,7 +458,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       unless ($done) {
          warn "Can't find function " . GREEN . $fname . RESET "\n"
       } else {
-         delete $specs{$_} foreach @exclude_specs
+         delete $acsl_specs{$_} foreach @exclude_specs
       }
    }
 }
@@ -413,10 +471,10 @@ foreach my $f (keys %module) {
 }
 
 
-if (keys %specs) {
+if (keys %acsl_specs) {
    my (undef, $col) = window_size();
 
    warn RED, "Can't merge following specifications:" . RESET . "\n\n";
-   warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %specs) . "\n";
+   warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %acsl_specs) . "\n";
 }
 

@@ -11,7 +11,7 @@ our @EXPORT_OK = qw(is_acsl_spec);
 
 sub is_acsl_spec ($)
 {
-   $_[0] =~ m!/[/*]@!
+   $_[0] =~ m!^\s*+(?:/\*\@|//\@)!
 }
 
 1;
