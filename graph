@@ -282,7 +282,7 @@ if ($done) {
 
    #check @marked_as_done
    foreach($graph->all_successors(@marked_as_done)) {
-      warn "Predecessor of '$_' is marked as done, but '$_' doesn't.\n"
+      warn "Predecessor of '$_' is marked as done, but '$_' isn't.\n"
          unless any($_, @marked_as_done);
    }
 }
