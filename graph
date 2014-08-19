@@ -162,7 +162,7 @@ my $out = 'graph';
 my $module_dir;
 my $kernel_dir;
 my $preprocessed;
-my $cache = 1;
+my $cache = 0;
 my $cache_dir = "$FindBin::Bin/.cache";
 my $cache_file = 'graph_map.cache';
 my $conf_file = "$FindBin::Bin/.graph.conf";
