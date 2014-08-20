@@ -226,10 +226,15 @@ sub preprocess_as_kernel_module_directives
    _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
 
+   my $argline =
+      '-E -CC -fdirectives-only -nostdinc ' .
+      form_gcc_kernel_include_path($kdir);
+
+   $argline .= " -I " . join(" -I ", @$idir) . " "
+      if @$idir;
+
    _generic_preprocess_directives(
-            '-E -CC -fdirectives-only -nostdinc ' .
-            form_gcc_kernel_include_path($kdir)   .
-            " -I " . join(" -I ", @$idir) . " ",
+            $argline,
             @_[0,1])
 }
 
@@ -242,10 +247,15 @@ sub preprocess_as_kernel_module
    _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
 
+   my $argline =
+      '-E -CC -nostdinc ' .
+      form_gcc_kernel_include_path($kdir);
+
+   $argline .= " -I " . join(" -I ", @$idir) . " "
+      if @$idir;
+
    _generic_preprocess_directives(
-            '-E -CC -nostdinc ' .
-            form_gcc_kernel_include_path($kdir)   .
-            " -I " . join(" -I ", @$idir) . " ",
+            $argline,
             @_[0,1])
 }
 
