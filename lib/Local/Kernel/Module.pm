@@ -36,20 +36,32 @@ use C::GlobalSet;
 our @EXPORT = qw(parse_sources);
 our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep prepare_module_sorces preprocess_module_sources prepare_module_sources);
 
+sub __get_module_folder_c_contents
+{
+   my $code;
+   my $makefile = catfile $_[0], 'Makefile';
+   if (-r $makefile) {
+      my $files = get_modules_deps($makefile);
+      if (%$files) {
+         $code = merge(map {@{$_}} values $files) # Just use them all
+      } else {
+         goto FALLBACK
+      }
+   } else {
+FALLBACK:
+      $code = merge_sources($_[0])
+   }
+
+   #FIXME:
+   $code
+}
 
 sub _get_module_data
 {
    my $dir = shift;
-
    my @kernel_includes;
    my $headers = merge_headers($dir, \@kernel_includes);
-   my $makefile = catfile $dir, 'Makefile';
-   my $code;
-   if (-r $makefile) {
-      $code = merge(map {@{$_}} values get_modules_deps($makefile)) # Just use them all
-   } else {
-      $code = merge_sources($dir)
-   }
+   my $code = __get_module_folder_c_contents($dir);
 
    @kernel_includes = map {"#include <$_>"} @kernel_includes;
 
@@ -135,14 +147,7 @@ sub _generic_handle_sources
 {
    my ($kdir, $mdir, $defines, $func) = @_;
 
-   my $makefile = catfile $mdir, 'Makefile';
-   my $code;
-   if (-r $makefile) {
-      $code = merge(map {@{$_}} values get_modules_deps($makefile)) # Just use them all
-   } else {
-      $code = merge_sources($mdir)
-   }
-
+   my $code = __get_module_folder_c_contents($mdir);
 
    my %include_dirs;
    foreach(find_headers($mdir)) {
