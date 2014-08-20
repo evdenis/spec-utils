@@ -6,10 +6,10 @@ use warnings;
 use re '/aa';
 
 use Exporter qw(import);
-use File::Spec::Functions qw(splitpath);
+use File::Spec::Functions qw(splitpath catfile);
 use Cwd qw(realpath);
 
-use Local::File::C::Merge qw(merge_headers find_headers);
+use Local::File::C::Merge qw(merge_headers merge_sources find_headers);
 use Local::File::Merge qw(merge);
 use Local::C::Transformation qw(adapt);
 use Local::Kernel::Makefile qw(get_modules_deps);
@@ -43,7 +43,13 @@ sub _get_module_data
 
    my @kernel_includes;
    my $headers = merge_headers($dir, \@kernel_includes);
-   my $code    = merge(map {@{$_}} values get_modules_deps("$dir/Makefile")); # Just use them all
+   my $makefile = catfile $dir, 'Makefile';
+   my $code;
+   if (-r $makefile) {
+      $code = merge(map {@{$_}} values get_modules_deps($makefile)) # Just use them all
+   } else {
+      $code = merge_sources($dir)
+   }
 
    @kernel_includes = map {"#include <$_>"} @kernel_includes;
 
@@ -129,8 +135,14 @@ sub _generic_handle_sources
 {
    my ($kdir, $mdir, $defines, $func) = @_;
 
-   my $code = merge( map { @{$_} }
-                     values get_modules_deps("$mdir/Makefile"));
+   my $makefile = catfile $mdir, 'Makefile';
+   my $code;
+   if (-r $makefile) {
+      $code = merge(map {@{$_}} values get_modules_deps($makefile)) # Just use them all
+   } else {
+      $code = merge_sources($mdir)
+   }
+
 
    my %include_dirs;
    foreach(find_headers($mdir)) {
