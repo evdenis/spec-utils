@@ -551,8 +551,12 @@ digraph g
       kernel_enum;
       kernel_global;
 
-      // kernel_macro; nothing already preprocessed
       kernel_macro -> kernel_macro;
+      kernel_macro -> kernel_structure;
+      kernel_macro -> kernel_function;
+      kernel_macro -> kernel_typedef;
+      kernel_macro -> kernel_enum;
+      kernel_macro -> kernel_global;
 
       kernel_structure -> kernel_macro;
       kernel_structure -> kernel_structure;
