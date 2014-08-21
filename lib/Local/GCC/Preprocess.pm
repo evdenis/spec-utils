@@ -221,13 +221,20 @@ sub preprocess_as_kernel_module_directives
 {
    my ($kdir, $idir) = (shift, shift);
 
+   return ([], {}) unless ${$_[0]};
+
    _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
 
+   my $argline =
+      '-E -CC -fdirectives-only -nostdinc ' .
+      form_gcc_kernel_include_path($kdir);
+
+   $argline .= " -I " . join(" -I ", @$idir) . " "
+      if @$idir;
+
    _generic_preprocess_directives(
-            '-E -CC -fdirectives-only -nostdinc ' .
-            form_gcc_kernel_include_path($kdir)   .
-            " -I " . join(" -I ", @$idir) . " ",
+            $argline,
             @_[0,1])
 }
 
@@ -235,18 +242,29 @@ sub preprocess_as_kernel_module
 {
    my ($kdir, $idir) = (shift, shift);
 
+   return ([], {}) unless ${$_[0]};
+
    _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
 
+   my $argline =
+      '-E -CC -nostdinc ' .
+      form_gcc_kernel_include_path($kdir);
+
+   $argline .= " -I " . join(" -I ", @$idir) . " "
+      if @$idir;
+
    _generic_preprocess_directives(
-            '-E -CC -nostdinc ' .
-            form_gcc_kernel_include_path($kdir)   .
-            " -I " . join(" -I ", @$idir) . " ",
+            $argline,
             @_[0,1])
 }
 
 sub preprocess_as_kernel_module_simpl
 {
+   unless (${$_[1]}) {
+      return $_[2] ? [] : \undef;
+   }
+
    _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
    call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1,2])
@@ -254,6 +272,10 @@ sub preprocess_as_kernel_module_simpl
 
 sub preprocess_as_kernel_module_get_macro_simpl
 {
+   unless (${$_[1]}) {
+      return $_[2] ? [] : \undef;
+   }
+
    _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
    call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1,2])

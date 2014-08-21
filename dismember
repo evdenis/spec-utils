@@ -50,7 +50,7 @@ my $module_dir = $ENV{CURRENT_PROJECT} // '.';
 my $kernel_dir;
 
 #cache options
-my $use_cache = 1;
+my $use_cache = 0;
 my $cache_level = 0;
 my $output_dir = catfile $FindBin::Bin, 'result';
 my $cache_dir  = catfile $FindBin::Bin, '.cache';
@@ -106,12 +106,6 @@ goto CACHED_GRAPH
 ### PARSING SOURCES...
 my %sources = parse_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"], !$use_cache);
 
-#if ($use_cache && $cache_level == 0) {
-#   ($sources{kernel}, $C::Entity::_NEXT_ID) = @{ retrieve($cache_file[0]) }
-#} else {
-#   store([$sources{kernel}, $C::Entity::_NEXT_ID], $cache_file[0])
-#}
-
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $use_cache, file => $cache_file[0]}});
 $g->set_graph_attribute('comments', $sources{comments});
@@ -130,7 +124,7 @@ if ($use_cache && $cache_level == 1) {
    die("There is no function $function in module\n")
       unless $id;
 
-   $output_dir = "$output_dir/$function";
+   $output_dir = catfile $output_dir, $function;
    create_directory $output_dir;
 
    ### GENERATING SUBGRAPH FOR FUNCTION: $function
