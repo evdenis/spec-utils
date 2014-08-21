@@ -86,7 +86,7 @@ sub resolve_structure_typedef ($$$)
       return 1;
    } else {
       my $t = $obj[1]->inside->[0];
-      $t = 'structure' if $t eq 'struct';
+      $t = 'structure' if $t eq 'struct' || $t eq 'union';
       my $sub = 'resolve_structure_' . $t;
       {
          no strict 'refs';
@@ -114,8 +114,8 @@ sub resolve_typedef_typedef
    my $t0 = defined $obj[0]->inside ? $obj[0]->inside->[0] : 'typedef';
    my $t1 = defined $obj[1]->inside ? $obj[1]->inside->[0] : 'typedef';
 
-   $t0 = 'structure' if $t0 eq 'struct';
-   $t1 = 'structure' if $t1 eq 'struct';
+   $t0 = 'structure' if $t0 eq 'struct' || $t0 eq 'union';
+   $t1 = 'structure' if $t1 eq 'struct' || $t1 eq 'union';
 
    if ($t0 ne 'typedef' || $t1 ne 'typedef') {
       my $sub = join('_', ('resolve', $t0, $t1));
