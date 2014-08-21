@@ -1,7 +1,7 @@
 package C::Typedef;
 use Moose;
 
-use Local::C::Parsing qw(_get_structure_fields);
+use Local::C::Parsing qw(_get_structure_wo_field_names);
 use Local::C::Transformation qw(:RE);
 use C::Keywords qw(prepare_tags);
 use namespace::autoclean;
@@ -49,7 +49,7 @@ sub get_code_tags
 
    my $i = $_[0]->inside;
    if ($i) {
-      push @$filter, @{ _get_structure_fields($code) }
+      $code =  _get_structure_wo_field_names($code)
          if $i && (@$i[0] eq 'struct' || @$i[0] eq 'union');
 
       push @$filter, join(' ', @$i)

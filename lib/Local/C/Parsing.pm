@@ -10,7 +10,7 @@ use Exporter qw(import);
 use Local::List::Utils qw(uniq any);
 use Local::C::Transformation qw(:RE);
 
-our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields);
+our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields _get_structure_wo_field_names);
 
 our @keywords = qw(
 auto
@@ -162,13 +162,34 @@ sub _get_structure_fields
    $code = substr($code, $begin, $end - $begin);
 
    my @fields;
-   foreach(split(/;/, $_[0])) {
+   foreach(split(/;/, $code)) {
       next if m/\A${s}*+\z/;
 
       push @fields, _argname_exists($_)
    }
 
    \@fields
+}
+
+sub _get_structure_wo_field_names
+{
+   my $code = $_[0];
+   my ($begin, $end) = (index($code, '{') + 1, rindex($code, '}'));
+
+   my $repl = '';
+   foreach my $line (split(/;/, substr($code, $begin, $end - $begin))) {
+      next if $line =~ m/\A${s}*+\z/;
+
+      foreach (_argname_exists($line)) {
+         $line =~ s/\b\Q$_\E\b(?=.*+\z)//;
+      }
+
+      $repl .= $line
+   }
+
+   substr($code, $begin, $end - $begin - 1, $repl);
+
+   $code
 }
 
 sub parse_structures
