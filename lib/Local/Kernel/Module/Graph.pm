@@ -435,27 +435,18 @@ sub output_sources_graph
 
    my %vertices = map { ($_ => 0) } $graph->vertices;
 
-CE:   while (%vertices) {
+   while ($graph->has_a_cycle) {
+      resolve($graph, $graph->find_a_cycle);
+   }
+
+   while (%vertices) {
       my @vertices = keys %vertices;
       my @zv;
       my %vd  = map { ($_, $graph->in_degree($_)) } @vertices;
-      my $min = min values %vd;
 
       # keys %vd == @vertices
       foreach(@vertices) {
-         push @zv, $_ if $min == $vd{$_};
-      }
-
-      if ($min) {
-         my $g = Graph::Directed->new(edges =>
-               [ grep { any($_->[0], \@zv) && any($_->[1], \@zv) } $graph->edges ]
-         );
-
-         if ($g->has_a_cycle) {
-            resolve($graph, $g->find_a_cycle);
-
-            redo CE
-         }
+         push @zv, $_ if 0 == $vd{$_};
       }
 
       die("Cycle in graph") unless @zv;

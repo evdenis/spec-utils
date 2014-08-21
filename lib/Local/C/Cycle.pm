@@ -54,7 +54,8 @@ sub resolve_structure_structure ($$$)
    #   }
    #}
 
-   if ($obj[1]->code =~ m/$ctype[0]${s}++$name[0]${s}*+\*/) {
+   #multiple fields 'struct test; struct test *;' possible
+   if ($obj[1]->code !~ m/$ctype[0]${s}++$name[0]\b${s}*+[^*]/) {
       $graph->delete_edge($obj[0]->id, $obj[1]->id);
       return 1
    }
@@ -80,9 +81,24 @@ sub resolve_structure_typedef ($$$)
 {
    my ($graph, @obj) = @_;
 
-   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+   unless (defined $obj[1]->inside) {
+      $graph->delete_edge($obj[0]->id, $obj[1]->id);
+      return 1;
+   } else {
+      my $t = $obj[1]->inside->[0];
+      $t = 'structure' if $t eq 'struct';
+      my $sub = 'resolve_structure_' . $t;
+      {
+         no strict 'refs';
 
-   1
+         if (defined &{ $sub }) {
+            goto &{ $sub }
+         } else {
+            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
+         }
+      }
+
+   }
 }
 
 sub resolve_typedef_structure
@@ -90,6 +106,32 @@ sub resolve_typedef_structure
    0
 }
 
+sub resolve_typedef_typedef
+{
+   my ($graph, @obj) = @_;
+   my @name  = map $_->name, @obj;
+
+   my $t0 = defined $obj[0]->inside ? $obj[0]->inside->[0] : 'typedef';
+   my $t1 = defined $obj[1]->inside ? $obj[1]->inside->[0] : 'typedef';
+
+   $t0 = 'structure' if $t0 eq 'struct';
+   $t1 = 'structure' if $t1 eq 'struct';
+
+   if ($t0 ne 'typedef' || $t1 ne 'typedef') {
+      my $sub = join('_', ('resolve', $t0, $t1));
+      {
+         no strict 'refs';
+
+         if (defined &{ $sub }) {
+            goto &{ $sub }
+         } else {
+            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
+         }
+      }
+   }
+
+   0
+}
 
 sub resolve
 {
@@ -109,7 +151,7 @@ sub resolve
       }
 
       my $ok = 0;
-      foreach (@obj_pairs) {
+LOOP: foreach (@obj_pairs) {
          my @t   = map blessed $_, @$_;
 
          my $trans = sub { lc(substr($_[0], 3)) };
@@ -119,10 +161,12 @@ sub resolve
             no strict 'refs';
 
             if (defined &{ $sub }) {
-               $ok = 1, last if
-                  &{ $sub }($graph, @$_)
+               if (&{ $sub }($graph, @$_)) {
+                  $ok = 1;
+                  last LOOP
+               }
             } else {
-               warn "Function $sub in Local::C::Cycle package doesn't exist. Skipping the call.\n";
+               warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
             }
          }
       }
