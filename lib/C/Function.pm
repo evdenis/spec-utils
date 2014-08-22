@@ -43,17 +43,23 @@ sub get_code_tags
    my $end = $-[0];
    $code = substr($code, $begin, $end - $begin);
 
-   my @args;
-   if ($code !~ m/\A${s}*+(?:void)?${s}*+\z/) {
-      foreach(split(/,/, $code)) {
-         next if m/\A${s}*+(?:\.{3}${s}*+)?\z/;
-
-         push @args, _argname_exists($_)
-      }
-   }
-
    my $filter = $self->get_code_ids();
-   push @$filter, @args;
+
+   ##
+   # Exclude function argument names from tags.
+   # Not effective because argnames coincide with
+   # names of other entries.
+   ##
+   #my @args;
+   #if ($code !~ m/\A${s}*+(?:void)?${s}*+\z/) {
+   #   foreach(split(/,/, $code)) {
+   #      next if m/\A${s}*+(?:\.{3}${s}*+)?\z/;
+   #
+   #      push @args, _argname_exists($_)
+   #   }
+   #}
+   #
+   #push @$filter, @args;
 
    prepare_tags($self->code, $filter)
 }
