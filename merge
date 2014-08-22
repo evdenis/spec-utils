@@ -289,7 +289,7 @@ my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
    unless %specs;
 
-### simple preprocessing step--> done
+### simple preprocessing step
 simple_preprocess(\%specs);
 
 my @comments = @{ $specs{comments} };
