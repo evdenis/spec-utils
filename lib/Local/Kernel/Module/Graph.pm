@@ -387,11 +387,17 @@ sub _write_to_files
          qq(#include "$kernel_h"\n#include "$extern_h"\n#include "$module_h"\n\n) .
          $content->{module_c};
       $content->{module_h} =
-         qq(#include "$kernel_h"\n#include "$extern_h"\n\n) .
-         $content->{module_h};
+         qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n#include "$kernel_h"\n#include "$extern_h"\n\n) .
+         $content->{module_h} .
+         qq(\n\n#endif // __MODULE_H__);
       $content->{extern_h} =
-         qq(#include "$kernel_h"\n\n) .
-         $content->{extern_h};
+         qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n#include "$kernel_h"\n\n) .
+         $content->{extern_h} .
+         qq(\n\n#endif // __EXTERN_H__);
+      $content->{kernel_h} =
+         qq(#ifndef __KERNEL_H__\n#define __KERNEL_H__\n\n) .
+         $content->{kernel_h} .
+         qq(\n\n#endif // __KERNEL_H__);
 
 
       if ($output_dir) {
