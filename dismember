@@ -10,7 +10,7 @@ use Graph::Directed;
 use Graph::Reader::Dot;
 
 use Data::Alias qw(alias deref);
-use Getopt::Long qw(:config gnu_getopt);
+use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use Scalar::Util qw(blessed);
 use File::Spec::Functions qw(catfile);
 use Storable;
@@ -45,7 +45,8 @@ BEGIN {
    }
 }
 
-my $function;
+my @functions;
+my $all_flag = 0;
 my $module_dir = $ENV{CURRENT_PROJECT} // '.';
 my $kernel_dir;
 
@@ -59,7 +60,8 @@ my @cache_file = qw/kernel.cache kernel_module.cache/;
 my $single_file = 0;
 
 GetOptions(
-   'function|f=s'          =>  \$function,
+   'all|a!'                =>  \$all_flag,
+   'functions|f=s{1,}'     =>  \@functions,
    'module|m=s'            =>  \$module_dir,
    'kernel|k=s'            =>  \$kernel_dir,
    'cache|c!'              =>  \$use_cache,
@@ -67,10 +69,12 @@ GetOptions(
    'single|s!'             =>  \$single_file
 ) or die "Incorrect usage!\n";
 
+@functions = split(/,/,join(',',@functions));
+
 $kernel_dir //= autodetect_kernel_directory();
 
-die("You should provide function name.\n")      unless $function;
-die("$module_dir is not a directory.\n")        unless -d $module_dir;
+die("You should provide at least one function name.\n") if !@functions && !$all_flag;
+die("$module_dir is not a directory.\n") unless -d $module_dir;
 die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kernel_dir);
 
 ### KERNEL DIRECTORY: $kernel_dir
@@ -120,20 +124,27 @@ if ($use_cache && $cache_level == 1) {
 }
 
 {
-   my $id = $g->get_graph_attribute('index')->{$function};
-   die("There is no function $function in module\n")
-      unless $id;
+   my $indx = $g->get_graph_attribute('index');
 
-   $output_dir = catfile $output_dir, $function;
-   create_directory $output_dir;
+   if ($all_flag) {
+      @functions = keys $indx
+   }
 
-   ### GENERATING SUBGRAPH FOR FUNCTION: $function
-   $g = get_predecessors_subgraph($g, $id);
+   foreach my $function (@functions) {
+      my $id = $indx->{$function};
+
+      my $fd = catfile $output_dir, $function;
+      create_directory $fd;
+
+      ### GENERATING SUBGRAPH FOR FUNCTION: $function
+      my $g2 = get_predecessors_subgraph($g, $id);
+
+      ### WRITING RESULTS TO DISK
+      print
+      "###   OUTPUT: " . ($single_file ? catfile($fd, 'module.c') : $fd) . "\n";
+      output_sources_graph($g2, $fd, $single_file);
+   }
 }
 
 
-### WRITING RESULTS TO DISK
-###   SINGLE FILE: $single_file
-###   OUTPUT DIRECTORY: $output_dir
-output_sources_graph($g, $output_dir, $single_file);
 
