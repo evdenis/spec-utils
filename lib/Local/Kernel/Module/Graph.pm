@@ -185,6 +185,10 @@ sub __sort_cmp
    $pa <=> $pb
 }
 
+sub __add_edge
+{
+   $_[0]->add_edge($order->($_[1]->$vname, $_[2]->$vname))
+}
 
 sub _create_edges
 {
@@ -231,13 +235,12 @@ sub _create_edges
    }
 
    if ($legal && @from == 1) {
-      $graph->add_edge($order->($from[0]->$vname, $to->$vname))
+      __add_edge($graph, $from[0], $to)
    } elsif (!$legal && $label) {
       die('Internal error')
    } elsif (!$legal && !$label) {
       foreach(@from) {
-         $graph->add_edge($order->($_->$vname, $to->$vname))
-         #__add_edge($order)
+         __add_edge($graph, $_, $to)
       }
    }
 }
@@ -272,7 +275,7 @@ sub _form_graph
                            unless _allow($label, $type);
                      }
 
-                     $graph->add_edge($order->($from->$vname, $to->$vname))
+                     __add_edge($graph, $from, $to)
                   }
                }
             } else {
