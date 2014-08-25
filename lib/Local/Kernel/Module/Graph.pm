@@ -550,7 +550,7 @@ digraph g
 
       kernel_macro -> kernel_macro;
       kernel_macro -> kernel_structure;
-      kernel_macro -> kernel_function;
+      kernel_macro -> kernel_declaration;
       kernel_macro -> kernel_typedef;
       kernel_macro -> kernel_enum;
       kernel_macro -> kernel_global;
