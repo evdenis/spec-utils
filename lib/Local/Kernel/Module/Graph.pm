@@ -105,7 +105,7 @@ RECHECK:
                my $o  = $index{$_};
                my $to = ref $o;
 
-               if ($to eq HASH ) {
+               if ($to eq HASH) {
                   my $n  = $set->get_from_index($i);
                   my $tn = blessed($n);
 
