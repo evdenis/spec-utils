@@ -25,6 +25,25 @@ use constant ARRAY => ref [];
 our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
 
 
+my ($order, $vname) = ('id', sub {@_});
+
+sub init
+{
+   my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
+   $opts->{reverse} ||= 0;
+   $opts->{human_readable} ||= 0;
+
+   $vname = $opts->{human_readable} ? 'name' : 'id';
+
+   if ($opts->{reverse}) {
+      $order = sub { ($_[1], $_[0]) }
+   } else {
+      $order = sub { @_ }
+   }
+
+   0
+}
+
 #dependency graph
 my $dg = Graph::Reader::Dot->new()->read_graph(\*Local::Kernel::Module::Graph::DATA);
 
@@ -67,7 +86,7 @@ sub _dependencies_graph_iterator_module
 #\%sources
 sub __add_vertices
 {
-   my ($graph, $sources, $vname, $iterator) = @_;
+   my ($graph, $sources, $iterator) = @_;
 
    while (my $set = $iterator->()) {
       $set = $set->set;
@@ -169,7 +188,7 @@ sub __sort_cmp
 
 sub _create_edges
 {
-   my ($index, $to, $label, $graph, $vname, $order) = @_;
+   my ($index, $to, $label, $graph) = @_;
    
    my @possible;
    foreach (keys %$index) {
@@ -218,13 +237,14 @@ sub _create_edges
    } elsif (!$legal && !$label) {
       foreach(@from) {
          $graph->add_edge($order->($_->$vname, $to->$vname))
+         #__add_edge($order)
       }
    }
 }
 
 sub _form_graph
 {
-   my ($graph, $index, $vname, $order, $iterator) = @_;
+   my ($graph, $index, $iterator) = @_;
 
    while (my $set = $iterator->()) {
       print "TAGS: " . blessed($set) . "\n";
@@ -242,7 +262,7 @@ sub _form_graph
                my $to = $set->get_from_index($i);
             
                if (ref $from eq HASH) {
-                  _create_edges($from, $to, $label, $graph, $vname, $order)
+                  _create_edges($from, $to, $label, $graph)
                } else {
                   if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
                      if ($label) {
@@ -275,17 +295,6 @@ sub build_sources_graph
 {
    my $sources = shift;
    my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
-   $opts->{reverse} ||= 0;
-   $opts->{human_readable} ||= 0;
-
-   my $vname = $opts->{human_readable} ? 'name' : 'id';
-
-   my $order;
-   if ($opts->{reverse}) {
-      $order = sub { ($_[1], $_[0]) }
-   } else {
-      $order = sub { @_ }
-   }
 
    my $index;
    my $graph;
@@ -293,7 +302,7 @@ sub build_sources_graph
       my ($hr, $rev);
       ($index, $graph, $C::Entity::_NEXT_ID, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
       die("Internal error. Corrupted cache.\n")
-         unless $hr == $opts->{reverse} && $rev == $opts->{human_readable};
+         unless $hr == $order && $rev == $vname;
    } else {
       $index = _update_ids_index({},
                   _dependencies_graph_iterator_kernel($sources)
@@ -301,13 +310,13 @@ sub build_sources_graph
 
       $graph = Graph::Directed->new();
 
-      __add_vertices($graph, $sources, $vname, _dependencies_graph_iterator_kernel($sources));
+      __add_vertices($graph, $sources, _dependencies_graph_iterator_kernel($sources));
 
-      $graph = _form_graph($graph, $index, $vname, $order,
+      $graph = _form_graph($graph, $index,
          _dependencies_graph_iterator_kernel($sources)
       );
 
-      store([ $index, $graph, $C::Entity::_NEXT_ID, $opts->{human_readable}, $opts->{reverse} ], $opts->{cache}{file})
+      store([ $index, $graph, $C::Entity::_NEXT_ID, $vname, $order ], $opts->{cache}{file})
          if $opts->{cache}{file};
    }
 
@@ -315,10 +324,10 @@ sub build_sources_graph
                _dependencies_graph_iterator_module($sources)
             );
 
-   __add_vertices($graph, $sources, $vname, _dependencies_graph_iterator_module($sources));
+   __add_vertices($graph, $sources, _dependencies_graph_iterator_module($sources));
 
 
-   $graph = _form_graph($graph, $index, $vname, $order,
+   $graph = _form_graph($graph, $index,
                _dependencies_graph_iterator_module($sources)
             );
 
