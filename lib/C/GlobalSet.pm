@@ -25,9 +25,20 @@ sub parse
    my $name_re = qr/[a-zA-Z_]\w*+/;
    my $name = qr/(?<name>${name_re})/;
 
-   while (${$_[0]} =~ m/extern${s}++([^;}{]+?)${name}\b${s}*+(?:\[[^\]]*+\])?${s}*+;
-                        |
-                        static${s}++struct${s}++${name_re}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})${s}*+;
+   while (${$_[0]} =~ m/
+                        (?:
+                           (?:extern${s}++([^;}{]+?)${name}\b${s}*+(?:\[[^\]]*+\])?${s}*+)
+                           |
+                           (?:
+                              static${s}++
+                              (?:
+                                 struct${s}++${name_re}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})
+                                 |
+                                 DEFINE_SPINLOCK${s}*+\(${s}*+${name}${s}*+\)
+                              )
+                           )
+                        )
+                        ${s}*+;
                      /gxp) {
       $globals{$+{name}} = ${^MATCH}
    }
