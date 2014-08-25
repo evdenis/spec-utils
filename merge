@@ -129,9 +129,10 @@ sub call_meld
 {
    return 1 if $#_ > 2;
 
+   my @template = qw/from_ to_ merge_/;
    my @f;
    foreach my $i (0 .. $#_) {
-      my (undef, $name) = tempfile(SUFFIX => '.c');
+      my (undef, $name) = tempfile(TEMPLATE => $template[$i], SUFFIX => '.c');
       push @f, $name;
 
       write_file($name, {binmode => ':utf8'}, @{$_[$i]})
