@@ -58,6 +58,7 @@ my $cache_dir  = catfile $FindBin::Bin, '.cache';
 my @cache_file = qw/kernel.cache kernel_module.cache/;
 
 my $single_file = 0;
+my $size_t_workaround = 0;
 
 GetOptions(
    'all|a!'                =>  \$all_flag,
@@ -66,7 +67,8 @@ GetOptions(
    'kernel|k=s'            =>  \$kernel_dir,
    'cache|c!'              =>  \$use_cache,
    'cache-level|cl|l=i'    =>  \$cache_level,
-   'single|s!'             =>  \$single_file
+   'single|s!'             =>  \$single_file,
+   'size_t|workaround|w!'  =>  \$size_t_workaround
 ) or die "Incorrect usage!\n";
 
 @functions = split(/,/,join(',',@functions));
@@ -121,6 +123,15 @@ if ($use_cache && $cache_level == 1) {
    $g = retrieve($cache_file[1])
 } else {
    store($g, $cache_file[1])
+}
+
+if ($size_t_workaround) {
+   foreach($g->vertices) {
+      if ($g->get_vertex_attribute($_, 'object')->name eq 'size_t') {
+         $g->delete_vertex($_);
+         last
+      }
+   }
 }
 
 {
