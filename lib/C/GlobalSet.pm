@@ -22,8 +22,13 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my %globals;
+   my $name_re = qr/[a-zA-Z_]\w*+/;
+   my $name = qr/(?<name>${name_re})/;
 
-   while (${$_[0]} =~ m/extern${s}++([^;}{]+?)(?<name>[a-zA-Z_]\w*+)\b${s}*+(?:\[[^\]]*+\])?${s}*+;/gp) {
+   while (${$_[0]} =~ m/extern${s}++([^;}{]+?)${name}\b${s}*+(?:\[[^\]]*+\])?${s}*+;
+                        |
+                        static${s}++struct${s}++${name_re}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})${s}*+;
+                     /gxp) {
       $globals{$+{name}} = ${^MATCH}
    }
 
