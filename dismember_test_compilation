@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#./dismember -a
+
+counter=0
+for i in $(find result -name '*.c')
+do
+   err=$(gcc --no-warnings -c $i 2>&1)
+   if [[ -n "$err" ]]
+   then
+      echo "$err" > "$(dirname $i)/errors.log"
+      echo "FAIL: $i"
+      counter=$(($counter + 1))
+   fi
+done
+
+rm 'module.o'
+
+echo
+echo "TOTAL: $counter failed compilations"
+
