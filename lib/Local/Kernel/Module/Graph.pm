@@ -24,8 +24,9 @@ use constant ARRAY => ref [];
 
 our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
 
-
-my ($order, $vname) = ('id', sub {@_});
+my %_order  = (0 => sub { @_ }, 1 => sub { ($_[1], $_[0]) });
+my $_orderp = 0;
+my ($order, $vname);
 
 sub init
 {
@@ -35,14 +36,13 @@ sub init
 
    $vname = $opts->{human_readable} ? 'name' : 'id';
 
-   if ($opts->{reverse}) {
-      $order = sub { ($_[1], $_[0]) }
-   } else {
-      $order = sub { @_ }
-   }
+   $_orderp = $opts->{reverse};
+   $order   = $_order{$_orderp};
 
    0
 }
+
+init();
 
 #dependency graph
 my $dg = Graph::Reader::Dot->new()->read_graph(\*Local::Kernel::Module::Graph::DATA);
@@ -305,7 +305,7 @@ sub build_sources_graph
       my ($hr, $rev);
       ($index, $graph, $C::Entity::_NEXT_ID, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
       die("Internal error. Corrupted cache.\n")
-         unless $hr == $order && $rev == $vname;
+         unless $hr eq $vname && $rev == $_orderp;
    } else {
       $index = _update_ids_index({},
                   _dependencies_graph_iterator_kernel($sources)
@@ -319,7 +319,7 @@ sub build_sources_graph
          _dependencies_graph_iterator_kernel($sources)
       );
 
-      store([ $index, $graph, $C::Entity::_NEXT_ID, $vname, $order ], $opts->{cache}{file})
+      store([ $index, $graph, $C::Entity::_NEXT_ID, $vname, $_orderp ], $opts->{cache}{file})
          if $opts->{cache}{file};
    }
 
