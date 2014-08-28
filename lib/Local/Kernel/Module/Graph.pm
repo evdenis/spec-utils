@@ -187,12 +187,15 @@ sub __sort_cmp
 
 sub __add_edge
 {
+   if (blessed($_[1]) eq 'C::Enum') {
+      $_[1]->up($_[3])
+   }
    $_[0]->add_edge($order->($_[1]->$vname, $_[2]->$vname))
 }
 
 sub _create_edges
 {
-   my ($index, $to, $label, $graph) = @_;
+   my ($graph, $index, $to, $label, $tag) = @_;
    
    my @possible;
    foreach (keys %$index) {
@@ -235,12 +238,12 @@ sub _create_edges
    }
 
    if ($legal && @from == 1) {
-      __add_edge($graph, $from[0], $to)
+      __add_edge($graph, $from[0], $to, $tag)
    } elsif (!$legal && $label) {
       die('Internal error')
    } elsif (!$legal && !$label) {
       foreach(@from) {
-         __add_edge($graph, $_, $to)
+         __add_edge($graph, $_, $to, $tag)
       }
    }
 }
@@ -265,7 +268,7 @@ sub _form_graph
                my $to = $set->get_from_index($i);
             
                if (ref $from eq HASH) {
-                  _create_edges($from, $to, $label, $graph)
+                  _create_edges($graph, $from, $to, $label, $tag)
                } else {
                   if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
                      if ($label) {
@@ -275,7 +278,7 @@ sub _form_graph
                            unless _allow($label, $type);
                      }
 
-                     __add_edge($graph, $from, $to)
+                     __add_edge($graph, $from, $to, $tag)
                   }
                }
             } else {
@@ -439,7 +442,7 @@ my %sp = (
 
 sub output_sources_graph
 {
-   my ($graph, $output_dir, $single_file) = @_;
+   my ($graph, $output_dir, $single_file, $remove_fields) = @_;
 
    my %out = map { $_ => [] } qw/
       kernel_h
@@ -528,7 +531,7 @@ sub output_sources_graph
          my $a = $out{$_};
          my $len = @$a;
          for (my $i = 0; $i < $len; ++$i) {
-            $a->[$i] = $a->[$i]->to_string($c)
+            $a->[$i] = $a->[$i]->to_string($c, $remove_fields)
          }
       }
 

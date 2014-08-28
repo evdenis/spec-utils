@@ -59,6 +59,7 @@ my @cache_file = qw/kernel.cache kernel_module.cache/;
 
 my $single_file = 0;
 my $size_t_workaround = 0;
+my $remove_fields = 0;
 
 GetOptions(
    'all|a!'                =>  \$all_flag,
@@ -68,6 +69,7 @@ GetOptions(
    'cache|c!'              =>  \$use_cache,
    'cache-level|cl|l=i'    =>  \$cache_level,
    'single|s!'             =>  \$single_file,
+   'remove-fields|r!'      =>  \$remove_fields,
    'size_t|workaround|w!'  =>  \$size_t_workaround
 ) or die "Incorrect usage!\n";
 
@@ -153,7 +155,7 @@ if ($size_t_workaround) {
       ### WRITING RESULTS TO DISK
       print
       "###   OUTPUT: " . ($single_file ? catfile($fd, 'module.c') : $fd) . "\n";
-      output_sources_graph($g2, $fd, $single_file);
+      output_sources_graph($g2, $fd, $single_file, $remove_fields);
    }
 }
 
