@@ -20,7 +20,7 @@ sub parse
    my $area = $_[1];
    my %structures;
 
-   my $name = qr!(?<sname>[a-zA-Z_]\w*)!;
+   my $name = qr!(?<sname>[a-zA-Z_]\w*+)!;
    
    while ( ${$_[0]} =~ m/^${h}*+
          (struct|union)
