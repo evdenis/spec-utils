@@ -18,10 +18,13 @@ foreach (@{ $set->set }) {
    #$_->up('TEST12');
    #$_->up('TEST3');
    $_->up('TEST5');
+   $_->up('PIDTYPE_PID');
+   $_->up('PIDTYPE_MAX');
    #$_->up('TEST7');
-   p $_;
-   p $_->fields;
-   print $_->to_string(undef, 1)
+   #p $_;
+   #p $_->fields;
+   print $_->to_string(undef, 1);
+   print "\n" . '---' . "\n";
 }
 
 __DATA__
@@ -37,3 +40,10 @@ enum {
    TEST7
 };
 
+enum pid_type
+{
+       PIDTYPE_PID,
+       PIDTYPE_PGID,
+       PIDTYPE_SID,
+       PIDTYPE_MAX
+}  ;

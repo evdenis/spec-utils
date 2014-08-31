@@ -55,25 +55,14 @@ around BUILDARGS => sub {
       $opts->{name} = ''; #Will be set to first constant in BUILD
       $opts->{has_name} = 0;
    }
+   $opts->{code} =~ s/}\s++;\z/};/;
 
    $class->$orig($opts)
 };
 
-sub BUILD {
-   my $self = shift;
-
-   $self->name($self->get_code_ids->[0])
-      unless ($self->has_name);
-}
-
-sub _build_code_ids
+sub BUILD
 {
    my $self = shift;
-   my @a;
-
-   if ($self->has_name) {
-      push @a, $self->name
-   }
 
    my $code = $self->code;
    my ($o, $c) = (index($code, '{') + 1, rindex($code, '}'));
@@ -83,14 +72,15 @@ sub _build_code_ids
    my @fields  = split(/,/, substr($code, $o, $c - $o));
    my $name = qr/([a-zA-Z_]\w*+)/;
 
+   $self->name($self->head =~ m/enum${s}++$name/)
+      unless $self->has_name;
+
    my $last_expr_dep;
    foreach (@fields) {
       next if /\A\s++\z/;
 
       if (m/\A${s}*+${name}(${s}*+=${s}*+)?/g) {
          my $f = $1;
-         push @a, $f;
-
          my $field = [0, $_];
 
          my $arr = [];
@@ -122,6 +112,16 @@ sub _build_code_ids
          warn "Can't parse '$_' string for enum ids\n"
       }
    }
+}
+
+sub _build_code_ids
+{
+   my $self = shift;
+   my @a;
+
+   push @a, $self->name
+      if $self->has_name;
+   push @a, $self->fields->keys;
 
    \@a
 }
@@ -130,7 +130,7 @@ sub get_code_tags
 {
    my $filter = $_[0]->get_code_ids();
 
-   $filter->[0] = "enum " . $_[0]->name if $_[0]->has_name; #HACK
+   $filter->[0] = 'enum ' . $_[0]->name if $_[0]->has_name; #HACK
 
    prepare_tags(substr($_[0]->code, index($_[0]->code, '{')), $filter)
 }
@@ -191,7 +191,7 @@ sub to_string
             $last_value_type = 'e';
             $last_value = $ref->[3];
          }
-         $gap = 0;
+         $gap = 1;
          $skip = 0;
       } else {
          if ($t eq 'next') {
