@@ -1,6 +1,7 @@
 package C::Typedef;
 use Moose;
 
+use RE::Common qw($varname);
 use Local::C::Parsing qw(_get_structure_wo_field_names);
 use Local::C::Transformation qw(:RE);
 use C::Keywords qw(prepare_tags);
@@ -23,7 +24,7 @@ has 'inside' => (
 
 sub _build_inside
 {
-   if ($_[0]->code =~ m/typedef${s}*+(union|struct|enum)${s}*+([a-zA-Z_]\w*+)?${s}*+\{/) {
+   if ($_[0]->code =~ m/typedef${s}*+(union|struct|enum)${s}*+($varname)?${s}*+\{/) {
       return $2 ? [$1, $2] : [$1]
    }
 

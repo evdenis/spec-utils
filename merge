@@ -13,6 +13,7 @@ use lib catfile $FindBin::Bin, 'lib';
 
 use utf8::all;
 
+use RE::Common qw($varname);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Pod::Usage;
@@ -307,7 +308,7 @@ foreach(0 .. $#comments) {
 #funcs init
 my %f;
 my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
-my $name = qr'(?<name>[a-zA-Z_]\w*+)';
+my $name = qr/(?<name>$varname)/;
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 

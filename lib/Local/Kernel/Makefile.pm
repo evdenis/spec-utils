@@ -5,6 +5,7 @@ use strict;
 
 use re '/aa';
 
+use RE::Common qw($varname);
 use Local::String::Utils qw(normalize);
 use File::Slurp qw(read_file);
 use File::Spec::Functions qw(catfile splitpath);
@@ -22,7 +23,7 @@ sub get_modules_deps
    my @modules;
 
    while ( $$data =~ m/
-                        obj-(?:\$\([a-zA-Z_]\w*+\)|[mny])
+                        obj-(?:\$\($varname\)|[mny])
                         \h*+
                            [:+]?=
                         \h*+

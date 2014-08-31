@@ -1,6 +1,7 @@
 package C::MacroSet;
 use Moose;
 
+use RE::Common qw($varname);
 use Carp;
 use C::Macro;
 use namespace::autoclean;
@@ -91,7 +92,7 @@ sub parse
             [ \t]*+
             define
             [ \t]++
-            (?<def>[a-zA-Z_]\w*+)
+            (?<def>$varname)
             (?:\([ \t]*(?<args>[^\)]*)\))?
             [ \t]*+
             (?<code>.*)\Z
@@ -108,7 +109,7 @@ sub parse
             my $args = undef;
 
             if (exists $+{args}) {
-               $args = [ $+{args} =~ m/[a-zA-Z_]\w*+/g ]
+               $args = [ $+{args} =~ m/$varname/g ]
             }
 
             $defines{$name} = C::Macro->new(name => $name, args => $args, code => $code, substitution => $substitution, area => $area)

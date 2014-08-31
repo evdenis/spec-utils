@@ -1,6 +1,7 @@
 package C::Enum;
 use Moose;
 
+use RE::Common qw($varname);
 use Local::C::Transformation qw(:RE);
 use Local::String::Utils qw(normalize);
 use C::Keywords qw(prepare_tags);
@@ -70,16 +71,15 @@ sub BUILD
    $self->head(substr($code, 0, $o));
    $self->tail(substr($code, $c));
    my @fields  = split(/,/, substr($code, $o, $c - $o));
-   my $name = qr/([a-zA-Z_]\w*+)/;
 
-   $self->name($self->head =~ m/enum${s}++$name/)
+   $self->name($self->head =~ m/enum${s}++($varname)/)
       unless $self->has_name;
 
    my $last_expr_dep;
    foreach (@fields) {
       next if /\A\s++\z/;
 
-      if (m/\A${s}*+${name}(${s}*+=${s}*+)?/g) {
+      if (m/\A${s}*+(${varname})(${s}*+=${s}*+)?/g) {
          my $f = $1;
          my $field = [0, $_];
 

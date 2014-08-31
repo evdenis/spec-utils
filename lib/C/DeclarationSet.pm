@@ -1,6 +1,7 @@
 package C::DeclarationSet;
 use Moose;
 
+use RE::Common qw($varname);
 use Local::C::Transformation qw(:RE);
 use Local::String::Utils qw(normalize);
 use Local::List::Utils qw(any);
@@ -23,7 +24,7 @@ sub parse
    my %declarations;
 
    my $ret  = qr/(?<ret>[\w\s\*$Local::C::Transformation::special_symbols]+)/;
-   my $name = qr'(?<name>[a-zA-Z_]\w*+)';
+   my $name = qr/(?<name>$varname)/;
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 

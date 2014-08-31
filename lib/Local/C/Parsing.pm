@@ -7,6 +7,7 @@ use re '/aa';
 
 use Exporter qw(import);
 
+use RE::Common qw($varname);
 use Local::List::Utils qw(uniq any);
 use Local::C::Transformation qw(:RE);
 
@@ -76,10 +77,9 @@ aligned
 
 sub _argname_exists
 {
-   my $name = qr/[a-zA-Z_]\w*+/;
    my @result = ();
 
-   if ($_[0] =~ m/\(${h}*+\*${h}*+($name)${h}*+\)${h}*+\(/) {
+   if ($_[0] =~ m/\(${h}*+\*${h}*+($varname)${h}*+\)${h}*+\(/) {
       @result = ($1);
       my ($begin, $end) = ($+[0]+1, rindex($_[0], ')'));
 
@@ -93,11 +93,11 @@ sub _argname_exists
       return @result
    }
 
-   my $name_ex = qr/($name)(?:\[[^\]]+\]|:\d+)?/;
+   my $name_ex = qr/($varname)(?:\[[^\]]+\]|:\d+)?/;
    my $several = index($_[0], ',');
    if ($several != -1) {
       my $tail = substr($_[0], $several + 1);
-      push @result, $1 while ($tail =~ m/($name)/g);
+      push @result, $1 while ($tail =~ m/($varname)/g);
 
       $_[0] =~ m/${name_ex}${h}*+,/;
       unshift @result, $1;
@@ -115,7 +115,7 @@ sub _argname
    if (index($_[0], '(') != -1) {
       return _argname_exists($_[0])
    } else {
-      my @a = $_[0] =~ m/[a-zA-Z_]\w*+/g;
+      my @a = $_[0] =~ m/$varname/g;
       my $i  = 1;
       my $us = 0;
       my $l  = 0;
@@ -194,7 +194,7 @@ sub _get_structure_wo_field_names
 
 sub parse_structures
 {
-   my @s = [$_[0] =~ m/struct${s}++([a-zA-Z_]\w*+)/g];
+   my @s = [$_[0] =~ m/struct${s}++($varname)/g];
 
    uniq(\@s);
 
@@ -208,7 +208,7 @@ sub parse_calls
    while (
       $_[0] =~
          m/
-            \b(?<fname>[a-zA-Z_]\w*+)
+            \b(?<fname>$varname)
             ${s}*+
             (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
             (?!${s}*+(?:\{|\()) # исключает функции которые ни разу не вызываются

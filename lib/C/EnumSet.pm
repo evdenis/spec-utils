@@ -1,6 +1,7 @@
 package C::EnumSet;
 use Moose;
 
+use RE::Common qw($varname);
 use C::Enum;
 use Local::C::Transformation qw(:RE);
 use namespace::autoclean;
@@ -21,7 +22,7 @@ sub parse
    my $self = shift;
    my @enums;
 
-   my $name = qr!(?<ename>[a-zA-Z_]\w*)!;
+   my $name = qr!(?<ename>$varname)!;
    
    while ( ${$_[0]} =~ m/^${h}*+
          enum

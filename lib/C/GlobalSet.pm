@@ -3,6 +3,7 @@ use Moose;
 
 use Carp;
 
+use RE::Common qw($varname);
 use C::Global;
 use Local::C::Transformation qw(:RE);
 use namespace::autoclean;
@@ -22,8 +23,7 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my %globals;
-   my $name_re = qr/[a-zA-Z_]\w*+/;
-   my $name = qr/(?<name>${name_re})/;
+   my $name = qr/(?<name>${varname})/;
 
    while (${$_[0]} =~ m/
                         (?:
@@ -32,7 +32,7 @@ sub parse
                            (?:
                               static${s}++
                               (?:
-                                 struct${s}++${name_re}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})
+                                 struct${s}++${varname}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})
                                  |
                                  DEFINE_SPINLOCK${s}*+\(${s}*+${name}${s}*+\)
                               )

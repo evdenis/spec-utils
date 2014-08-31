@@ -1,6 +1,7 @@
 package C::TypedefSet;
 use Moose;
 
+use RE::Common qw($varname);
 use C::Typedef;
 use Local::C::Transformation qw(:RE);
 use namespace::autoclean;
@@ -21,11 +22,11 @@ sub parse
    my $set = $self->new(set => []);
    my %typedefs;
 
-   my $name = qr/(?:[\*\s]+)?(?<name>[a-zA-Z_]\w*+)\b${s}*+(?:\[[^\]]+\])?/;
+   my $name = qr/(?:[\*\s]+)?(?<name>$varname)\b${s}*+(?:\[[^\]]+\])?/;
 
    while (${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
          (?:
-            (?:(?:(?:struct|union|enum)${s}*+(?:[a-zA-Z_]\w*)?${s}*+(?<crec>\{(?:(?>[^\{\}]+)|(?&crec))+\}))(?:${s}*+PARSEC_PACKED)?${s}*+($name))
+            (?:(?:(?:struct|union|enum)${s}*+(?:$varname)?${s}*+(?<crec>\{(?:(?>[^\{\}]+)|(?&crec))+\}))(?:${s}*+PARSEC_PACKED)?${s}*+($name))
             |
             (?:.*?(?:\($name\)|$name)${s}*+(?<nrec>\((?:(?>[^()]+)|(?&nrec))+\)))
             |

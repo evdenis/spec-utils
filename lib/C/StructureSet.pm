@@ -1,6 +1,7 @@
 package C::StructureSet;
 use Moose;
 
+use RE::Common qw($varname);
 use C::Structure;
 use Local::C::Transformation qw(:RE);
 use namespace::autoclean;
@@ -20,7 +21,7 @@ sub parse
    my $area = $_[1];
    my %structures;
 
-   my $name = qr!(?<sname>[a-zA-Z_]\w*+)!;
+   my $name = qr!(?<sname>$varname)!;
    
    while ( ${$_[0]} =~ m/^${h}*+
          (struct|union)

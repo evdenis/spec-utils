@@ -3,6 +3,7 @@ use Moose;
 
 use Carp;
 
+use RE::Common qw($varname);
 use C::Function;
 use Local::C::Transformation qw(:RE);
 use Local::List::Utils qw(any);
@@ -32,7 +33,7 @@ sub parse
    my %functions;
 
    my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
-   my $name = qr'(?<name>[a-zA-Z_]\w*+)';
+   my $name = qr/(?<name>$varname)/;
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
    

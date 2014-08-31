@@ -5,6 +5,7 @@ use strict;
 
 use Exporter qw(import);
 
+use RE::Common qw($varname);
 use Local::C::Parsing;
 
 our @EXPORT = qw(@keywords);
@@ -30,7 +31,7 @@ sub prepare_tags
 {
    my $code = $_[0];
    my %filter = map { $_ => undef } @{$_[1]};
-   my $name = qr/\b([a-zA-Z_]\w*+)\b/;
+   my $name = qr/\b($varname)\b/;
 
    #remove strings
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
