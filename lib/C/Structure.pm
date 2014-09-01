@@ -20,6 +20,16 @@ has 'type' => (
 );
 
 
+around BUILDARGS => sub {
+   my $orig = shift;
+   my $class = shift;
+   my $opts = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
+
+   $opts->{code} =~ s/}\s++;\z/};/;
+
+   $class->$orig($opts)
+};
+
 sub get_code_tags
 {
    my $code = $_[0]->code;
@@ -32,7 +42,7 @@ sub get_code_tags
 
 sub to_string
 {
-   $_[0]->code =~ s/}\s+;$/};/r
+   $_[0]->code
 }
 
 __PACKAGE__->meta->make_immutable;
