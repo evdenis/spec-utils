@@ -3,6 +3,9 @@
 *.svg
 *.pdf
 
+.graph.conf
+progress.txt
+
 .cache/
 result/
 
