@@ -13,12 +13,13 @@ use Graph::Writer::Dot;
 use Pod::Usage;
 use File::Slurp qw(read_file write_file);
 use File::Which;
+use File::Spec::Functions qw(catfile catdir);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use Storable;
 use YAML::XS qw(LoadFile);
 use FindBin;
 
-use lib "$FindBin::Bin/lib/";
+use lib catfile $FindBin::Bin, 'lib/';
 
 use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;
@@ -163,9 +164,9 @@ my $module_dir;
 my $kernel_dir;
 my $preprocessed;
 my $cache = 0;
-my $cache_dir = "$FindBin::Bin/.cache";
+my @cache_dir = (catdir($ENV{HOME}, '.cache/graph'), catdir($FindBin::Bin, '.cache'));
 my $cache_file = 'graph_map.cache';
-my $conf_file = "$FindBin::Bin/.graph.conf";
+my @conf_file = (catfile($FindBin::Bin, '.graph.conf'), catfile($ENV{HOME}, '.config/graph/config'));
 my $done = 1;
 my $priority = 1;
 my $issues = 0;
@@ -210,22 +211,35 @@ unless ($preprocessed) {
 
 $cache = 0 if $preprocessed;
 
-if ($cache_dir) {
-   mkdir($cache_dir) or
-      die("Can't create directory $cache_dir: $!\n")
-         unless -e $cache_dir;
+{
+   my $c = 0;
+   foreach (@cache_dir) {
+      unless (mkdir($_)) {
+         unless (-e $_) {
+            warn("Can't create directory $_: $!\n");
+            next
+         }
+      }
 
-   $cache_file = "$cache_dir/$cache_file";
+      $cache_file = catfile $_, $cache_file;
+      $c = 1;
+      last
+   }
+   die "Can't create cache directory.\n"
+      unless $c
 }
 
 $cache = 0 unless -r $cache_file;
 
 my $conf;
-if (-r $conf_file) {
-   $conf = LoadFile($conf_file)
-} else {
-   die("Can't read config file.\n")
+foreach (@conf_file) {
+   if (-r $_) {
+      $conf = LoadFile($_);
+      last
+   }
 }
+die("Can't read config file.\n")
+   unless $conf;
 
 #Initializing the library
 Local::Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
