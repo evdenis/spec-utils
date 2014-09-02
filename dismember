@@ -139,6 +139,10 @@ if ($size_t_workaround) {
    }
 
    foreach my $function (@functions) {
+      unless (exists $indx->{$function}) {
+         warn "Function $function doesn't exist in module.\n";
+         next
+      }
       my $id = $indx->{$function};
 
       my $fd = catfile $output_dir, $function;
