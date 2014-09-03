@@ -30,6 +30,13 @@ use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph)
 
 use C::FunctionSet;
 
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
+
 
 =encoding utf8
 
@@ -208,6 +215,8 @@ unless ($preprocessed) {
    pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $module_dir;
 }
 
+### KERNEL DIRECTORY: $kernel_dir
+### MODULE DIRECTORY: $module_dir
 
 $cache = 0 if $preprocessed;
 
@@ -229,11 +238,13 @@ $cache = 0 if $preprocessed;
       unless $c
 }
 
+### CACHE FILE: $cache_file
 $cache = 0 unless -r $cache_file;
 
 my $conf;
 foreach (@conf_file) {
    if (-r $_) {
+### CONFIG FILE: $_
       $conf = LoadFile($_);
       last
    }
@@ -276,11 +287,11 @@ CACHE: if ($cache) {
 $graph->set_vertex_attribute($_, shape => 'octagon')
    foreach $graph->successorless_vertices();
 
-#2
 my $stat_done = 0;
 my @marked_as_done;
 
 if ($done) {
+   ### MARKING VERIFIED FUNCTIONS
    #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
    #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
    sub label_done { state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0] }
@@ -305,9 +316,9 @@ if ($done) {
 }
 
 
-#3
 my @stat_priority;
 if ($priority) {
+   ### MARKING PRIORITIES
    while ( my ($i, $list) = each $conf->{priority}{lists} ) {
       my $color = $conf->{priority}{colors}{$list};
       my %stat = ( done => 0, remains => 0);
@@ -359,6 +370,7 @@ if ($priority) {
 #4
 my %used_issues;
 if ($issues) {
+   ### MARKING ISSUES
    my $mark = "\N{SALTIRE}";
    foreach (keys %{ $conf->{issues} }) {
       foreach my $v ($graph->vertices) {
@@ -389,6 +401,7 @@ if ($issues) {
 }
 
 if ($stat) {
+   ### GATHERING STATISTICS
    say "\n--- Статистика ---";
    say "Общее количество функций: " . $graph->vertices;
    if ($priority) {
@@ -418,6 +431,7 @@ if ($stat) {
 }
 
 if (@functions) {
+   ### GRAPH REDUCING
    my @e;
    foreach (@functions) {
       unless ($graph->has_vertex($_)) {
