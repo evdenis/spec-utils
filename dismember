@@ -12,7 +12,7 @@ use Graph::Reader::Dot;
 use Data::Alias qw(alias deref);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use Scalar::Util qw(blessed);
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(catfile catdir);
 use Storable;
 
 use FindBin;
@@ -52,8 +52,8 @@ my $kernel_dir;
 
 #cache options
 my $cache = 0;
-my $output_dir = catfile $FindBin::Bin, 'result';
-my $cache_dir  = catfile $FindBin::Bin, '.cache';
+my $output_dir = catdir $FindBin::Bin, 'result';
+my @cache_dir  = (catdir($ENV{HOME}, '.cache/dismember'), catdir($FindBin::Bin, '.cache'));
 my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my $single_file = 0;
@@ -84,16 +84,29 @@ die("You should provide proper kernel directory with --kernel option\n") unless 
 
 sub create_directory
 {
-   mkdir($_[0]) or
-      die("Can't create directory $_[0]: $!\n")
-         if $_[0] && (! -e $_[0])
+   unless (mkdir($_[0])) {
+      unless (-e $_[0]) {
+         warn("Can't create directory $_[0]: $!\n");
+         return 1
+      }
+   }
+
+   0
 }
 
 create_directory $output_dir;
 
-if ($cache_dir) {
-   create_directory $cache_dir;
-   @cache_file = map { defined $_ ? catfile($cache_dir, $_) : $_ } @cache_file;
+{
+   my $c = 0;
+   foreach my $dir (@cache_dir) {
+      unless (create_directory($dir)) {
+         @cache_file = map { defined $_ ? catfile($dir, $_) : $_ } @cache_file;
+         $c = 1;
+         last
+      }
+   }
+   die "Can't create directory for cache.\n"
+      unless $c
 }
 
 $cache = 2 if $cache > 2;
