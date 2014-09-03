@@ -13,7 +13,7 @@ our @EXPORT_OK = qw(prepare_tags);
 
 our @keywords = @Local::C::Parsing::keywords;
 
-my @special_labels = qw(struct union enum);
+my @special_labels = qw(struct union enum . ->);
 
 sub not_special_label
 {
@@ -37,11 +37,15 @@ sub prepare_tags
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
 
    my @tokens;
-   while ($code =~ m/$name/g) {
+   while ($code =~ m/(|$name|(\.|->))/g) {
       if (not_special_label($1)) {
          push @tokens, $1
       } else {
          my $special = $1;
+
+         #pop @token; remove previous; + a.b; + a->b; - .b = ;
+         $special = 'field'
+            if $special == '.' || $special == '->';
 
          push @tokens, [$special, $1]
             if $code =~ m/\G\s*+$name/gc
