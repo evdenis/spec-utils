@@ -16,7 +16,7 @@ use File::Spec::Functions qw(catfile catdir);
 use Storable;
 
 use FindBin;
-use lib catfile $FindBin::Bin, 'lib';
+use lib catdir $FindBin::Bin, 'lib';
 
 use Local::List::Utils qw(difference any);
 use Local::String::Utils qw(normalize);
