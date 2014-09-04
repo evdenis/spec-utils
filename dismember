@@ -6,20 +6,13 @@ use strict;
 use feature qw(say);
 use re '/aa';
 
-use Graph::Directed;
-use Graph::Reader::Dot;
-
-use Data::Alias qw(alias deref);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
-use Scalar::Util qw(blessed);
 use File::Spec::Functions qw(catfile catdir);
 use Storable;
 
 use FindBin;
 use lib catdir $FindBin::Bin, 'lib';
 
-use Local::List::Utils qw(difference any);
-use Local::String::Utils qw(normalize);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Kernel::Module qw(parse_sources);
 use Local::Kernel::Module::Graph qw(
@@ -27,16 +20,6 @@ use Local::Kernel::Module::Graph qw(
    get_predecessors_subgraph
    output_sources_graph
 );
-
-use C::Entity;
-use C::Macro;
-use C::MacroSet;
-use C::TypedefSet;
-use C::StructureSet;
-use C::EnumSet;
-use C::FunctionSet;
-use C::DeclarationSet;
-use C::GlobalSet;
 
 BEGIN {
    eval {
