@@ -10,6 +10,7 @@ my $data = join('', <DATA>);
 my $set = C::StructureSet->parse(\$data, 'kernel');
 
 foreach (@{$set->set}) {
+   $_->up('c');
    print $_->to_string(undef, 1);
 }
 
