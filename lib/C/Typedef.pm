@@ -51,7 +51,7 @@ sub get_code_tags
    my $i = $_[0]->inside;
    if ($i) {
       $code =  _get_structure_wo_field_names($code)
-         if $i && (@$i[0] eq 'struct' || @$i[0] eq 'union');
+         if $i && ($i->[0] eq 'struct' || $i->[0] eq 'union');
 
       push @$filter, join(' ', @$i)
          if @$i == 2;
