@@ -142,7 +142,7 @@ RECHECK:
                } else {
                   $index{$_} = {};
                   $index{$_}{$to} = $o;
-                  goto RECHECK;
+                  goto RECHECK
                }
             } else {
                $index{$_} = $set->get_from_index($i);
