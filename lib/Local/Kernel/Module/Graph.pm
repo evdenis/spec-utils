@@ -383,7 +383,7 @@ sub _write_to_files
    my $kernel_h = 'kernel.h';
    my $extern_h = 'extern.h';
 
-   $module_c = "$output_dir/$module_c"
+   $module_c = catfile $output_dir, $module_c
       if $output_dir;
 
    if ($single_file) {
