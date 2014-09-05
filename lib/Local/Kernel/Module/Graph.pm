@@ -528,10 +528,8 @@ sub output_sources_graph
       my $c = $graph->get_graph_attribute('comments');
 
       foreach (keys %out) {
-         my $a = $out{$_};
-         my $len = @$a;
-         for (my $i = 0; $i < $len; ++$i) {
-            $a->[$i] = $a->[$i]->to_string($c, $remove_fields)
+         foreach (@{ $out{$_} }) {
+            $_ = $_->to_string($c, $_->area eq 'kernel' ? $remove_fields : 0)
          }
       }
 
