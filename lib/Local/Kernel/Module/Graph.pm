@@ -119,6 +119,26 @@ sub _update_ids_index
          my @id = @{$id};
 
          foreach (@id) {
+            if ($_ eq ARRAY) { #structure fields
+               foreach (@$_) {
+                  my $n = $set->get_from_index($i);
+                  if (exists $index{$_}) {
+                     my $o  = $index{$_};
+                     my $to = ref $o;
+
+                     if ($to eq HASH) {
+                        push @{ $index{$_}{fields} }, $n
+                     } else {
+                        $index{$_} = {};
+                        $index{$_}{$to} = $o;
+                        $index{$_}{fields} = [ $n ]
+                     }
+
+                  } else {
+                     $index{$_}{fields} = [ $n ]
+                  }
+               }
+            }
             if (exists $index{$_}) {
 RECHECK:
                my $o  = $index{$_};
@@ -198,7 +218,7 @@ sub _create_edges
    my ($graph, $index, $to, $label, $tag) = @_;
    
    my @possible;
-   foreach (keys %$index) {
+   foreach (grep {!m/fields/} keys %$index) {
       push @possible, $index->{$_}
          if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
    }
@@ -268,17 +288,33 @@ sub _form_graph
                my $to = $set->get_from_index($i);
             
                if (ref $from eq HASH) {
-                  _create_edges($graph, $from, $to, $label, $tag)
-               } else {
-                  if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
-                     if ($label) {
-                        my $type = blessed($from);
-
-                        die("Wrong type: want $label, but get $type. Objects:\n" . $from->code . "\n<->\n" . $to->code)
-                           unless _allow($label, $type);
+                  if ($label && $label eq 'field') {
+                     my @objects;
+                     if (exists $from->{fields}) {
+                        @objects = @{ $from->{fields} }
+                     } else {
+                        warn "Can't find fields in index for tag '$tag' in object " . $to->name . "\n"
                      }
+                     foreach (@objects) {
+                        $_->up($tag)
+                     }
+                  } else {
+                     _create_edges($graph, $from, $to, $label, $tag)
+                  }
+               } else {
+                  if ($label && $label eq 'field') {
+                     warn "Can't find fields in index for tag '$tag' in object " . $to->name . "\n"
+                  } else {
+                     if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
+                        if ($label) {
+                           my $type = blessed($from);
 
-                     __add_edge($graph, $from, $to, $tag)
+                           die("Wrong type: want $label, but get $type. Objects:\n" . $from->code . "\n<->\n" . $to->code)
+                              unless _allow($label, $type);
+                        }
+
+                        __add_edge($graph, $from, $to, $tag)
+                     }
                   }
                }
             } else {

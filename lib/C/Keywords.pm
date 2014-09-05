@@ -45,7 +45,7 @@ sub prepare_tags
 
          #pop @token; remove previous; + a.b; + a->b; - .b = ;
          $special = 'field'
-            if $special == '.' || $special == '->';
+            if $special eq '.' || $special eq '->';
 
          push @tokens, [$special, $1]
             if $code =~ m/\G\s*+$name/gc
