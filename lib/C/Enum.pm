@@ -213,7 +213,7 @@ sub to_string
       if ($self->has_name == 0) {
          warn "Enum doesn't have name and all constants are reducted.\n"
             if $ENV{DEBUG};
-         return '';
+         return undef;
       } else {
          warn "There is no explotable constants in Enum " . $self->name . ". Stub will be used.\n"
             if $ENV{DEBUG};
