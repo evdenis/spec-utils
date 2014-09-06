@@ -530,7 +530,7 @@ sub output_sources_graph
          }
       }
 
-      %out = map { $_ => join("\n\n", @{ $out{$_} } ) } keys %out;
+      %out = map { $_ => join("\n\n", grep {$_} @{ $out{$_} } ) } keys %out;
 
       foreach (qw/module_h module_c/) {
          restore($out{$_}, comments => $c)
