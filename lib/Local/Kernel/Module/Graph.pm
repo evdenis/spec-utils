@@ -19,7 +19,7 @@ use Local::List::Utils qw(any);
 use Local::C::Transformation qw(restore);
 use Local::C::Cycle qw(resolve);
 
-use constant HASH => ref {};
+use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
 our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
