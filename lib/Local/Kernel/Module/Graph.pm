@@ -456,19 +456,20 @@ sub output_sources_graph
       resolve($graph, $graph->find_a_cycle);
    }
 
+   my %vd  = map { ($_, $graph->in_degree($_)) } keys %vertices;
    while (%vertices) {
-      my @vertices = keys %vertices;
       my @zv;
-      my %vd  = map { ($_, $graph->in_degree($_)) } @vertices;
 
-      # keys %vd == @vertices
-      foreach(@vertices) {
+      foreach(keys %vertices) {
          push @zv, $_ if 0 == $vd{$_};
       }
 
       die("Cycle in graph") unless @zv;
 
-      delete $vertices{$_} foreach @zv;
+      foreach (@zv) {
+         --$vd{$_->[1]} foreach $graph->edges_from($_);
+         delete $vertices{$_}
+      }
 
 
       my %i = map {
