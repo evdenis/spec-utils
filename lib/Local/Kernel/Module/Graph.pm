@@ -341,17 +341,14 @@ sub build_sources_graph
 }
 
 
+my %ft = (all_predecessors => 'edges_to', all_sucessors => 'edges_from');
 sub _generic_get_subgraph
 {
    my ($method, $graph, @id) = @_;
+   my $em = $ft{$method};
 
-   my @pr = $graph->$method(@id);
-   push @pr, @id;
-
-   my $subgraph =
-      Graph::Directed->new(edges =>
-         [ grep { any($_->[0], \@pr) && any($_->[1], \@pr) } $graph->edges ]
-      );
+   my @pr = (@id, $graph->$method(@id));
+   my $subgraph = Graph::Directed->new(edges => [ map $graph->$em($_), @pr ]);
 
    $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
       foreach @pr;
@@ -360,7 +357,6 @@ sub _generic_get_subgraph
       if $graph->has_graph_attribute('comments');
 
    $subgraph
-
 }
 
 sub get_predecessors_subgraph
