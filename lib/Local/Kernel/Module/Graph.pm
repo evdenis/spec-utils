@@ -15,7 +15,6 @@ use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
 
-use Local::List::Utils qw(any);
 use Local::C::Transformation qw(restore);
 use Local::C::Cycle qw(resolve);
 
