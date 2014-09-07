@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use feature qw(state);
-use Perl6::Junction qw(any);
+use Local::List::Utils qw(any);
 use File::Spec::Functions qw(catfile);
 use Exporter qw(import);
 
@@ -29,7 +29,7 @@ sub check_kernel_dir ($)
       #Check for standard files
       foreach (qw(Kbuild Kconfig MAINTAINERS Makefile drivers include arch kernel security)) {
          goto OUT
-            unless $_ eq any(@files);
+            unless any($_, \@files);
       }
 
       $res = 1;

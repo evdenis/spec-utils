@@ -6,20 +6,14 @@ use strict;
 use feature qw(say);
 use re '/aa';
 
-use Graph::Directed;
-use Graph::Reader::Dot;
-
-use Data::Alias qw(alias deref);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
-use Scalar::Util qw(blessed);
 use File::Spec::Functions qw(catfile catdir);
 use Storable;
 
 use FindBin;
-use lib catfile $FindBin::Bin, 'lib';
+use lib catdir $FindBin::Bin, 'lib';
 
-use Local::List::Utils qw(difference any);
-use Local::String::Utils qw(normalize);
+use Local::Terminal qw(window_size);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Kernel::Module qw(parse_sources);
 use Local::Kernel::Module::Graph qw(
@@ -27,16 +21,6 @@ use Local::Kernel::Module::Graph qw(
    get_predecessors_subgraph
    output_sources_graph
 );
-
-use C::Entity;
-use C::Macro;
-use C::MacroSet;
-use C::TypedefSet;
-use C::StructureSet;
-use C::EnumSet;
-use C::FunctionSet;
-use C::DeclarationSet;
-use C::GlobalSet;
 
 BEGIN {
    eval {
@@ -144,16 +128,23 @@ if ($size_t_workaround) {
    }
 }
 
+my $indx = $g->get_graph_attribute('index');
+
+if ($all_flag) {
+   @functions = keys $indx
+}
+
+print "\n";
+
 {
-   my $indx = $g->get_graph_attribute('index');
-
-   if ($all_flag) {
-      @functions = keys $indx
-   }
-
+   my $total = @functions;
+   my $i = 1;
+   my (undef, $col) = window_size();
+   my $msg = "GENERATING SUBGRAPH FOR FUNCTION: ";
+   my $reserved_colons = length($msg) + length($total) + 3;
    foreach my $function (@functions) {
       unless (exists $indx->{$function}) {
-         warn "Function $function doesn't exist in module.\n";
+         warn "Function $function doesn't exist in module.\n\n";
          next
       }
       my $id = $indx->{$function};
@@ -161,15 +152,11 @@ if ($size_t_workaround) {
       my $fd = catfile $output_dir, $function;
       create_directory $fd;
 
-      ### GENERATING SUBGRAPH FOR FUNCTION: $function
+      my $spaces = $col - $reserved_colons - length($function) - length($i);
+      print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
       my $g2 = get_predecessors_subgraph($g, $id);
 
-      ### WRITING RESULTS TO DISK
-      print
-      "###   OUTPUT: " . ($single_file ? catfile($fd, 'module.c') : $fd) . "\n";
       output_sources_graph($g2, $fd, $single_file, $remove_fields);
+      print "OUTPUT: " . ($single_file ? catfile($fd, 'module.c') : $fd) . "\n\n";
    }
 }
-
-
-

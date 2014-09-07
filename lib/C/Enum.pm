@@ -211,10 +211,12 @@ sub to_string
 
    if (@body == 0) {
       if ($self->has_name == 0) {
-         warn "Enum doesn't have name and all constants are reducted.\n";
-         return '';
+         warn "Enum doesn't have name and all constants are reducted.\n"
+            if $ENV{DEBUG};
+         return undef;
       } else {
-         warn "There is no explotable constants in Enum " . $self->name . ". Stub will be used.\n";
+         warn "There is no explotable constants in Enum " . $self->name . ". Stub will be used.\n"
+            if $ENV{DEBUG};
          push @body, "\n__STUB__" . uc($self->name);
       }
    }

@@ -15,11 +15,10 @@ use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
 
-use Local::List::Utils qw(any);
 use Local::C::Transformation qw(restore);
 use Local::C::Cycle qw(resolve);
 
-use constant HASH => ref {};
+use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
 our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
@@ -377,17 +376,14 @@ sub build_sources_graph
 }
 
 
+my %ft = (all_predecessors => 'edges_to', all_sucessors => 'edges_from');
 sub _generic_get_subgraph
 {
    my ($method, $graph, @id) = @_;
+   my $em = $ft{$method};
 
-   my @pr = $graph->$method(@id);
-   push @pr, @id;
-
-   my $subgraph =
-      Graph::Directed->new(edges =>
-         [ grep { any($_->[0], \@pr) && any($_->[1], \@pr) } $graph->edges ]
-      );
+   my @pr = (@id, $graph->$method(@id));
+   my $subgraph = Graph::Directed->new(edges => [ map $graph->$em($_), @pr ]);
 
    $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
       foreach @pr;
@@ -396,7 +392,6 @@ sub _generic_get_subgraph
       if $graph->has_graph_attribute('comments');
 
    $subgraph
-
 }
 
 sub get_predecessors_subgraph
@@ -419,7 +414,7 @@ sub _write_to_files
    my $kernel_h = 'kernel.h';
    my $extern_h = 'extern.h';
 
-   $module_c = "$output_dir/$module_c"
+   $module_c = catfile $output_dir, $module_c
       if $output_dir;
 
    if ($single_file) {
@@ -496,19 +491,20 @@ sub output_sources_graph
       resolve($graph, $graph->find_a_cycle);
    }
 
+   my %vd  = map { ($_, $graph->in_degree($_)) } keys %vertices;
    while (%vertices) {
-      my @vertices = keys %vertices;
       my @zv;
-      my %vd  = map { ($_, $graph->in_degree($_)) } @vertices;
 
-      # keys %vd == @vertices
-      foreach(@vertices) {
+      foreach(keys %vertices) {
          push @zv, $_ if 0 == $vd{$_};
       }
 
       die("Cycle in graph") unless @zv;
 
-      delete $vertices{$_} foreach @zv;
+      foreach (@zv) {
+         --$vd{$_->[1]} foreach $graph->edges_from($_);
+         delete $vertices{$_}
+      }
 
 
       my %i = map {
@@ -564,14 +560,12 @@ sub output_sources_graph
       my $c = $graph->get_graph_attribute('comments');
 
       foreach (keys %out) {
-         my $a = $out{$_};
-         my $len = @$a;
-         for (my $i = 0; $i < $len; ++$i) {
-            $a->[$i] = $a->[$i]->to_string($c, $remove_fields)
+         foreach (@{ $out{$_} }) {
+            $_ = $_->to_string($c, $_->area eq 'kernel' ? $remove_fields : 0)
          }
       }
 
-      %out = map { $_ => join("\n\n", @{ $out{$_} } ) } keys %out;
+      %out = map { $_ => join("\n\n", grep {$_} @{ $out{$_} } ) } keys %out;
 
       foreach (qw/module_h module_c/) {
          restore($out{$_}, comments => $c)
