@@ -149,7 +149,7 @@ sub to_string
    if (@body) {
       $self->head . join('', @body) . "\n" . $self->tail
    } else {
-      ''
+      undef
    }
 }
 
