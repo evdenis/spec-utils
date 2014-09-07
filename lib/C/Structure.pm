@@ -86,15 +86,15 @@ sub BUILD
 
          my $fieldname;
 
-         if ($l =~ m/\(${h}*+\*${h}*+($varname)${h}*+\)${h}*+\(/) {
+         if ($l =~ m/\(${s}*+\*${s}*+(?:const${s}++)?($varname)${s}*+\)${s}*+\(/) {
             $fieldname = $1
          } else {
-            my $name_ex = qr/($varname)(?:\[[^\]]+\]|:\d+)?/;
+            my $name_ex = qr/($varname)${s}*+(?:\[[^\]]*+\]|:${s}*+\d++)?/;
 
             if ((my $several = index($l, ',')) != -1) {
                my @v = split(/,/, $l);
                my $type;
-               if ($v[0] =~ m/\b${name_ex}${h}*+\z/) {
+               if ($v[0] =~ m/\b${name_ex}${s}*+\z/) {
                   $type = substr($l, 0, $-[0])
                } else {
                   warn "Can't determine type in string '$v[0]'\n";
@@ -104,7 +104,7 @@ sub BUILD
                $_ =~ s/\s++//g foreach @v[1..$#v];
                splice(@lines, 0, 0, $v[0] . ';', map($type . $_ . ';', @v[1 .. $#v - 1]), $type . $v[-1]);
                next
-            } elsif ($l =~ m/${name_ex}${h}*+;/) {
+            } elsif ($l =~ m/${name_ex}${s}*+;/) {
                $fieldname = $1;
             } else {
                warn "Can't determine field name in string '$l'\n";
