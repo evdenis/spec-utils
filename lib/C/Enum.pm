@@ -11,6 +11,8 @@ use Hash::Ordered;
 use namespace::autoclean;
 
 extends 'C::Entity';
+with 'C::Fields';
+
 
 has 'has_name' => (
    is => 'ro',
@@ -133,15 +135,6 @@ sub get_code_tags
    $filter->[0] = 'enum ' . $_[0]->name if $_[0]->has_name; #HACK
 
    prepare_tags(substr($_[0]->code, index($_[0]->code, '{')), $filter)
-}
-
-sub up
-{
-   my $ref = $_[0]->fields->get($_[1]);
-   if (defined $ref) {
-      $ref->[0]++;
-      $_[0]->fields->set($_[1] => $ref);
-   }
 }
 
 sub to_string

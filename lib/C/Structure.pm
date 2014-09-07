@@ -12,7 +12,7 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Entity';
-
+with 'C::Fields';
 
 has 'type' => (
    is => 'ro',
@@ -119,15 +119,6 @@ sub get_code_ids
          grep {m/\A[^-]/} $_[0]->fields->keys
       ]
    ]
-}
-
-sub up
-{
-   my $ref = $_[0]->fields->get($_[1]);
-   if (defined $ref) {
-      $ref->[0]++;
-      $_[0]->fields->set($_[1] => $ref);
-   }
 }
 
 sub get_code_tags
