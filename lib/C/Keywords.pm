@@ -6,6 +6,7 @@ use strict;
 use Exporter qw(import);
 
 use RE::Common qw($varname);
+use Local::C::Transformation qw(:RE);
 use Local::C::Parsing;
 
 our @EXPORT = qw(@keywords);
@@ -37,7 +38,7 @@ sub prepare_tags
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
 
    my @tokens;
-   while ($code =~ m/(|$name|(\.|->))/g) {
+   while ($code =~ m/(?|$name|((?<!\.)\.(?!\.)|->))/g) {
       if (not_special_label($1)) {
          push @tokens, $1
       } else {
@@ -48,7 +49,7 @@ sub prepare_tags
             if $special eq '.' || $special eq '->';
 
          push @tokens, [$special, $1]
-            if $code =~ m/\G\s*+$name/gc
+            if $code =~ m/\G${s}*+$name/gc
       }
    }
 
