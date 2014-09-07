@@ -61,7 +61,6 @@ sub BUILD
    my $l;
    my @lines = split(/(?<=;)/, substr($code, $o, $c - $o));
    while ($l = shift @lines) {
-      next if $l =~ m/\A\s++\Z/;
 
       if (index($l, '{') != -1) {
          splice(@lines, 0, 0, split(/(?<={)/, $l));
@@ -72,13 +71,19 @@ sub BUILD
       if ($r) {
          if (index($l, '}') != -1) {
             #TODO: don't ignore internal structures
-            $self->fields->set("--STUB" . $stub_count++ . "--" => [1, join('', @{ $buf[$r] }, $l)]);
+            $self->fields->set("--STUB" . $stub_count++ . "--" => [1, join('', @{ $buf[$r] }, $l), 0]);
             $buf[$r] = [];
             --$r
          } else {
             push @{ $buf[$r] }, $l
          }
       } else {
+
+         if ($l =~ m/\A${s}++;?\Z/) {
+            $self->fields->set("--STUB" . $stub_count++ . "--" => [0, $l, 1]);
+            next
+         }
+
          my $fieldname;
 
          if ($l =~ m/\(${h}*+\*${h}*+($varname)${h}*+\)${h}*+\(/) {
@@ -107,7 +112,7 @@ sub BUILD
             }
          }
 
-         $self->fields->set($fieldname => [0, $l])
+         $self->fields->set($fieldname => [0, $l, 0])
       }
    }
 }
@@ -139,14 +144,15 @@ sub to_string
       unless $_[1];
 
    my @body;
-
+   my $c = 0;
    foreach ($self->fields->keys) {
       my $ref = $self->fields->get($_);
+      $c += $ref->[0];
       push @body, $ref->[1]
-         if $ref->[0]
+         if $ref->[0] || $ref->[2]
    }
 
-   if (@body) {
+   if (@body && $c > 0) {
       $self->head . join('', @body) . "\n" . $self->tail
    } else {
       undef
