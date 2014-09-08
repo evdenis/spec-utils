@@ -118,7 +118,7 @@ sub _update_ids_index
          my @id = @{$id};
 
          foreach (@id) {
-            if ($_ eq ARRAY) { #structure fields
+            if (ref $_ eq ARRAY) { #structure fields
                foreach (@$_) {
                   my $n = $set->get_from_index($i);
                   if (exists $index{$_}) {
@@ -217,7 +217,7 @@ sub _create_edges
    my ($graph, $index, $to, $label, $tag) = @_;
    
    my @possible;
-   foreach (grep {!m/fields/} keys %$index) {
+   foreach (grep {!m/fields/} keys $index) {
       push @possible, $index->{$_}
          if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
    }
@@ -294,9 +294,7 @@ sub _form_graph
                      } else {
                         warn "Can't find fields in index for tag '$tag' in object " . $to->name . "\n"
                      }
-                     foreach (@objects) {
-                        $_->up($tag)
-                     }
+                     $_->up($tag) foreach @objects;
                   } else {
                      _create_edges($graph, $from, $to, $label, $tag)
                   }
