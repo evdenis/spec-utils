@@ -378,10 +378,10 @@ if ($issues) {
             $used_issues{$_} = undef;
 
             unless ($graph->has_vertex_attribute($v, 'done')) {
-               unless ($graph->get_vertex_attribute($v, 'shape') eq 'record') {
+               unless (($graph->get_vertex_attribute($v, 'shape') // '') eq 'record') {
                   $graph->set_vertex_attribute($v, shape => 'record');
                   $graph->set_vertex_attribute($v, style =>
-                     $graph->get_vertex_attribute($v, 'style') . ',bold');
+                     ($graph->get_vertex_attribute($v, 'style') // '')  . ',bold');
                   $graph->set_vertex_attribute($v, label => "$mark $v | $_");
                } else {
                   $graph->set_vertex_attribute($v, label =>
@@ -460,14 +460,16 @@ if (@functions) {
 if ($priority || $issues) {
    my @legenda;
 
-   if ($issues) {
+   if ($issues && %used_issues) {
       push @legenda, qq(  subgraph "cluster_issues_legenda" {\n);
       push @legenda, qq(    style = "filled";\n);
       push @legenda, qq(    color = "lightgrey";\n);
       push @legenda, qq(    label = "Issues legenda";\n);
       push @legenda, qq(    node [shape = "box", style = "filled"];\n);
-      my $edges = join(' -> ', map { "\"$_\"" } keys %used_issues);
-      push @legenda, qq(    $edges [ style = "invis" ];\n);
+      if (keys %used_issues > 1) {
+         my $edges = join(' -> ', map { "\"$_\"" } keys %used_issues);
+         push @legenda, qq(    $edges [style = "invis"];\n);
+      }
       foreach (keys %used_issues) {
          push @legenda, qq(    "$_" [label = "$_: $conf->{issues}{$_}{description}", fillcolor = "white"];\n);
       }
