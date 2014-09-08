@@ -221,7 +221,7 @@ sub _create_edges
       push @possible, $index->{$_}
          if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
    }
-   die('Can\'t find object of appropriate type' . blessed($to) . ' for ' . $to->name)
+   die("Can't find object of appropriate type for tag $tag and " . blessed($to) . ' ' . $to->name)
       unless @possible;
 
    @possible = sort __sort_cmp @possible;
