@@ -180,9 +180,11 @@ sub _get_structure_wo_field_names
    foreach my $line (split(/;/, substr($code, $begin, $end - $begin))) {
       next if $line =~ m/\A${s}*+\z/;
 
-      foreach (_argname_exists($line)) {
-         $line =~ s/\b\Q$_\E\b(?=.*+\z)//;
+      my $rline = reverse $line;
+      foreach (map { scalar reverse $_ } _argname_exists($line)) {
+         $rline =~ s/\b\Q$_\E\b//
       }
+      $line = reverse $rline;
 
       $repl .= $line
    }
