@@ -81,7 +81,7 @@ sub _argname_exists
 
    if ($_[0] =~ m/\(${h}*+\*${h}*+($varname)${h}*+\)${h}*+\(/) {
       @result = ($1);
-      my ($begin, $end) = ($+[0]+1, rindex($_[0], ')'));
+      my ($begin, $end) = ($+[0], rindex($_[0], ')'));
 
       foreach(split(/,/, substr($_[0], $begin, $end - $begin))) {
          next if m/\A${s}*+\z/;
