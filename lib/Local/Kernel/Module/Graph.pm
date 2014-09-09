@@ -195,14 +195,19 @@ sub __add_edge
 sub _create_edges
 {
    my ($graph, $index, $to, $label, $tag) = @_;
-   
+
    my @possible;
-   foreach (keys %$index) {
-      push @possible, $index->{$_}
-         if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
+   {
+      my @keys = grep {!m/fields/} keys $index;
+      return if @keys == 0;
+
+      foreach (@keys) {
+         push @possible, $index->{$_}
+            if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
+      }
+      return
+         unless @possible;
    }
-   die('Can\'t find object of appropriate type' . blessed($to) . ' for ' . $to->name)
-      unless @possible;
 
    @possible = sort __sort_cmp @possible;
 
