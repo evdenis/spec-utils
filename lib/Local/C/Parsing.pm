@@ -10,7 +10,6 @@ use Exporter qw(import);
 use RE::Common qw($varname);
 use Local::List::Utils qw(uniq any);
 use Local::C::Transformation qw(:RE);
-use Local::String::rsubstr_remove_exact;
 
 our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields _get_structure_wo_field_names);
 
@@ -181,9 +180,11 @@ sub _get_structure_wo_field_names
    foreach my $line (split(/;/, substr($code, $begin, $end - $begin))) {
       next if $line =~ m/\A${s}*+\z/;
 
-      foreach (_argname_exists($line)) {
-         rsubstr_remove_exact($line, $_)
+      my $rline = reverse $line;
+      foreach (map { scalar reverse $_ } _argname_exists($line)) {
+         $rline =~ s/\b\Q$_\E\b//
       }
+      $line = reverse $rline;
 
       $repl .= $line
    }
