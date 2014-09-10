@@ -145,6 +145,7 @@ print "\n";
    foreach my $function (@functions) {
       unless (exists $indx->{$function}) {
          warn "Function $function doesn't exist in module.\n\n";
+         ++$i;
          next
       }
       my $id = $indx->{$function};
