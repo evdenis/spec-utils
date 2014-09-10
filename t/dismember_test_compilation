@@ -2,8 +2,21 @@
 
 #./dismember -a
 
+if [[ -n $1 && ! -d $1 ]]
+then
+   echo "USAGE: ./dismember_test_comilation dir"
+   exit
+elif [[ -z $1 ]]
+then
+   dir='../result'
+else
+   dir=$1
+fi
+
+find $dir -name 'errors.log' -delete
+
 counter=0
-for i in $(find result -name '*.c')
+for i in $(find $dir -name '*.c')
 do
    err=$(gcc --no-warnings -c $i 2>&1)
    if [[ -n "$err" ]]
@@ -14,7 +27,7 @@ do
    fi
 done
 
-rm 'module.o'
+rm -f 'module.o'
 
 echo
 echo "TOTAL: $counter failed compilations"

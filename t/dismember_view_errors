@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ -n $1 && ! -d $1 ]]
+then
+   echo "USAGE: ./dismember_view_errors dir"
+   exit
+elif [[ -z $1 ]]
+then
+   dir='../result'
+else
+   dir=$1
+fi
+
+
+echo '' | cat $(find $dir -name 'errors.log') - | less
+

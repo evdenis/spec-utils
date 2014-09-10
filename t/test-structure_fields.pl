@@ -2,7 +2,7 @@
 
 use Data::Printer;
 use common::sense;
-use lib './lib';
+use lib::abs '../lib';
 
 use Local::C::Parsing qw/_get_structure_wo_field_names _get_structure_fields/;
 

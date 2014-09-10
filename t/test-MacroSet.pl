@@ -4,7 +4,7 @@ use Data::Printer;
 
 use common::sense;
 
-use lib "./lib";
+use lib::abs '../lib';
 
 use C::MacroSet;
 
