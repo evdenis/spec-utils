@@ -4,6 +4,7 @@
 *.pdf
 
 .graph.conf
+.dismember.conf
 progress.txt
 
 .cache/

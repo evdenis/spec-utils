@@ -31,40 +31,65 @@ BEGIN {
 
 my @functions;
 my $all_flag = 0;
-my $module_dir = $ENV{CURRENT_PROJECT} // '.';
-my $kernel_dir;
 
 #cache options
 my $cache = 0;
-my $output_dir = catdir $FindBin::Bin, 'result';
 my @cache_dir  = (catdir($ENV{HOME}, '.cache/dismember'), catdir($FindBin::Bin, '.cache'));
 my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
 
-my $single_file = 0;
-my $size_t_workaround = 0;
-my $remove_fields = 0;
+#config options
+my @conf_file = (catfile($FindBin::Bin, '.dismember.conf'), catfile($ENV{HOME}, '.config/dismember/config'));
+
+my %config;
+$config{single_file}       = 0;
+$config{size_t_workaround} = 0;
+$config{remove_fields}     = 0;
+$config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
+$config{kernel_dir}        = undef;
+$config{output_dir}        = catdir $FindBin::Bin, 'result';
+
+foreach (@conf_file) {
+   if (-r $_) {
+      ### CONFIG FILE: $_
+      open(my $conf, '<', $_);
+      foreach (<$conf>) {
+         next if m/\A\h*+#?\h*+\Z/;
+         if (m/(\w++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))/) {
+            if (exists $config{$1}) {
+               $config{$1} = $2
+            } else {
+               warn "Unknown configuration option '$1'\n"
+            }
+         } else {
+            warn "Wrong config format in line '$_'\n"
+         }
+      }
+      close($conf);
+      last
+   }
+}
 
 GetOptions(
    'all|a!'                =>  \$all_flag,
    'functions|f=s{1,}'     =>  \@functions,
-   'module|m=s'            =>  \$module_dir,
-   'kernel|k=s'            =>  \$kernel_dir,
+   'module|m=s'            =>  \$config{module_dir},
+   'kernel|k=s'            =>  \$config{kernel_dir},
    'cache|c:2'             =>  \$cache,
-   'single|s!'             =>  \$single_file,
-   'remove-fields|r!'      =>  \$remove_fields,
-   'size_t|workaround|w!'  =>  \$size_t_workaround
+   'single|s!'             =>  \$config{single_file},
+   'remove-fields|r!'      =>  \$config{remove_fields},
+   'size_t|workaround|w!'  =>  \$config{size_t_workaround}
 ) or die "Incorrect usage!\n";
 
 @functions = split(/,/,join(',',@functions));
 
-$kernel_dir //= autodetect_kernel_directory();
+$config{kernel_dir} //= autodetect_kernel_directory();
 
 die("You should provide at least one function name.\n") if !@functions && !$all_flag;
-die("$module_dir is not a directory.\n") unless -d $module_dir;
-die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kernel_dir);
+die("$config{module_dir} is not a directory.\n") unless -d $config{module_dir};
+die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($config{kernel_dir});
 
-### KERNEL DIRECTORY: $kernel_dir
-### MODULE DIRECTORY: $module_dir
+### KERNEL DIRECTORY: $config{kernel_dir}
+### MODULE DIRECTORY: $config{module_dir}
 
 sub create_directory
 {
@@ -78,7 +103,7 @@ sub create_directory
    0
 }
 
-create_directory $output_dir;
+create_directory $config{output_dir};
 
 {
    my $c = 0;
@@ -96,7 +121,6 @@ create_directory $output_dir;
 $cache = 2 if $cache > 2;
 $cache = 0 if $cache && ! -r $cache_file[$cache];
 
-
 ### CACHE OPTIONS:
 ###   use:   $cache
 ###   file:  @cache_file
@@ -104,7 +128,7 @@ goto CACHED_GRAPH
    if $cache == 2;
 
 ### PARSING SOURCES...
-my %sources = parse_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"], !$cache);
+my %sources = parse_sources($config{kernel_dir}, $config{module_dir}, ["#define SPECIFICATION 1\n"], !$cache);
 
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $cache, file => $cache_file[1]}});
@@ -119,7 +143,7 @@ if ($cache == 2) {
    store($g, $cache_file[2])
 }
 
-if ($size_t_workaround) {
+if ($config{size_t_workaround}) {
    foreach($g->vertices) {
       if ($g->get_vertex_attribute($_, 'object')->name eq 'size_t') {
          $g->delete_vertex($_);
@@ -150,14 +174,14 @@ print "\n";
       }
       my $id = $indx->{$function};
 
-      my $fd = catfile $output_dir, $function;
+      my $fd = catfile $config{output_dir}, $function;
       create_directory $fd;
 
       my $spaces = $col - $reserved_colons - length($function) - length($i);
       print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
       my $g2 = get_predecessors_subgraph($g, $id);
 
-      output_sources_graph($g2, $fd, $single_file, $remove_fields);
-      print "OUTPUT: " . ($single_file ? catfile($fd, 'module.c') : $fd) . "\n\n";
+      output_sources_graph($g2, $fd, $config{single_file}, $config{remove_fields});
+      print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
    }
 }
