@@ -8,6 +8,7 @@ use re '/aa';
 use Exporter qw(import);
 
 use Local::List::Utils qw(any);
+use RE::Common qw($acsl_varname);
 
 our @EXPORT_OK = qw(is_acsl_spec);
 
@@ -72,13 +73,13 @@ strong
 global
 module
 open
+Pre
+Here
+Old
+Post
+LoopEntry
+LoopCurrent
 /;
-#Pre
-#Here
-#Old
-#Post
-#LoopEntry
-#LoopCurrent
 
 sub is_acsl_keyword
 {
@@ -92,5 +93,27 @@ sub is_acsl_keyword
    $r
 }
 
+sub prepare_tags
+{
+   my $code = $_[0];
+   my %filter = map { $_ => undef } @{$_[1]};
+   my $token = qr/($acsl_varname)\b/;
+
+   #remove strings
+   $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
+
+   my @tokens = $code =~ m/$token/g;
+
+   my @tags;
+   my %uniq;
+   foreach (@tokens) {
+      next unless is_acsl_keyword($_);
+
+      push @tags, $_
+         unless $uniq{$_}++
+   }
+
+   \@tags
+}
 
 1;
