@@ -10,10 +10,16 @@ use feature qw(state);
 use re '/aa';
 
 
+#comment id
+has 'id' => (
+   is       => 'ro',
+   isa      => 'int',
+   required => 1
+);
+
 has 'names' => (
    is => 'rw',
    isa => 'ArrayRef[Str]',
-   required => 1
 );
 
 has 'specification' => (
