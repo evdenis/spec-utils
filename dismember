@@ -11,7 +11,7 @@ use File::Spec::Functions qw(catfile catdir);
 use Storable;
 
 use FindBin;
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 use Local::Terminal qw(window_size);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);

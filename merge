@@ -6,10 +6,7 @@ use strict;
 use re '/aa';
 use feature qw(say);
 
-use File::Spec::Functions qw(catdir);
-
-use FindBin;
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 use utf8::all;
 

@@ -19,7 +19,7 @@ use Storable;
 use YAML::XS qw(LoadFile);
 use FindBin;
 
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;

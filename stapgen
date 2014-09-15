@@ -8,11 +8,11 @@ use strict;
 use warnings;
 use re '/aa';
 
-use File::Spec::Functions qw(catfile catdir);
+use File::Spec::Functions qw(catfile);
 use File::Slurp qw(read_file);
 use Getopt::Long qw(:config gnu_getopt);
 use FindBin;
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 

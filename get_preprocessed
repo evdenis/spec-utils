@@ -3,9 +3,7 @@
 use warnings;
 use strict;
 
-use FindBin;
-use File::Spec::Functions qw(catdir);
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 
 package TS {

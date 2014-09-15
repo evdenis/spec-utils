@@ -8,14 +8,13 @@ use re '/aa';
 
 use utf8::all;
 use IO::Interactive;
-use File::Spec::Functions qw(catfile catdir);
+use File::Spec::Functions qw(catfile);
 use File::Slurp qw(read_file write_file);
 use Getopt::Long qw(:config gnu_getopt);
 use Text::ANSITable;
 use Class::CSV;
 
-use FindBin;
-use lib catdir $FindBin::Bin, 'lib';
+use lib::abs 'lib';
 
 use Local::C::Transformation;
 use Local::String::Utils qw(normalize);
