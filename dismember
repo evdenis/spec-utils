@@ -13,6 +13,7 @@ use Storable;
 use FindBin;
 use lib::abs 'lib';
 
+use Local::Config qw(find_config);
 use Local::Terminal qw(window_size);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Kernel::Module qw(parse_sources);
@@ -34,11 +35,8 @@ my $all_flag = 0;
 
 #cache options
 my $cache = 0;
-my @cache_dir  = (catdir($ENV{HOME}, '.cache/dismember'), catdir($FindBin::Bin, '.cache'));
+my @cache_dir  = (catdir($ENV{HOME}, '.cache', 'dismember'), catdir($FindBin::Bin, '.cache'));
 my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
-
-#config options
-my @conf_file = (catfile($FindBin::Bin, '.dismember.conf'), catfile($ENV{HOME}, '.config/dismember/config'));
 
 my %config;
 $config{single_file}       = 0;
@@ -48,25 +46,22 @@ $config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel_dir}        = undef;
 $config{output_dir}        = catdir $FindBin::Bin, 'result';
 
-foreach (@conf_file) {
-   if (-r $_) {
-      ### CONFIG FILE: $_
-      open(my $conf, '<', $_);
-      foreach (<$conf>) {
-         next if m/\A\h*+#?\h*+\Z/;
-         if (m/(\w++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))/) {
-            if (exists $config{$1}) {
-               $config{$1} = $2
-            } else {
-               warn "Unknown configuration option '$1'\n"
-            }
+if (defined (my $conf = find_config())) {
+   ### CONFIG FILE: $conf
+   open(my $conf, '<', $conf);
+   foreach (<$conf>) {
+      next if m/\A\h*+#?\h*+\Z/;
+      if (m/(\w++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))/) {
+         if (exists $config{$1}) {
+            $config{$1} = $2
          } else {
-            warn "Wrong config format in line '$_'\n"
+            warn "Unknown configuration option '$1'\n"
          }
+      } else {
+         warn "Wrong config format in line '$conf'\n"
       }
-      close($conf);
-      last
    }
+   close($conf);
 }
 
 GetOptions(

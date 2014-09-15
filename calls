@@ -25,6 +25,7 @@ use Local::File::Merge qw(merge find_all);
 use Local::File::C::Merge qw(merge_all_files_simple);
 use Local::C::Parsing qw(parse_calls);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use Local::Config qw(find_config);
 
 BEGIN {
    eval {
@@ -40,7 +41,7 @@ BEGIN {
 #grep query results sorting? different priorities for different paths
 
 my $kdir;
-my $moduledir = '.';
+my $moduledir = $ENV{CURRENT_PROJECT};
 my $preprocessed;
 
 my $kernel_sw = 1;
@@ -75,7 +76,7 @@ GetOptions(
    'modulename|n=s'   =>  \$modulename,
    'progressbar|b!'   =>  \$progressbar,
    'columns|c=s'      =>  \$columns,
-   'status=s'         =>  \$specs,
+   'status:s'         =>  \$specs,
    'output|o=s'       =>  \$output,
    'csv-output|v!'    =>  \$csvout,
    'only-functions!'  =>  \$only_functions,
@@ -90,6 +91,8 @@ exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
 
 $kdir //= autodetect_kernel_directory();
 die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kdir);
+
+$specs ||= find_config();
 
 my $mdir_subdir_kdir = 0;
 if (index(abs_path($moduledir), abs_path($kdir)) != -1) {
@@ -394,6 +397,7 @@ my @kernel_functions = get_list_of_kernel_functions();
 ### GETTING LIST OF MODULE FUNCTIONS...
 my %modules_functions = get_list_of_modules_functions();
 
+### SEARCH IN PROGRESS
 my $max = keys %status;
 my $progress = Term::ProgressBar->new({name => 'Status', count => $max, remove => 1, silent => !$progressbar});
 $progress->minor(0);

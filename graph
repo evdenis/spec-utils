@@ -21,6 +21,7 @@ use FindBin;
 
 use lib::abs 'lib';
 
+use Local::Config qw(find_config);
 use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;
 use Local::C::Parsing qw(parse_calls);
@@ -171,9 +172,8 @@ my $module_dir;
 my $kernel_dir;
 my $preprocessed;
 my $cache = 0;
-my @cache_dir = (catdir($ENV{HOME}, '.cache/graph'), catdir($FindBin::Bin, '.cache'));
+my @cache_dir = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
 my $cache_file = 'graph_map.cache';
-my @conf_file = (catfile($FindBin::Bin, '.graph.conf'), catfile($ENV{HOME}, '.config/graph/config'));
 my $done = 1;
 my $priority = 1;
 my $issues = 0;
@@ -242,12 +242,9 @@ $cache = 0 if $preprocessed;
 $cache = 0 unless -r $cache_file;
 
 my $conf;
-foreach (@conf_file) {
-   if (-r $_) {
-### CONFIG FILE: $_
-      $conf = LoadFile($_);
-      last
-   }
+if (defined ($conf = find_config())) {
+   ### CONFIG FILE: $conf
+   $conf = LoadFile($conf)
 }
 die("Can't read config file.\n")
    unless $conf;
