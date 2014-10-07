@@ -40,7 +40,7 @@ BEGIN {
 #simple preprocessing
 #grep query results sorting? different priorities for different paths
 
-my $kdir;
+my $kdir      = $ENV{CURRENT_KERNEL};
 my $moduledir = $ENV{CURRENT_PROJECT};
 my $preprocessed;
 
@@ -66,11 +66,11 @@ my $only_functions = 0;
 my $only_macro = 0;
 
 GetOptions(
-   'ksources|s=s'     =>  \$kdir,
-   'directory|d=s'    =>  \$moduledir,
+   'kernel-dir|s=s'   =>  \$kdir,
+   'module-dir|d=s'   =>  \$moduledir,
    'preprocessed|p=s' =>  \$preprocessed,
    'kernel|k!'        =>  \$kernel_sw,
-   'modules|m!'       =>  \$modules_sw,
+   'module|m!'        =>  \$modules_sw,
    'unknown|u!'       =>  \$unknown_sw,
    'only-names!'      =>  \$only_names,
    'modulename|n=s'   =>  \$modulename,
