@@ -8,7 +8,7 @@ use feature qw(say);
 
 use lib::abs 'lib';
 
-use utf8::all;
+use utf8;
 
 use RE::Common qw($varname);
 use File::Slurp qw(read_file write_file);
@@ -98,6 +98,7 @@ merge - Переложение спецификаций с одной верси
 
 =cut
 
+
 my $help = 0;
 # '' need for -d checking
 my $module_dir = $ENV{CURRENT_PROJECT} // '';
@@ -105,6 +106,7 @@ my $specs_dir = '.';
 my $strict = 1;
 my $mode = 1;
 my $kdiff = 0;
+my $tr_wh = 0;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
@@ -112,6 +114,7 @@ GetOptions(
    'detailed|d!'  =>  \$mode,
    'strict|s!'    =>  \$strict,
    'kdiff|k!'     =>  \$kdiff,
+   'rtw|r!'       =>  \$tr_wh, # remove trailing whitespaces
    'help|h'       =>  \$help,
 ) or pod2usage(1);
 
@@ -134,7 +137,7 @@ sub call_meld
       my (undef, $name) = tempfile(TEMPLATE => $template[$i], SUFFIX => '.c');
       push @f, $name;
 
-      write_file($name, {binmode => ':utf8'}, @{$_[$i]})
+      write_file($name, @{$_[$i]})
    }
 
    my $ret;
@@ -144,7 +147,7 @@ sub call_meld
       $ret = system('meld', @f)
    }
 
-   @{$_[-1]} = read_file($f[-1], binmode => ':utf8')
+   @{$_[-1]} = read_file($f[-1])
       unless $ret;
 
    unlink $f[$_] for 0 .. $#_;
@@ -163,7 +166,7 @@ sub fetch_module_sources
 
    my %module;
    foreach my $f (@module) {
-      $module{$f}{code} = read_file($f, binmode => ':utf8');
+      $module{$f}{code} = read_file($f);
       adapt($module{$f}{code},
             comments => \@{ $module{$f}{c} },
             macro    => \@{ $module{$f}{m} }
@@ -300,7 +303,11 @@ my $code     = ${ $specs{specs}    };
 my %acsl_specs;
 ### detecting specifications
 foreach(0 .. $#comments) {
-   $acsl_specs{$_} = 1 if is_acsl_spec($comments[$_]);
+   if (is_acsl_spec($comments[$_])) {
+      $acsl_specs{$_} = 1;
+      $comments[$_] =~ s/\s+$//mg
+         if $tr_wh;
+   }
 }
 
 #funcs init
@@ -467,7 +474,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 foreach my $f (keys %module) {
    $module{$f}{code} =~ s/$macro_re/$module{$f}{m}->[$1]/g;
    $module{$f}{code} =~ s/$comment_re/$module{$f}{c}->[$1]/g;
-   write_file($f, {binmode => ':utf8'}, $module{$f}{code});
+   write_file($f, $module{$f}{code});
 }
 
 
