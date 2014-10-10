@@ -98,12 +98,14 @@ merge - Переложение спецификаций с одной верси
 
 =cut
 
+
 my $help = 0;
 my $module_dir = $ENV{CURRENT_PROJECT} // '';
 my $specs_dir = '.';
 my $strict = 1;
 my $mode = 1;
 my $kdiff = 0;
+my $tr_wh = 0;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
@@ -111,6 +113,7 @@ GetOptions(
    'detailed|d!'  =>  \$mode,
    'strict|s!'    =>  \$strict,
    'kdiff|k!'     =>  \$kdiff,
+   'rtw|r!'       =>  \$tr_wh, # remove trailing whitespaces
    'help|h'       =>  \$help,
 ) or pod2usage(1);
 
@@ -299,7 +302,11 @@ my $code     = ${ $specs{specs}    };
 my %acsl_specs;
 ### detecting specifications
 foreach(0 .. $#comments) {
-   $acsl_specs{$_} = 1 if is_acsl_spec($comments[$_]);
+   if (is_acsl_spec($comments[$_])) {
+      $acsl_specs{$_} = 1;
+      $comments[$_] =~ s/\s+$//mg
+         if $tr_wh;
+   }
 }
 
 #funcs init
