@@ -21,6 +21,7 @@ use Algorithm::Diff qw(traverse_sequences);
 use Local::String::Utils qw(trim);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
+use Local::GCC::Preprocess qw(preprocess_directives);
 use Local::File::Merge qw(merge);
 use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
 use ACSL::Common qw(is_acsl_spec);
@@ -201,50 +202,6 @@ sub fetch_specifications
    )
 }
 
-sub simple_preprocess
-{
-   my $cntx = $_[0];
-   my ($code, $comments, $macro) = @{$cntx}{qw/code comments macro/};
-
-   my $skip = 0;
-   my $ifdef_rec = 0;
-   my ($begin, $end) = (undef, undef);
-   my ($ML, $MR) = @macro_t{qw(L R)};
-
-   foreach my $i (0 .. $#$macro)
-   {
-      unless ($skip) {
-         if ($macro->[$i] =~ m/^\h*+#\h*+if\h*+0/) {
-            $skip = 1;
-            $begin = $i;
-            $ifdef_rec = 0;
-         }
-      } else {
-         if ($macro->[$i] =~ m/^\h*+#\h*+if(?:(?:n)?def)?/) {
-            ++$ifdef_rec;
-         } elsif ($macro->[$i] =~ m/^\h*+#\h*+endif/) {
-            if ($ifdef_rec == 0) {
-               $skip = 0;
-               $end = $i;
-
-               #remove part of the code
-               $$code =~ m/$ML${begin}$MR/;
-               $begin = $-[0];
-               $$code =~ m/$ML${end}$MR/;
-               $end = $+[0];
-               my $remove = substr($$code, $begin, $end - $begin, '');
-
-               #exclude comments from
-               $comments->[$_] = '' foreach ($remove =~ m/$comment_re/g);
-            } else {
-               --$ifdef_rec;
-            }
-         }
-      }
-   }
-}
-
-
 sub move_specs
 {
    my ($fret, $spec, $file, $module, $sbegin, $send) = @_;
@@ -292,8 +249,7 @@ my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
    unless %specs;
 
-### simple preprocessing step
-simple_preprocess(\%specs);
+$specs{specs} = \((preprocess_directives($specs{specs}))[1]->{'<stdin>'});
 
 my @comments = @{ $specs{comments} };
 my @macro    = @{ $specs{macro}    };
