@@ -110,39 +110,32 @@ sub preprocess_directives_noincl
 sub _generic_preprocess_directives
 {
    my %files;
-   my $current_file;
 
    my $code = call_gcc( shift,
                         \(($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]}),
                         1);
 
-   {
-      my $ind = -1;
-      for (my $i = 0; $i < $#$code; ++$i) {
-         if ($code->[$i] eq '//<special_mark>') {
-            $ind = $i;
-            last
-         }
-      }
-      die("Internal error. Can't find marker") if $ind == -1;
-
-      $code = [ splice(@$code, $ind + 1) ];
-   }
-
    my @order;
-   foreach (@$code) {
-      if (m/#\h++\d++\h++"([^"]++)"/) {
-         $current_file = $1 eq "<stdin>" ? $1 : realpath($1);
-         push @order, $current_file;
-         next
-      }
+   {
+      my $ready = 0;
+      my $current_file;
+      foreach (@$code) {
+         $ready = 1, next
+            if $_ eq '//<special_mark>';
+         if (m/#\h++\d++\h++"([^"]++)"/) {
+            $current_file = index($1, '<') != -1 ? $1 : realpath($1);
+            push @order, $current_file;
+            next
+         }
 
-      push @{ $files{$current_file} }, $_
+         push @{ $files{$current_file} }, $_
+            if $ready
+      }
    }
 
    {
       my %uniq;
-      @order = reverse grep { !$uniq{$_}++ } reverse @order;
+      @order = reverse grep { exists $files{$_} && !$uniq{$_}++ } reverse @order;
    }
 
    foreach (keys %files) {
@@ -152,7 +145,6 @@ sub _generic_preprocess_directives
    (\@order, \%files)
 }
 
-# directory
 # code
 # additional directives
 sub preprocess_directives
