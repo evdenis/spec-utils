@@ -7,7 +7,7 @@ use warnings;
 
 use re '/aa';
 
-our @EXPORT_OK = qw(normalize ltrim rtrim trim);
+our @EXPORT_OK = qw(normalize ltrim rtrim trim remove_spaces eq_spaces ne_spaces blank);
 
 
 sub normalize ($)
@@ -24,5 +24,25 @@ sub normalize ($)
 sub ltrim ($) { my $s = shift; $s =~ s/^\s++//; $s }
 sub rtrim ($) { my $s = shift; $s =~ s/\s+$//; $s }
 sub trim  ($) { my $s = shift; $s =~ s/^\s++|\s+$//g; $s }
+
+sub remove_spaces ($)
+{
+   $_[0] =~ s/\s++//gr
+}
+
+sub eq_spaces ($$)
+{
+   remove_spaces($_[0]) eq remove_spaces($_[1])
+}
+
+sub ne_spaces ($$)
+{
+   !eq_spaces($_[0], $_[1])
+}
+
+sub blank ($)
+{
+   $_[0] =~ m/\A\s++\Z/
+}
 
 1;
