@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 
-our @EXPORT_OK = qw(any uniq intersection union difference_symmetric difference);
+our @EXPORT_OK = qw(any uniq intersection union difference_symmetric difference str_to_list);
 
 #FIXME: later 2 arrays (@l, @r) doesn't work
 #sub uniq (\[$@])
@@ -98,5 +98,9 @@ sub difference ($$)
    @res
 }
 
+sub str_to_list ($)
+{
+   [ split /^/, $_[0] ]
+}
 
 1;
