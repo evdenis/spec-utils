@@ -14,16 +14,15 @@ sub normalize ($)
 {
    my $s = shift;
 
-   $s =~ s/\n/ /g;
    $s =~ s/\s++/ /g;
-   $s =~ s/^\s++|\s++$//g;
+   $s =~ s/\A\s++|\s++\Z//g;
 
    $s
 }
 
 
 sub ltrim ($) { my $s = shift; $s =~ s/^\s++//; $s }
-sub rtrim ($) { my $s = shift; $s =~ s/\s++$//; $s }
-sub trim  ($) { my $s = shift; $s =~ s/^\s++|\s++$//g; $s }
+sub rtrim ($) { my $s = shift; $s =~ s/\s+$//; $s }
+sub trim  ($) { my $s = shift; $s =~ s/^\s++|\s+$//g; $s }
 
 1;
