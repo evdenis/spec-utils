@@ -241,15 +241,15 @@ sub move_specs
 }
 
 
-### Fetching module sources from dir: $module_dir
-my %module = fetch_module_sources($module_dir);
-die(RED . "Can't find module sources." . RESET . "\n")
-   unless %module;
-
 ### Fetching specifications from dir: $specs_dir
 my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
    unless %specs;
+
+### Fetching module sources from dir: $module_dir
+my %module = fetch_module_sources($module_dir);
+die(RED . "Can't find module sources." . RESET . "\n")
+   unless %module;
 
 $specs{specs} = \((preprocess_directives($specs{specs}))[1]->{'<stdin>'});
 
@@ -277,8 +277,8 @@ my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 
 while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
    my ($fret, $fname, $fargs, $fbody) = @+{qw/ret name args fbody/};
-  
-   if ($fret =~ m/^\s*($comment_re(\s*$comment_re)*).*$/s) {
+
+   if ($fret =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
       my $spec = $1;
       my ($ret_pattern, $args_pattern) = (substr($fret, $+[1]), $fargs);
       my @exclude_specs;
