@@ -19,6 +19,7 @@ use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
 use Local::String::Utils qw(trim is_blank ne_spaces);
+use Local::List::Utils qw(str_to_list);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives);
@@ -337,24 +338,24 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                $nbody =~ s/$macro_re/$module{$_}{m}->[$1]/g;
                $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
 
-               my @new_code = map { split(/^/, $_) } $fbody;
-               my @old_code = map { split(/^/, $_) } $nbody;
+               my $new_code = str_to_list $fbody;
+               my $old_code = str_to_list $nbody;
                my @code;
 
                my $cant_resolve = 0;
 
                traverse_sequences(
-                  \@old_code,
-                  \@new_code,
+                  $old_code,
+                  $new_code,
                   {
-                     MATCH     => sub { push @code, $new_code[$_[1]] },
-                     DISCARD_A => sub { push @code, $old_code[$_[0]] },
+                     MATCH     => sub { push @code, @$new_code[$_[1]] },
+                     DISCARD_A => sub { push @code, @$old_code[$_[0]] },
                      DISCARD_B => sub {
-                        if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
-                           push @code, $new_code[$_[1]];
-                        } elsif ($new_code[$_[1]] =~ m/$comment_re/) {
+                        if (@$new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
+                           push @code, @$new_code[$_[1]];
+                        } elsif (@$new_code[$_[1]] =~ m/$comment_re/) {
                            $cant_resolve = 1;
-                           push @code, $new_code[$_[1]];
+                           push @code, @$new_code[$_[1]];
                         } else {
                            $cant_resolve = 1;
                         }
@@ -363,7 +364,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                   sub { $_[0] =~ s/\s+|[(){}\[\];]|$comment_re//gr }
                );
 
-               @code = split(/^/, join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
+               $code = str_to_list(join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
 
                if ($cant_resolve) {
                   my $function = $fret . ' ' . $fname . $fargs;
@@ -373,26 +374,26 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                   $function =~ s/\n//g;
                   $function .= "\n";
 
-                  @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
-                  @new_code = split(/^/, $fbody_saved =~ s/$comment_re/$comments[$1]/gr);
+                  $old_code = str_to_list(join('', @$old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
+                  $new_code = str_to_list($fbody_saved =~ s/$comment_re/$comments[$1]/gr);
 
-                  unshift @old_code, $function;
-                  unshift @new_code, $function;
-                  unshift @code,     $function;
+                  unshift $old_code, $function;
+                  unshift $new_code, $function;
+                  unshift $code,     $function;
 
                   warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
                      ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
-                        if call_meld(\@old_code, \@new_code, \@code);
+                        if call_meld($old_code, $new_code, $code);
 
-                  shift @old_code;
-                  shift @new_code;
-                  my $check = shift @code;
+                  shift $old_code;
+                  shift $new_code;
+                  my $check = shift $code;
                   warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
                      if $check ne $function;
                }
 
                delete $acsl_specs{$_} foreach @exclude_specs;
-               substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
+               substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @$code));
             }
 
             move_specs($fret, $spec, $_, \%module, $sbegin, $send);
