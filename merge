@@ -192,6 +192,18 @@ sub fetch_specifications
    )
 }
 
+sub contains_specs
+{
+   if ($_[0]) {
+      while ($_[0] =~ m/$comment_re/g) {
+         return 1
+            if exists $_[1]->{$1}
+      }
+   }
+
+   0
+}
+
 sub move_specs
 {
    my ($fret, $spec, $file, $module, $sbegin, $send) = @_;
@@ -300,16 +312,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                }
             }
 
-            my $specs_exists = 0;
-            if ($fbody) {
-               while ($fbody =~ m/$comment_re/g) {
-                  if (exists $acsl_specs{$1}) {
-                     $specs_exists = 1;
-                     last
-                  }
-               }
-            }
-            if ($specs_exists) {
+            if (contains_specs $fbody, \%acsl_specs) {
                my $fbody_saved = $fbody;
                my @exclude_specs;
                my @intervals;
