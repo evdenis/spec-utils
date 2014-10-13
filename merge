@@ -319,8 +319,8 @@ my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 
 while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
    my ($fret, $fname, $fargs, $fbody) = @+{qw/ret name args fbody/};
-  
-   if ($fret =~ m/^\s*($comment_re(\s*$comment_re)*).*$/s) {
+
+   if ($fret =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
       my $spec = $1;
       my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
       my @exclude_specs;
