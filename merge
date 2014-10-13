@@ -131,7 +131,7 @@ sub call_meld
 {
    return 1 if $#_ > 2;
 
-   my @template = map {$_ . 'XXXX'} qw/from_ to_ merge_/;
+   my @template = map {$_ . 'XXXX'} qw/to_ from_ merge_/;
    my @f;
    foreach my $i (0 .. $#_) {
       my (undef, $name) = tempfile(TEMPLATE => $template[$i], SUFFIX => '.c');
