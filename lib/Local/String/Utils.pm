@@ -7,7 +7,7 @@ use warnings;
 
 use re '/aa';
 
-our @EXPORT_OK = qw(normalize ltrim rtrim trim remove_spaces eq_spaces ne_spaces blank);
+our @EXPORT_OK = qw(normalize ltrim rtrim trim remove_spaces eq_spaces ne_spaces is_blank);
 
 
 sub normalize ($)
@@ -40,7 +40,7 @@ sub ne_spaces ($$)
    !eq_spaces($_[0], $_[1])
 }
 
-sub blank ($)
+sub is_blank ($)
 {
    $_[0] =~ m/\A\s++\Z/
 }
