@@ -48,7 +48,6 @@ merge - Переложение спецификаций с одной верси
  Options:
   -f|--from dir      - откуда переносятся спецификации
   -t|--to dir        - куда переносятся спецификации
-  -d|--[no-]detailed - переключение режимов переноса спецификаций внутри тел функций
   -s|--[no-]strict   - осуществлять дополнительные проверки при сопоставлении функций
   -k|--[no-]kdiff    - использовать kdiff3 вместо meld
   -h|--help          - выводит полное описание программы
@@ -64,10 +63,6 @@ merge - Переложение спецификаций с одной верси
 =item B<-t|--to dir>
 
 Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения CURRENT_PROJECT.
-
-=item B<-d|--[no-]detailed>
-
-Если режим включён, то спецификации внутри тела функции переносятся по отдельности через привязки к строкам. В противном случае, если в теле функции есть хотя бы одна спецификация, то заменяется всё тело функции. Соответственно, в данным случае переносятся также и все изменения в коде, если таковые наличествуют. По умолчанию включён режим детального переноса, то есть посредством копирования отдельных спецификаций внутри тела функции.
 
 =item B<-s|--[no-]strict>
 
@@ -93,10 +88,6 @@ merge - Переложение спецификаций с одной верси
 
 На последнем этапе функционирования программа выводит в STDERR все спецификации, которые не были перенесены. Чаще всего это спецификации, которые прикреплены не к функциям.
 
-=head1 BUGS
-
-Программа не осуществляет никакого препроцессирования, за исключением обработки "#if 0" в исходниках из директории со спецификациями. Необходимость этого выглядит сомнительной. Однако, в ряде случаев это может приводить к переносу спецификаций, которые программистом считались скрытыми от таких инструментов, как Frama-C.
-
 =cut
 
 
@@ -105,14 +96,12 @@ my $help = 0;
 my $module_dir = $ENV{CURRENT_PROJECT} // '';
 my $specs_dir = '.';
 my $strict = 1;
-my $mode = 1;
 my $kdiff = 0;
 my $tr_wh = 0;
 
 GetOptions(
    'from|f=s'     =>  \$specs_dir,
    'to|t=s'       =>  \$module_dir,
-   'detailed|d!'  =>  \$mode,
    'strict|s!'    =>  \$strict,
    'kdiff|k!'     =>  \$kdiff,
    'rtw|r!'       =>  \$tr_wh, # remove trailing whitespaces
@@ -320,96 +309,90 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                }
             }
             if ($specs_exists) {
-               unless ($mode) {
-                  $fbody =~ s/$comment_re/delete $acsl_specs{$1}; "$comments[$1]"/eg;
-                  $fbody =~ s/$macro_re/$macro[$1]/g;
-                  substr($module{$_}{code}, $bbegin, $bend - $bbegin, $fbody)
-               } else {
-                  my $fbody_saved = $fbody;
-                  my @exclude_specs;
-                  my @intervals;
+               my $fbody_saved = $fbody;
+               my @exclude_specs;
+               my @intervals;
 
-                  $fbody =~ s/$macro_re/$macro[$1]/g;
+               $fbody =~ s/$macro_re/$macro[$1]/g;
 # This code remove simple comments from new_code. Not very useful.
-#                  while ($fbody =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
-#                     my ($b, $e) = ($-[0], $+[0]);
-#                     my @m = ${^MATCH} =~ m/$comment_re/g;
-#                     my $cond = 0;
+#               while ($fbody =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
+#                  my ($b, $e) = ($-[0], $+[0]);
+#                  my @m = ${^MATCH} =~ m/$comment_re/g;
+#                  my $cond = 0;
 #
-#                     foreach (@m) {
-#                        $cond = 1 if exists $acsl_specs{$_}
-#                     }
-#                     unless ($cond) {
-#                        push @intervals, ($b, $e)
-#                     }
+#                  foreach (@m) {
+#                     $cond = 1 if exists $acsl_specs{$_}
 #                  }
-#                  while (@intervals) {
-#                     my $e = pop @intervals;
-#                     my $b = pop @intervals;
-#                     substr($fbody, $b, $e - $b, '');
+#                  unless ($cond) {
+#                     push @intervals, ($b, $e)
 #                  }
-                  $fbody =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
+#               }
+#               while (@intervals) {
+#                  my $e = pop @intervals;
+#                  my $b = pop @intervals;
+#                  substr($fbody, $b, $e - $b, '');
+#               }
+               $fbody =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
 
-                  $nbody =~ s/$macro_re/$module{$_}{m}->[$1]/g;
-                  $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
+               $nbody =~ s/$macro_re/$module{$_}{m}->[$1]/g;
+               $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
 
-                  my @new_code = map { split(/^/, $_) } $fbody;
-                  my @old_code = map { split(/^/, $_) } $nbody;
-                  my @code;
+               my @new_code = map { split(/^/, $_) } $fbody;
+               my @old_code = map { split(/^/, $_) } $nbody;
+               my @code;
 
-                  my $cant_resolve = 0;
+               my $cant_resolve = 0;
 
-                  traverse_sequences(
-                     \@old_code,
-                     \@new_code,
-                     {
-                        MATCH     => sub { push @code, $new_code[$_[1]] },
-                        DISCARD_A => sub { push @code, $old_code[$_[0]] },
-                        DISCARD_B => sub {
-                           if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
-                              push @code, $new_code[$_[1]];
-                           } elsif ($new_code[$_[1]] =~ m/$comment_re/) {
-                              $cant_resolve = 1;
-                              push @code, $new_code[$_[1]];
-                           } else {
-                              $cant_resolve = 1;
-                           }
+               traverse_sequences(
+                  \@old_code,
+                  \@new_code,
+                  {
+                     MATCH     => sub { push @code, $new_code[$_[1]] },
+                     DISCARD_A => sub { push @code, $old_code[$_[0]] },
+                     DISCARD_B => sub {
+                        if ($new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
+                           push @code, $new_code[$_[1]];
+                        } elsif ($new_code[$_[1]] =~ m/$comment_re/) {
+                           $cant_resolve = 1;
+                           push @code, $new_code[$_[1]];
+                        } else {
+                           $cant_resolve = 1;
                         }
-                     },
-                     sub { $_[0] =~ s/\s+|[(){}\[\];]|$comment_re//gr }
-                  );
+                     }
+                  },
+                  sub { $_[0] =~ s/\s+|[(){}\[\];]|$comment_re//gr }
+               );
 
-                  @code = split(/^/, join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
+               @code = split(/^/, join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
 
-                  if ($cant_resolve) {
-                     my $function = $fret . ' ' . $fname . $fargs;
-                     $function =~ s/$comment_re//g;
-                     $function =~ s/\s+/ /g;
-                     $function =~ s/^\s+//g;
-                     $function =~ s/\n//g;
-                     $function .= "\n";
+               if ($cant_resolve) {
+                  my $function = $fret . ' ' . $fname . $fargs;
+                  $function =~ s/$comment_re//g;
+                  $function =~ s/\s+/ /g;
+                  $function =~ s/^\s+//g;
+                  $function =~ s/\n//g;
+                  $function .= "\n";
 
-                     @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
-                     @new_code = split(/^/, $fbody_saved =~ s/$comment_re/$comments[$1]/gr);
+                  @old_code = split(/^/, join('', @old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
+                  @new_code = split(/^/, $fbody_saved =~ s/$comment_re/$comments[$1]/gr);
 
-                     unshift @old_code, $function;
-                     unshift @new_code, $function;
-                     unshift @code,     $function;
+                  unshift @old_code, $function;
+                  unshift @new_code, $function;
+                  unshift @code,     $function;
 
-                     warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
-                        ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
-                           if call_meld(\@old_code, \@new_code, \@code);
+                  warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
+                     ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
+                        if call_meld(\@old_code, \@new_code, \@code);
 
-                     shift @old_code;
-                     shift @new_code;
-                     my $check = shift @code;
-                     warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
-                        if $check ne $function;
-                  }
-
-                  delete $acsl_specs{$_} foreach @exclude_specs;
-                  substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
+                  shift @old_code;
+                  shift @new_code;
+                  my $check = shift @code;
+                  warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
+                     if $check ne $function;
                }
+
+               delete $acsl_specs{$_} foreach @exclude_specs;
+               substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @code));
             }
 
             move_specs($fret, $spec, $_, \%module, $sbegin, $send);
