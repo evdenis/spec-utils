@@ -282,15 +282,15 @@ sub move_specs
 }
 
 
-### Fetching module sources from dir: $module_dir
-my %module = fetch_module_sources($module_dir);
-die(RED . "Can't find module sources." . RESET . "\n")
-   unless %module;
-
 ### Fetching specifications from dir: $specs_dir
 my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
    unless %specs;
+
+### Fetching module sources from dir: $module_dir
+my %module = fetch_module_sources($module_dir);
+die(RED . "Can't find module sources." . RESET . "\n")
+   unless %module;
 
 ### simple preprocessing step
 simple_preprocess(\%specs);
