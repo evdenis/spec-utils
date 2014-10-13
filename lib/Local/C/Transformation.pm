@@ -21,6 +21,8 @@ our @EXPORT_OK = qw(
          restore_attributes
          restore_strings
          restore_macro
+         remove
+         remove_dup
 
          %comment_t
          %attribute_t
@@ -263,5 +265,18 @@ sub restore
 
    undef
 }
+
+sub remove ($)
+{
+   $_[0] =~ s/$replacement//g;
+
+   undef
+}
+
+sub remove_dup ($)
+{
+   $_[0] =~ s/$replacement//gr;
+}
+
 
 1;
