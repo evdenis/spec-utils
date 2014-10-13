@@ -18,7 +18,7 @@ use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
-use Local::String::Utils qw(trim is_blank ne_spaces);
+use Local::String::Utils qw(trim is_blank ne_spaces normalize);
 use Local::List::Utils qw(str_to_list);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
@@ -368,11 +368,8 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 
                if ($cant_resolve) {
                   my $function = $fret . ' ' . $fname . $fargs;
-                  $function =~ s/$comment_re//g;
-                  $function =~ s/\s+/ /g;
-                  $function =~ s/^\s+//g;
-                  $function =~ s/\n//g;
-                  $function .= "\n";
+                  $function =~ s/$Local::C::Transformation::replacement//g;
+                  $function = normalize($function) . "\n";
 
                   $old_code = str_to_list(join('', @$old_code) =~ s/$comment_re/$module{$_}{c}->[$1]/gr);
                   $new_code = str_to_list($fbody_saved =~ s/$comment_re/$comments[$1]/gr);
