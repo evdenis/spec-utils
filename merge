@@ -18,7 +18,7 @@ use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
-use Local::String::Utils qw(trim is_blank);
+use Local::String::Utils qw(trim is_blank ne_spaces);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives);
@@ -278,7 +278,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
   
    if ($fret =~ m/^\s*($comment_re(\s*$comment_re)*).*$/s) {
       my $spec = $1;
-      my $ret_pattern = substr($fret, $+[1]) =~ s/\s+//gsr;
+      my ($ret_pattern, $args_pattern) = (substr($fret, $+[1]), $fargs);
       my @exclude_specs;
 
       $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
@@ -287,7 +287,6 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       $spec = trim $spec;
       $spec .= "\n";
 
-      my $args_pattern = $fargs =~ s/\s+//gr;
 
       my $done = 0;
       foreach (keys %module) {
@@ -299,15 +298,15 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 
             #additional checks
             if ($strict) {
-               if ($args_pattern ne $fargs =~ s/\s+//gr) {
+               if (ne_spaces $args_pattern, $fargs) {
                   warn "$_: " . RED . 'arguments' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
-                  next;
+                  next
                }
 
                $fret =~ m/[a-zA-Z_]/;
-               if ($ret_pattern ne substr($fret, $-[0]) =~ s/\s+//gr) {
+               if (ne_spaces $ret_pattern, substr($fret, $-[0])) {
                   warn "$_: " . RED . 'return type' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
-                  next;
+                  next
                }
             }
 
