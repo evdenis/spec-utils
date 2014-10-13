@@ -18,7 +18,7 @@ use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
-use Local::String::Utils qw(trim);
+use Local::String::Utils qw(trim is_blank);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives);
@@ -282,7 +282,8 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       my @exclude_specs;
 
       $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
-      next if $spec =~ m/^\s++$/s;
+      next
+         if is_blank $spec;
       $spec = trim $spec;
       $spec .= "\n";
 
