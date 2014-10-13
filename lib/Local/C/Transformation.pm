@@ -15,7 +15,20 @@ use Local::List::Utils qw(uniq);
 
 
 our @EXPORT = qw(adapt);
-our @EXPORT_OK = qw(restore %comment_t %attribute_t %string_t %macro_t $s $h);
+our @EXPORT_OK = qw(
+         restore
+         restore_comments
+         restore_attributes
+         restore_strings
+         restore_macro
+
+         %comment_t
+         %attribute_t
+         %string_t
+         %macro_t
+
+         $s $h
+);
 our %EXPORT_TAGS = (TYPES => [qw(%comment_t %attribute_t %string_t %macro_t)], RE => [qw($s $h)]);
 
 #TODO: md5 hash
