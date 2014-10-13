@@ -21,7 +21,7 @@ use Algorithm::Diff qw(traverse_sequences);
 use Local::String::Utils qw(trim is_blank ne_spaces normalize);
 use Local::List::Utils qw(str_to_list);
 use Local::Terminal qw(window_size);
-use Local::C::Transformation qw(adapt restore restore_macro restore_comments :RE :TYPES);
+use Local::C::Transformation qw(adapt restore remove remove_dup restore_macro restore_comments :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives);
 use Local::File::Merge qw(merge);
 use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
@@ -280,7 +280,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 
    if ($fret =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
       my $spec = $1;
-      my ($ret_pattern, $args_pattern) = (substr($fret, $+[1]), $fargs);
+      my ($ret_pattern, $args_pattern) = ($fret, $fargs);
       my @exclude_specs;
 
       $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
@@ -299,13 +299,12 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 
             #additional checks
             if ($strict) {
-               if (ne_spaces $args_pattern, $fargs) {
+               if (ne_spaces(remove_dup($args_pattern), remove_dup($fargs))) {
                   warn "$_: " . RED . 'arguments' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
                   next
                }
 
-               $fret =~ m/[a-zA-Z_]/;
-               if (ne_spaces $ret_pattern, substr($fret, $-[0])) {
+               if (ne_spaces(remove_dup($ret_pattern), remove_dup($fret))) {
                   warn "$_: " . RED . 'return type' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
                   next
                }
@@ -370,7 +369,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 
                if ($cant_resolve) {
                   my $function = $fret . ' ' . $fname . $fargs;
-                  $function =~ s/$Local::C::Transformation::replacement//g;
+                  remove($function);
                   $function = normalize($function) . "\n";
 
                   $old_code = str_to_list(restore_comments(join('', @$old_code), $module{$_}{c}));
