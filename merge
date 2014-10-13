@@ -420,7 +420,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
                            }
                         }
                      },
-                     sub { $_[0] =~ s/\s+|[(){}\[\];]|$comment_re//gr }
+                     sub { $_[0] =~ s/\s++|$comment_re//gr }
                   );
 
                   @code = split(/^/, join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
