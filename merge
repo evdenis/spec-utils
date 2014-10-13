@@ -268,19 +268,50 @@ foreach(0 .. $#comments) {
    }
 }
 
-#funcs init
-my %f;
+
 my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
 my $name = qr/(?<name>$varname)/;
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
 
+my %s;
 while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
-   my ($fret, $fname, $fargs, $fbody) = @+{qw/ret name args fbody/};
+   my $name = $+{name};
+   if (exists $s{$name} && defined $s{$name}{body}) {
+      warn "Function $+{name} has been already defined.\n"
+   } else {
+      $s{$name}{ret}  = $+{ret};
+      $s{$name}{args} = $+{args};
 
-   if ($fret =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
+      $s{$name}{body} = $+{body}
+         if exists $+{body};
+   }
+}
+
+my %m;
+foreach (keys %module) {
+   while ($module{$_}{code} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
+      my $name = $+{name};
+      if (exists $m{$name}) {
+         warn "Function $+{name} has been already defined.\n"
+      } else {
+         $m{$name}{file} = $_;
+
+         $m{$name}{ret_idx}  = [$-[1], $+[1]];
+         $m{$name}{body_idx} = [$-[4], $+[4]];
+
+         $m{$name}{ret}  = $+{ret};
+         $m{$name}{args} = $+{args};
+         $m{$name}{body} = $+{body};
+      }
+   }
+}
+
+
+foreach (keys %s) {
+   if ($s{$_}{ret} =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
+      my $cs = $s{$_};
       my $spec = $1;
-      my ($ret_pattern, $args_pattern) = ($fret, $fargs);
       my @exclude_specs;
 
       $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
@@ -289,122 +320,110 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       $spec = trim $spec;
       $spec .= "\n";
 
-      my $done = 0;
-      foreach (keys %module) {
-         #only one function in one file
-         if ($module{$_}{code} =~ m/$ret\b\Q$fname\E${s}*+$args${s}*+$body/) {
-            my ($sbegin, $send) = ($-[1], $+[1]);
-            my ($bbegin, $bend) = ($-[3], $+[3]);
-            my ($fret, $fargs, $nbody) = @+{qw/ret args fbody/};
+      if (exists $m{$_}) {
+         my $cm = $m{$_};
 
-            #additional checks
-            if ($strict) {
-               if (ne_spaces(remove_dup($args_pattern), remove_dup($fargs))) {
-                  warn "$_: " . RED . 'arguments' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
-                  next
-               }
-
-               if (ne_spaces(remove_dup($ret_pattern), remove_dup($fret))) {
-                  warn "$_: " . RED . 'return type' . RESET . " of function " . GREEN . $fname . RESET . " doesn't match.\n";
-                  next
-               }
+         #additional checks
+         if ($strict) {
+            if (ne_spaces(remove_dup($cs->{args}), remove_dup($cm->{args}))) {
+               warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
+               next
             }
 
-            if (contains_specs $fbody, \%acsl_specs) {
-               my $fbody_saved = $fbody;
-               my @exclude_specs;
-               my @intervals;
-
-               restore_macro($fbody, \@macro);
-# This code remove simple comments from new_code. Not very useful.
-#               while ($fbody =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
-#                  my ($b, $e) = ($-[0], $+[0]);
-#                  my @m = ${^MATCH} =~ m/$comment_re/g;
-#                  my $cond = 0;
-#
-#                  foreach (@m) {
-#                     $cond = 1 if exists $acsl_specs{$_}
-#                  }
-#                  unless ($cond) {
-#                     push @intervals, ($b, $e)
-#                  }
-#               }
-#               while (@intervals) {
-#                  my $e = pop @intervals;
-#                  my $b = pop @intervals;
-#                  substr($fbody, $b, $e - $b, '');
-#               }
-               $fbody =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
-
-               restore_macro($nbody, $module{$_}{m});
-               $nbody =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
-
-               my $new_code = str_to_list $fbody;
-               my $old_code = str_to_list $nbody;
-               my @code;
-
-               my $cant_resolve = 0;
-
-               traverse_sequences(
-                  $old_code,
-                  $new_code,
-                  {
-                     MATCH     => sub { push @code, @$new_code[$_[1]] },
-                     DISCARD_A => sub { push @code, @$old_code[$_[0]] },
-                     DISCARD_B => sub {
-                        if (@$new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
-                           push @code, @$new_code[$_[1]];
-                        } elsif (@$new_code[$_[1]] =~ m/$comment_re/) {
-                           $cant_resolve = 1;
-                           push @code, @$new_code[$_[1]];
-                        } else {
-                           $cant_resolve = 1;
-                        }
-                     }
-                  },
-                  sub { $_[0] =~ s/\s++|$comment_re//gr }
-               );
-
-               $code = str_to_list(join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
-
-               if ($cant_resolve) {
-                  my $function = $fret . ' ' . $fname . $fargs;
-                  remove($function);
-                  $function = normalize($function) . "\n";
-
-                  $old_code = str_to_list(restore_comments(join('', @$old_code), $module{$_}{c}));
-                  $new_code = str_to_list(restore_comments($fbody_saved, \@comments));
-
-                  unshift $old_code, $function;
-                  unshift $new_code, $function;
-                  unshift $code,     $function;
-
-                  warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
-                     ". Note, that changes in function '" . GREEN . $fname . RESET . "' will be merged anyway.\n"
-                        if call_meld($old_code, $new_code, $code);
-
-                  shift $old_code;
-                  shift $new_code;
-                  my $check = shift $code;
-                  warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
-                     if $check ne $function;
-               }
-
-               delete $acsl_specs{$_} foreach @exclude_specs;
-               substr($module{$_}{code}, $bbegin, $bend - $bbegin, join('', @$code));
+            if (ne_spaces(remove_dup($cs->{ret}), remove_dup($cm->{ret}))) {
+               warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
+               next
             }
-
-            move_specs($fret, $spec, $_, \%module, $sbegin, $send);
-
-            $done = 1;
-            last;
          }
+
+         if (contains_specs $cs->{body}, \%acsl_specs) {
+            my $fbody_saved = $cs->{body};
+            my @exclude_specs;
+            my @intervals;
+
+            restore_macro($cs->{body}, \@macro);
+# This code remove simple comments from new_code. Not very useful.
+#            while ($cs->{body} =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
+#               my ($b, $e) = ($-[0], $+[0]);
+#               my @m = ${^MATCH} =~ m/$comment_re/g;
+#               my $cond = 0;
+#
+#               foreach (@m) {
+#                  $cond = 1 if exists $acsl_specs{$_}
+#               }
+#               unless ($cond) {
+#                  push @intervals, ($b, $e)
+#               }
+#            }
+#            while (@intervals) {
+#               my $e = pop @intervals;
+#               my $b = pop @intervals;
+#               substr($cs->{body}, $b, $e - $b, '');
+#            }
+            $cs->{body} =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
+
+            restore_macro($cm->{body}, $module{$_}{m});
+            $cm->{body} =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
+
+            my $new_code = str_to_list $cs->{body};
+            my $old_code = str_to_list $cm->{body};
+            my @code;
+
+            my $cant_resolve = 0;
+
+            traverse_sequences(
+               $old_code,
+               $new_code,
+               {
+                  MATCH     => sub { push @code, @$new_code[$_[1]] },
+                  DISCARD_A => sub { push @code, @$old_code[$_[0]] },
+                  DISCARD_B => sub {
+                     if (@$new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
+                        push @code, @$new_code[$_[1]];
+                     } elsif (@$new_code[$_[1]] =~ m/$comment_re/) {
+                        $cant_resolve = 1;
+                        push @code, @$new_code[$_[1]];
+                     } else {
+                        $cant_resolve = 1;
+                     }
+                  }
+               },
+               sub { $_[0] =~ s/\s++|$comment_re//gr }
+            );
+
+            $code = str_to_list(join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
+
+            if ($cant_resolve) {
+               my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
+               remove($function);
+               $function = normalize($function) . "\n";
+
+               $old_code = str_to_list(restore_comments(join('', @$old_code), $module{$_}{c}));
+               $new_code = str_to_list(restore_comments($fbody_saved, \@comments));
+
+               unshift $old_code, $function;
+               unshift $new_code, $function;
+               unshift $code,     $function;
+
+               if (call_meld($old_code, $new_code, $code)) {
+                  warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
+                     ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
+               }
+
+               shift $old_code;
+               shift $new_code;
+               my $check = shift $code;
+               warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
+                  if $check ne $function;
+            }
+
+            delete $acsl_specs{$_} foreach @exclude_specs;
+            substr($module{$_}{code}, $cm->{body_idx}[0], $cm->{body_idx}[1] - $cm->{body_idx}[0], join('', @$code));
+         }
+
+         move_specs($cm->{ret}, $spec, $_, \%module, @{$cm->{ret_idx}});
       }
-      unless ($done) {
-         warn "Can't find function " . GREEN . $fname . RESET "\n"
-      } else {
-         delete $acsl_specs{$_} foreach @exclude_specs
-      }
+      delete $acsl_specs{$_} foreach @exclude_specs
    }
 }
 
