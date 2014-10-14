@@ -272,7 +272,7 @@ foreach(0 .. $#comments) {
 my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
 my $name = qr/(?<name>$varname)/;
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
 
 my %s;
 while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
@@ -322,6 +322,7 @@ foreach (keys %s) {
 
       if (exists $m{$_}) {
          my $cm = $m{$_};
+         my $file = $cm->{file};
 
          #additional checks
          if ($strict) {
@@ -362,8 +363,8 @@ foreach (keys %s) {
 #            }
             $cs->{body} =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
 
-            restore_macro($cm->{body}, $module{$_}{m});
-            $cm->{body} =~ s/$comment_re/if (exists $module{$_}{i}{$1}) {${^MATCH}} else {$module{$_}{c}->[$1]}/egp;
+            restore_macro($cm->{body}, $module{$file}{m});
+            $cm->{body} =~ s/$comment_re/if (exists $module{$file}{i}{$1}) {${^MATCH}} else {$module{$file}{c}->[$1]}/egp;
 
             my $new_code = str_to_list $cs->{body};
             my $old_code = str_to_list $cm->{body};
@@ -418,10 +419,10 @@ foreach (keys %s) {
             }
 
             delete $acsl_specs{$_} foreach @exclude_specs;
-            substr($module{$_}{code}, $cm->{body_idx}[0], $cm->{body_idx}[1] - $cm->{body_idx}[0], join('', @$code));
+            substr($module{$file}{code}, $cm->{body_idx}[0], $cm->{body_idx}[1] - $cm->{body_idx}[0], join('', @$code));
          }
 
-         move_specs($cm->{ret}, $spec, $_, \%module, @{$cm->{ret_idx}});
+         move_specs($cm->{ret}, $spec, $file, \%module, @{$cm->{ret_idx}});
       }
       delete $acsl_specs{$_} foreach @exclude_specs
    }
