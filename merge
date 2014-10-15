@@ -304,7 +304,7 @@ my %s;
 while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
    my $name = $+{name};
    if (exists $s{$name} && defined $s{$name}{body}) {
-      warn "Function $+{name} has been already defined.\n"
+      warn "specs: Function $+{name} has been already defined.\n"
    } else {
       $s{$name}{ret}  = $+{ret};
       $s{$name}{args} = $+{args};
@@ -319,7 +319,7 @@ foreach (keys %module) {
    while ($module{$_}{code} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
       my $name = $+{name};
       if (exists $m{$name}) {
-         warn "Function $+{name} has been already defined.\n"
+         warn "module: $_: Function $+{name} has been already defined.\n"
       } else {
          $m{$name}{file} = $_;
 
