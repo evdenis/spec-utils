@@ -192,6 +192,32 @@ sub fetch_specifications
    )
 }
 
+sub restore_specs_only ($$$)
+{
+   if (wantarray) {
+      my @res;
+      $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {push @res, $1; $_[1]->[$1]} else {${^MATCH}}/egp;
+      return @res
+   } else {
+      $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {$_[1]->[$1]} else {${^MATCH}}/egp;
+      return undef
+   }
+}
+
+sub restore_comments_only ($$$)
+{
+   $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {${^MATCH}} else {$_[1]->[$1]}/egp
+}
+
+sub get_spec_ids ($)
+{
+   my @res;
+
+   push @res, $1 while $_[0] =~ m/$comment_re/g;
+
+   @res
+}
+
 sub contains_specs
 {
    if ($_[0]) {
@@ -314,7 +340,8 @@ foreach (keys %s) {
       my $spec = $1;
       my @exclude_specs;
 
-      $spec =~ s/$comment_re/if (exists $acsl_specs{$1}) {push @exclude_specs, $1; "$comments[$1]"} else {''}/eg;
+      push @exclude_specs, restore_specs_only($spec, \@comments, \%acsl_specs);
+      filter $spec;
       next
          if is_blank $spec;
       $spec = trim $spec;
@@ -361,10 +388,10 @@ foreach (keys %s) {
 #               my $b = pop @intervals;
 #               substr($cs->{body}, $b, $e - $b, '');
 #            }
-            $cs->{body} =~ s/$comment_re/if (exists $acsl_specs{$1}) {${^MATCH}} else {$comments[$1]}/egp;
+            restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
 
             restore_macro($cm->{body}, $module{$file}{m});
-            $cm->{body} =~ s/$comment_re/if (exists $module{$file}{i}{$1}) {${^MATCH}} else {$module{$file}{c}->[$1]}/egp;
+            restore_comments_only($cm->{body}, $module{$file}{c}, $module{$file}{i});
 
             my $new_code = str_to_list $cs->{body};
             my $old_code = str_to_list $cm->{body};
@@ -392,7 +419,10 @@ foreach (keys %s) {
                sub { $_[0] =~ s/\s++|$comment_re//gr }
             );
 
-            $code = str_to_list(join('', @code) =~ s/$comment_re/push @exclude_specs, $1;$comments[$1]/ger);
+            $code = join('', @code);
+            # comments have been already restored
+            push @exclude_specs, restore_specs_only($code, \@comments, \%acsl_specs);
+            $code = str_to_list($code);
 
             if ($cant_resolve) {
                my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
