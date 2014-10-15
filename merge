@@ -232,7 +232,7 @@ sub contains_specs
 
 sub move_specs
 {
-   my ($fret, $spec, $file, $module, $sbegin, $send) = @_;
+   my ($fret, $spec, $file, $module, $sbegin, $slen) = @_;
 
    my @interval;
    my $continue = 0;
@@ -263,7 +263,7 @@ sub move_specs
    }
    $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
-   substr($module->{$file}{code}, $sbegin, $send - $sbegin, $fret);
+   substr($module->{$file}{code}, $sbegin, $slen, $fret);
 }
 
 
@@ -323,8 +323,8 @@ foreach (keys %module) {
       } else {
          $m{$name}{file} = $_;
 
-         $m{$name}{ret_idx}  = [$-[1], $+[1]];
-         $m{$name}{body_idx} = [$-[4], $+[4]];
+         $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
+         $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
 
          $m{$name}{ret}  = $+{ret};
          $m{$name}{args} = $+{args};
@@ -449,10 +449,10 @@ foreach (keys %s) {
             }
 
             delete $acsl_specs{$_} foreach @exclude_specs;
-            substr($module{$file}{code}, $cm->{body_idx}[0], $cm->{body_idx}[1] - $cm->{body_idx}[0], join('', @$code));
+            substr($module{$file}{code}, @{ $cm->{body_idx} }, join('', @$code));
          }
 
-         move_specs($cm->{ret}, $spec, $file, \%module, @{$cm->{ret_idx}});
+         move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
       }
       delete $acsl_specs{$_} foreach @exclude_specs
    }
