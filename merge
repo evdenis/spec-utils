@@ -122,7 +122,7 @@ sub call_meld
 {
    return 1 if $#_ > 2;
 
-   my @template = map {$_ . 'XXXX'} qw/to_ from_ merge_/;
+   my @template = map {$_ . 'XXXX'} qw/to_ merge_ from_/;
    my @f;
    foreach my $i (0 .. $#_) {
       my (undef, $name) = tempfile(TEMPLATE => $template[$i], SUFFIX => '.c');
@@ -441,7 +441,7 @@ foreach (keys %s) {
                unshift $new_code, $function;
                unshift $code,     $function;
 
-               if (call_meld($old_code, $new_code, $code)) {
+               if (call_meld($old_code, $code, $new_code)) {
                   warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
                      ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
                }
