@@ -21,7 +21,7 @@ use Algorithm::Diff qw(traverse_sequences);
 use Local::String::Utils qw(trim is_blank ne_spaces normalize);
 use Local::List::Utils qw(str_to_list);
 use Local::Terminal qw(window_size);
-use Local::C::Transformation qw(adapt restore remove remove_dup restore_macro restore_comments :RE :TYPES);
+use Local::C::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives);
 use Local::File::Merge qw(merge);
 use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
@@ -326,12 +326,12 @@ foreach (keys %s) {
 
          #additional checks
          if ($strict) {
-            if (ne_spaces(remove_dup($cs->{args}), remove_dup($cm->{args}))) {
+            if (ne_spaces(filter_dup($cs->{args}), filter_dup($cm->{args}))) {
                warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
                next
             }
 
-            if (ne_spaces(remove_dup($cs->{ret}), remove_dup($cm->{ret}))) {
+            if (ne_spaces(filter_dup($cs->{ret}), filter_dup($cm->{ret}))) {
                warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
                next
             }
