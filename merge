@@ -426,7 +426,7 @@ foreach (keys %s) {
 
             if ($cant_resolve) {
                my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
-               remove($function);
+               filter($function);
                $function = normalize($function) . "\n";
 
                $old_code = str_to_list(restore_comments(join('', @$old_code), $module{$_}{c}));
