@@ -230,9 +230,17 @@ sub contains_specs
    0
 }
 
+my %index;
+sub upd_merge_index
+{
+   # $file $begin $len $code
+   $index{$_[0]}{$_[1]}{length} = $_[2];
+   $index{$_[0]}{$_[1]}{code}   = $_[3];
+}
+
 sub move_specs
 {
-   my ($fret, $spec, $file, $module, $sbegin, $slen) = @_;
+   my ($fret, $spec, $file, $module, $begin, $len) = @_;
 
    my @interval;
    my $continue = 0;
@@ -263,7 +271,7 @@ sub move_specs
    }
    $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
-   substr($module->{$file}{code}, $sbegin, $slen, $fret);
+   upd_merge_index($file, $begin, $len, $fret);
 }
 
 
@@ -436,7 +444,7 @@ foreach (keys %s) {
             }
 
             delete $acsl_specs{$_} foreach @exclude_specs;
-            substr($module{$file}{code}, @{ $cm->{body_idx} }, join('', @$code));
+            upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
          }
 
          move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
@@ -445,6 +453,13 @@ foreach (keys %s) {
    }
 }
 
+foreach my $file (keys %index) {
+   my $offset = 0;
+   foreach my $pos (sort keys $index{$file}) {
+      substr($module{$file}{code}, $pos + $offset, $index{$file}{$pos}{length}, $index{$file}{$pos}{code});
+      $offset += length($index{$file}{$pos}{code}) - $index{$file}{$pos}{length};
+   }
+}
 
 foreach my $f (keys %module) {
    restore($module{$f}{code}, comments => $module{$f}{c}, macro => $module{$f}{m});
