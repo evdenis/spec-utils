@@ -318,17 +318,19 @@ my %m;
 foreach (keys %module) {
    while ($module{$_}{code} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/g) {
       my $name = $+{name};
-      if (exists $m{$name}) {
-         warn "module: $_: Function $+{name} has been already defined.\n"
-      } else {
-         $m{$name}{file} = $_;
+      if (exists $s{$name}) {
+         if (exists $m{$name}) {
+            warn "module: $_: Function $+{name} has been already defined.\n"
+         } else {
+            $m{$name}{file} = $_;
 
-         $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
-         $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
+            $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
+            $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
 
-         $m{$name}{ret}  = $+{ret};
-         $m{$name}{args} = $+{args};
-         $m{$name}{body} = $+{body};
+            $m{$name}{ret}  = $+{ret};
+            $m{$name}{args} = $+{args};
+            $m{$name}{body} = $+{body};
+         }
       }
    }
 }
