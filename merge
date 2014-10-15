@@ -372,24 +372,6 @@ foreach (keys %s) {
             my @intervals;
 
             restore_macro($cs->{body}, \@macro);
-# This code remove simple comments from new_code. Not very useful.
-#            while ($cs->{body} =~ m/^[ \t]*$comment_re(?:[ \t]*+|$comment_re)*\n/gmp){
-#               my ($b, $e) = ($-[0], $+[0]);
-#               my @m = ${^MATCH} =~ m/$comment_re/g;
-#               my $cond = 0;
-#
-#               foreach (@m) {
-#                  $cond = 1 if exists $acsl_specs{$_}
-#               }
-#               unless ($cond) {
-#                  push @intervals, ($b, $e)
-#               }
-#            }
-#            while (@intervals) {
-#               my $e = pop @intervals;
-#               my $b = pop @intervals;
-#               substr($cs->{body}, $b, $e - $b, '');
-#            }
             restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
 
             restore_macro($cm->{body}, $module{$file}{m});
