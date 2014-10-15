@@ -22,7 +22,7 @@ use Local::String::Utils qw(trim is_blank ne_spaces normalize);
 use Local::List::Utils qw(str_to_list);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
-use Local::GCC::Preprocess qw(preprocess_directives);
+use Local::GCC::Preprocess qw(preprocess_directives_noincl);
 use Local::File::Merge qw(merge);
 use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
 use ACSL::Common qw(is_acsl_spec);
@@ -277,7 +277,7 @@ my %module = fetch_module_sources($module_dir);
 die(RED . "Can't find module sources." . RESET . "\n")
    unless %module;
 
-$specs{specs} = \((preprocess_directives($specs{specs}))[1]->{'<stdin>'});
+$specs{specs} = preprocess_directives_noincl($specs{specs});
 
 my @comments = @{ $specs{comments} };
 my @macro    = @{ $specs{macro}    };
