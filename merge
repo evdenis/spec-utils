@@ -431,8 +431,11 @@ foreach (keys %s) {
                filter($function);
                $function = normalize($function) . "\n";
 
-               $old_code = str_to_list(restore_comments(join('', @$old_code), $module{$_}{c}));
-               $new_code = str_to_list(restore_comments($fbody_saved, \@comments));
+               $old_code = join('', @$old_code);
+               restore_comments($old_code, $module{$_}{c});
+               $old_code = str_to_list($old_code);
+               restore_comments($fbody_saved, \@comments);
+               $new_code = str_to_list($fbody_saved);
 
                unshift $old_code, $function;
                unshift $new_code, $function;
