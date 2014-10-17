@@ -455,7 +455,7 @@ foreach (keys %s) {
 
 foreach my $file (keys %index) {
    my $offset = 0;
-   foreach my $pos (sort keys $index{$file}) {
+   foreach my $pos (sort { $a <=> $b } keys $index{$file}) {
       substr($module{$file}{code}, $pos + $offset, $index{$file}{$pos}{length}, $index{$file}{$pos}{code});
       $offset += length($index{$file}{$pos}{code}) - $index{$file}{$pos}{length};
    }
