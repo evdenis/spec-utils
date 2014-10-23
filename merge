@@ -218,7 +218,7 @@ sub restore_comments_only ($$$)
    $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {${^MATCH}} else {$_[1]->[$1]}/egp
 }
 
-sub get_spec_ids ($)
+sub get_comments_ids ($)
 {
    my @res;
 
@@ -395,7 +395,6 @@ foreach (keys %s) {
          if (contains_specs $cs->{body}, \%acsl_specs) {
             my $fbody_saved = $cs->{body};
             my @exclude_specs;
-            my @intervals;
 
             restore_macro($cs->{body}, \@macro);
             restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
@@ -408,6 +407,7 @@ foreach (keys %s) {
             my @code;
 
             my $cant_resolve = 0;
+            my $only_blank = 1;
 
             traverse_sequences(
                $old_code,
@@ -416,11 +416,13 @@ foreach (keys %s) {
                   MATCH     => sub { push @code, @$new_code[$_[1]] },
                   DISCARD_A => sub { push @code, @$old_code[$_[0]] },
                   DISCARD_B => sub {
-                     if (@$new_code[$_[1]] =~ m/^(?:\s++|$comment_re)*$/) {
-                        push @code, @$new_code[$_[1]];
-                     } elsif (@$new_code[$_[1]] =~ m/$comment_re/) {
+                     my $line = @$new_code[$_[1]];
+                     if ($line =~ m/^(?:\s++|$comment_re)*$/) {
+                        push @code, $line;
+                        $only_blank &&= is_blank($line);
+                     } elsif ($line =~ m/$comment_re/) {
                         $cant_resolve = 1;
-                        push @code, @$new_code[$_[1]];
+                        push @code, $line;
                      } else {
                         $cant_resolve = 1;
                      }
@@ -428,11 +430,20 @@ foreach (keys %s) {
                },
                sub { $_[0] =~ s/\s++|$comment_re//gr }
             );
+            $only_blank &&= !$cant_resolve;
 
-            $code = join('', @code);
-            # comments have been already restored
-            push @exclude_specs, restore_specs_only($code, \@comments, \%acsl_specs);
-            $code = str_to_list($code);
+            if ($only_blank) {
+               $code = join('', @$old_code);
+               # comments have been already restored
+               restore_specs_only($code, $module{$file}{c}, $module{$file}{i});
+               push @exclude_specs, get_comments_ids(join('', @code));
+               $code = str_to_list($code);
+            } else {
+               $code = join('', @code);
+               # comments have been already restored
+               push @exclude_specs, restore_specs_only($code, \@comments, \%acsl_specs);
+               $code = str_to_list($code);
+            }
 
             if ($cant_resolve) {
                my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
