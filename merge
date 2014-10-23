@@ -326,20 +326,21 @@ my %m;
 foreach (keys %module) {
    while ($module{$_}{code} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
       my $name = $+{name};
-      if (exists $s{$name}) {
-         if (exists $m{$name} && exists $m{$name}{body} && exists $+{body}) {
-            warn "module: $_: Function $+{name} has been already defined.\n"
-         } else {
+      if (exists $s{$name} && !exists $m{$name}) {
+         if (exists $+{body} == exists $s{$name}{body}) {
+            if (exists $+{body}) {
+               $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
+               $m{$name}{body} = $+{body};
+            } else {
+               next
+                  unless contains_specs $+{ret}, $module{$_}{i}
+            }
+
             $m{$name}{file} = $_;
 
             $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
             $m{$name}{ret}  = $+{ret};
             $m{$name}{args} = $+{args};
-
-            if (exists $+{body}) {
-               $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
-               $m{$name}{body} = $+{body};
-            }
          }
       }
    }
