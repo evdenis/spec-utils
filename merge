@@ -428,7 +428,7 @@ foreach (keys %s) {
                $function = normalize($function) . "\n";
 
                $old_code = join('', @$old_code);
-               restore_comments($old_code, $module{$_}{c});
+               restore_comments($old_code, $module{$file}{c});
                $old_code = str_to_list($old_code);
                restore_comments($fbody_saved, \@comments);
                $new_code = str_to_list($fbody_saved);
