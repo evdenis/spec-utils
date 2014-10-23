@@ -500,6 +500,6 @@ if (keys %acsl_specs) {
    my (undef, $col) = window_size();
 
    warn RED, "Can't merge following specifications:" . RESET . "\n\n";
-   warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort keys %acsl_specs) . "\n";
+   warn join("\n" . BLUE . '-' x $col . RESET, map { $comments[$_] } sort { $a <=> $b } keys %acsl_specs) . "\n";
 }
 
