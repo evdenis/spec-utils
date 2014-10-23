@@ -363,7 +363,7 @@ foreach (keys %module) {
 
 
 foreach (keys %s) {
-   if ($s{$_}{ret} =~ m/($comment_re(\s*+$comment_re)*+).*\Z/s) {
+   if ($s{$_}{ret} =~ m/($comment_re(\s*+$comment_re)*+)[^${Local::C::Transformation::special_symbols}]*\Z/s) {
       my $cs = $s{$_};
       my $spec = $1;
       my @exclude_specs;
