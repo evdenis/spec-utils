@@ -12,7 +12,7 @@ use utf8;
 
 use RE::Common qw($varname);
 use File::Slurp qw(read_file write_file);
-use Getopt::Long qw(:config gnu_getopt);
+use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use Pod::Usage;
 use Term::ANSIColor qw(:constants);
 use File::Temp qw(tempfile);
@@ -47,11 +47,12 @@ merge - Переложение спецификаций с одной верси
 
  merge [options]
  Options:
-  -f|--from dir      - откуда переносятся спецификации
-  -t|--to dir        - куда переносятся спецификации
-  -s|--[no-]strict   - осуществлять дополнительные проверки при сопоставлении функций
-  -k|--[no-]kdiff    - использовать kdiff3 вместо meld
-  -h|--help          - выводит полное описание программы
+  -f|--from dir         - откуда переносятся спецификации
+  -t|--to dir           - куда переносятся спецификации
+  -s|--skip f1,f2,f3... - пропустить функции f1, f2, f3 ...
+  --[no-]strict         - осуществлять дополнительные проверки при сопоставлении функций
+  -k|--[no-]kdiff       - использовать kdiff3 вместо meld
+  -h|--help             - выводит полное описание программы
 
 =head1 OPTIONS
 
@@ -65,7 +66,11 @@ merge - Переложение спецификаций с одной верси
 
 Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения CURRENT_PROJECT.
 
-=item B<-s|--[no-]strict>
+=item B<-s|--skip f1,f2,f3...>
+
+Не пытаться перенести спецификации для функций f1, f2, f3 ...
+
+=item B<--[no-]strict>
 
 Осуществлять точное сопоставление по аргументам и возвращаемому результату функций или отключить эти проверки. По умолчанию проверки включены.
 
@@ -99,15 +104,19 @@ my $specs_dir = '.';
 my $strict = 1;
 my $kdiff = 0;
 my $tr_wh = 0;
+my @skip;
 
 GetOptions(
-   'from|f=s'     =>  \$specs_dir,
-   'to|t=s'       =>  \$module_dir,
-   'strict|s!'    =>  \$strict,
-   'kdiff|k!'     =>  \$kdiff,
-   'rtw|r!'       =>  \$tr_wh, # remove trailing whitespaces
-   'help|h'       =>  \$help,
+   'from|f=s'     => \$specs_dir,
+   'to|t=s'       => \$module_dir,
+   'skip|s=s{1,}' => \@skip,
+   'strict!'      => \$strict,
+   'kdiff|k!'     => \$kdiff,
+   'rtw|r!'       => \$tr_wh, # remove trailing whitespaces
+   'help|h'       => \$help,
 ) or pod2usage(1);
+
+@skip = split(/,/,join(',',@skip));
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
 pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $module_dir && -d $specs_dir;
@@ -324,6 +333,9 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
          if exists $+{body};
    }
 }
+
+#Most efficient way to do this.
+delete $s{$_} foreach @skip;
 
 my %m;
 foreach (keys %module) {
