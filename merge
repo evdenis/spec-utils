@@ -19,7 +19,7 @@ use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 
 use Local::String::Utils qw(trim is_blank ne_spaces normalize);
-use Local::List::Utils qw(str_to_list);
+use Local::List::Utils qw(str_to_list uniq);
 use Local::Terminal qw(window_size);
 use Local::C::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
 use Local::GCC::Preprocess qw(preprocess_directives_noincl);
@@ -311,8 +311,8 @@ foreach(0 .. $#comments) {
    }
 }
 
-
-my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
+my $special_chars = join('', uniq(@comment_t{qw/L R/}));
+my $ret  = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
 my $name = qr/(?<name>$varname)/;
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
