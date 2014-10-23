@@ -394,7 +394,6 @@ foreach (keys %s) {
 
          if (contains_specs $cs->{body}, \%acsl_specs) {
             my $fbody_saved = $cs->{body};
-            my @exclude_specs;
 
             restore_macro($cs->{body}, \@macro);
             restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
@@ -471,14 +470,11 @@ foreach (keys %s) {
                warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
                   if $check ne $function;
             }
-
-            delete $acsl_specs{$_} foreach @exclude_specs;
             upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
          }
-
          move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
+         delete $acsl_specs{$_} foreach @exclude_specs
       }
-      delete $acsl_specs{$_} foreach @exclude_specs
    }
 }
 
