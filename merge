@@ -227,6 +227,18 @@ sub get_comments_ids ($)
    @res
 }
 
+sub get_specs_ids ($$)
+{
+   my @res;
+
+   while ($_[0] =~ m/$comment_re/g) {
+      push @res, $1
+         if exists $_[1]->{$1};
+   }
+
+   @res
+}
+
 sub contains_specs
 {
    if ($_[0]) {
@@ -323,17 +335,21 @@ my %m;
 
    while ($code =~ m/$func_re/g) {
       my $name = $+{name};
-      my $cond = exists $s{$name} && defined $s{$name}{body};
-      if ($cond && !exists $+{body}) {
-         # declaration; skipping
-      } elsif ($cond) {
-         warn "specs: Function $+{name} has been already defined.\n"
-      } else {
-         $s{$name}{ret}  = $+{ret};
-         $s{$name}{args} = $+{args};
+      my @specs_ids = get_specs_ids($+{ret}, \%acsl_specs);
+      push @specs_ids, get_specs_ids($+{body}, \%acsl_specs)
+         if exists $+{body};
 
-         $s{$name}{body} = $+{body}
-            if exists $+{body};
+      if (@specs_ids) {
+         if (exists $s{$name}) {
+            delete @acsl_specs{@specs_ids};
+            warn "Specifications for function $name have been already parsed: ignoring.\n";
+         } else {
+            $s{$name}{ret}  = $+{ret};
+            $s{$name}{args} = $+{args};
+
+            $s{$name}{body} = $+{body}
+               if exists $+{body};
+         }
       }
    }
 
