@@ -335,7 +335,7 @@ while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
 }
 
 #Most efficient way to do this.
-delete $s{$_} foreach @skip;
+delete @s{@skip};
 
 my %m;
 foreach (keys %module) {
@@ -473,7 +473,7 @@ foreach (keys %s) {
             upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
          }
          move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
-         delete $acsl_specs{$_} foreach @exclude_specs
+         delete @acsl_specs{@exclude_specs};
       }
    }
 }
