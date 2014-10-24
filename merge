@@ -267,28 +267,27 @@ sub move_specs
    my $continue = 0;
    my ($cb, $ce) = (0, 0);
 
-   while ($fret =~ m/$comment_t{pattern}/g) {
+   while ($fret =~ m/$comment_re/g) {
       my ($b, $e) = ($-[0], $+[0]);
       if (exists $module->{$file}{i}{$1}) {
-         if ($continue) {
-            $ce = $e + 1;
-         } else {
-            $cb = $b;
-            $ce = $e + 1;
-         }
+         $cb = $b
+            unless $continue;
 
+         $ce = $e + 1;
          $continue = 1;
       } else {
-         push @interval, ($cb, $ce);
+         push @interval, [$cb, $ce];
          $continue = 0;
       }
    }
-   push @interval, ($cb, $ce);
+   push @interval, [$cb, $ce]
+      if $continue;
 
-   while (@interval) {
-      $ce = pop @interval;
-      $cb = pop @interval;
-      substr($fret, $cb, $ce - $cb, '');
+   my $offset = 0;
+   foreach (@interval) {
+      my $len = $_->[1] - $_->[0];
+      substr($fret, $offset + $_->[0], $len, '');
+      $offset -= $len;
    }
    $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
