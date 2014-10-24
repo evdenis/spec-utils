@@ -311,52 +311,54 @@ foreach(0 .. $#comments) {
    }
 }
 
-my $special_chars = join('', uniq(@comment_t{qw/L R/}));
-my $ret  = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
-my $name = qr/(?<name>$varname)/;
-my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
-my $func_re = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
-
 my %s;
-while ($code =~ m/$func_re/g) {
-   my $name = $+{name};
-   my $cond = exists $s{$name} && defined $s{$name}{body};
-   if ($cond && !exists $+{body}) {
-      # declaration; skipping
-   } elsif ($cond) {
-      warn "specs: Function $+{name} has been already defined.\n"
-   } else {
-      $s{$name}{ret}  = $+{ret};
-      $s{$name}{args} = $+{args};
-
-      $s{$name}{body} = $+{body}
-         if exists $+{body};
-   }
-}
-
-#Most efficient way to do this.
-delete @s{@skip};
-
 my %m;
-foreach (keys %module) {
-   while ($module{$_}{code} =~ m/$func_re/g) {
+{
+   my $special_chars = join('', uniq(@comment_t{qw/L R/}));
+   my $ret  = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
+   my $name = qr/(?<name>$varname)/;
+   my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+   my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
+   my $func_re = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
+
+   while ($code =~ m/$func_re/g) {
       my $name = $+{name};
-      if (exists $s{$name} && !exists $m{$name}) {
-         if (exists $+{body} == exists $s{$name}{body}) {
-            if (exists $+{body}) {
-               $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
-               $m{$name}{body} = $+{body};
-            } else {
-               next
-                  unless contains_specs $+{ret}, $module{$_}{i}
+      my $cond = exists $s{$name} && defined $s{$name}{body};
+      if ($cond && !exists $+{body}) {
+         # declaration; skipping
+      } elsif ($cond) {
+         warn "specs: Function $+{name} has been already defined.\n"
+      } else {
+         $s{$name}{ret}  = $+{ret};
+         $s{$name}{args} = $+{args};
+
+         $s{$name}{body} = $+{body}
+            if exists $+{body};
+      }
+   }
+
+   #Most efficient way to do this.
+   delete @s{@skip};
+
+   foreach (keys %module) {
+      while ($module{$_}{code} =~ m/$func_re/g) {
+         my $name = $+{name};
+         if (exists $s{$name} && !exists $m{$name}) {
+            if (exists $+{body} == exists $s{$name}{body}) {
+               if (exists $+{body}) {
+                  $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
+                  $m{$name}{body} = $+{body};
+               } else {
+                  next
+                     unless contains_specs $+{ret}, $module{$_}{i}
+               }
+
+               $m{$name}{file} = $_;
+
+               $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
+               $m{$name}{ret}  = $+{ret};
+               $m{$name}{args} = $+{args};
             }
-
-            $m{$name}{file} = $_;
-
-            $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
-            $m{$name}{ret}  = $+{ret};
-            $m{$name}{args} = $+{args};
          }
       }
    }
