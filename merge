@@ -316,9 +316,10 @@ my $ret  = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
 my $name = qr/(?<name>$varname)/;
 my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
 my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
+my $func_re = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
 
 my %s;
-while ($code =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
+while ($code =~ m/$func_re/g) {
    my $name = $+{name};
    my $cond = exists $s{$name} && defined $s{$name}{body};
    if ($cond && !exists $+{body}) {
@@ -339,7 +340,7 @@ delete @s{@skip};
 
 my %m;
 foreach (keys %module) {
-   while ($module{$_}{code} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/g) {
+   while ($module{$_}{code} =~ m/$func_re/g) {
       my $name = $+{name};
       if (exists $s{$name} && !exists $m{$name}) {
          if (exists $+{body} == exists $s{$name}{body}) {
