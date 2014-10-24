@@ -382,10 +382,30 @@ my %m;
 
 
 foreach (keys %s) {
+   next unless exists $m{$_};
+
+   my $cs = $s{$_};
+   my $cm = $m{$_};
+
+   #additional checks
+   if ($strict) {
+      if (ne_spaces(filter_dup($cs->{args}), filter_dup($cm->{args}))) {
+         warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
+         next
+      }
+
+      if (ne_spaces(filter_dup($cs->{ret}), filter_dup($cm->{ret}))) {
+         warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
+         next
+      }
+   }
+
+
+   my $file = $cm->{file};
+   my @exclude_specs;
+
    if ($s{$_}{ret} =~ m/($comment_re(\s*+$comment_re)*+)[^${Local::C::Transformation::special_symbols}]*\Z/s) {
-      my $cs = $s{$_};
       my $spec = $1;
-      my @exclude_specs;
 
       push @exclude_specs, restore_specs_only($spec, \@comments, \%acsl_specs);
       filter $spec;
@@ -394,107 +414,91 @@ foreach (keys %s) {
       $spec = trim $spec;
       $spec .= "\n";
 
-      if (exists $m{$_}) {
-         my $cm = $m{$_};
-         my $file = $cm->{file};
-
-         #additional checks
-         if ($strict) {
-            if (ne_spaces(filter_dup($cs->{args}), filter_dup($cm->{args}))) {
-               warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
-               next
-            }
-
-            if (ne_spaces(filter_dup($cs->{ret}), filter_dup($cm->{ret}))) {
-               warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
-               next
-            }
-         }
-
-         if (contains_specs $cs->{body}, \%acsl_specs) {
-            my $fbody_saved = $cs->{body};
-
-            restore_macro($cs->{body}, \@macro);
-            restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
-
-            restore_macro($cm->{body}, $module{$file}{m});
-            restore_comments_only($cm->{body}, $module{$file}{c}, $module{$file}{i});
-
-            my $new_code = str_to_list $cs->{body};
-            my $old_code = str_to_list $cm->{body};
-            my @code;
-
-            my $cant_resolve = 0;
-            my $only_blank = 1;
-
-            traverse_sequences(
-               $old_code,
-               $new_code,
-               {
-                  MATCH     => sub { push @code, @$new_code[$_[1]] },
-                  DISCARD_A => sub { push @code, @$old_code[$_[0]] },
-                  DISCARD_B => sub {
-                     my $line = @$new_code[$_[1]];
-                     if ($line =~ m/^(?:\s++|$comment_re)*$/) {
-                        push @code, $line;
-                        $only_blank &&= is_blank($line);
-                     } elsif ($line =~ m/$comment_re/) {
-                        $cant_resolve = 1;
-                        push @code, $line;
-                     } else {
-                        $cant_resolve = 1;
-                     }
-                  }
-               },
-               sub { $_[0] =~ s/\s++|$comment_re//gr }
-            );
-            $only_blank &&= !$cant_resolve;
-
-            if ($only_blank) {
-               $code = join('', @$old_code);
-               # comments have been already restored
-               restore_specs_only($code, $module{$file}{c}, $module{$file}{i});
-               push @exclude_specs, get_comments_ids(join('', @code));
-               $code = str_to_list($code);
-            } else {
-               $code = join('', @code);
-               # comments have been already restored
-               push @exclude_specs, restore_specs_only($code, \@comments, \%acsl_specs);
-               $code = str_to_list($code);
-            }
-
-            if ($cant_resolve) {
-               my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
-               filter($function);
-               $function = normalize($function) . "\n";
-
-               $old_code = join('', @$old_code);
-               restore_comments($old_code, $module{$file}{c});
-               $old_code = str_to_list($old_code);
-               restore_comments($fbody_saved, \@comments);
-               $new_code = str_to_list($fbody_saved);
-
-               unshift $old_code, $function;
-               unshift $new_code, $function;
-               unshift $code,     $function;
-
-               if (call_meld($old_code, $code, $new_code)) {
-                  warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
-                     ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
-               }
-
-               shift $old_code;
-               shift $new_code;
-               my $check = shift $code;
-               warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
-                  if $check ne $function;
-            }
-            upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
-         }
-         move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
-         delete @acsl_specs{@exclude_specs};
-      }
+      move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
    }
+
+   if (contains_specs $cs->{body}, \%acsl_specs) {
+      my $fbody_saved = $cs->{body};
+
+      restore_macro($cs->{body}, \@macro);
+      restore_comments_only($cs->{body}, \@comments, \%acsl_specs);
+
+      restore_macro($cm->{body}, $module{$file}{m});
+      restore_comments_only($cm->{body}, $module{$file}{c}, $module{$file}{i});
+
+      my $new_code = str_to_list $cs->{body};
+      my $old_code = str_to_list $cm->{body};
+      my @code;
+
+      my $cant_resolve = 0;
+      my $only_blank = 1;
+
+      traverse_sequences(
+         $old_code,
+         $new_code,
+         {
+            MATCH     => sub { push @code, @$new_code[$_[1]] },
+            DISCARD_A => sub { push @code, @$old_code[$_[0]] },
+            DISCARD_B => sub {
+               my $line = @$new_code[$_[1]];
+               if ($line =~ m/^(?:\s++|$comment_re)*$/) {
+                  push @code, $line;
+                  $only_blank &&= is_blank($line);
+               } elsif ($line =~ m/$comment_re/) {
+                  $cant_resolve = 1;
+                  push @code, $line;
+               } else {
+                  $cant_resolve = 1;
+               }
+            }
+         },
+         sub { $_[0] =~ s/\s++|$comment_re//gr }
+      );
+      $only_blank &&= !$cant_resolve;
+
+      if ($only_blank) {
+         $code = join('', @$old_code);
+         # comments have been already restored
+         restore_specs_only($code, $module{$file}{c}, $module{$file}{i});
+         push @exclude_specs, get_comments_ids(join('', @code));
+         $code = str_to_list($code);
+      } else {
+         $code = join('', @code);
+         # comments have been already restored
+         push @exclude_specs, restore_specs_only($code, \@comments, \%acsl_specs);
+         $code = str_to_list($code);
+      }
+
+      if ($cant_resolve) {
+         my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
+         filter($function);
+         $function = normalize($function) . "\n";
+
+         $old_code = join('', @$old_code);
+         restore_comments($old_code, $module{$file}{c});
+         $old_code = str_to_list($old_code);
+         restore_comments($fbody_saved, \@comments);
+         $new_code = str_to_list($fbody_saved);
+
+         unshift $old_code, $function;
+         unshift $new_code, $function;
+         unshift $code,     $function;
+
+         if (call_meld($old_code, $code, $new_code)) {
+            warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
+               ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
+         }
+
+         shift $old_code;
+         shift $new_code;
+         my $check = shift $code;
+         warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
+            if $check ne $function;
+      }
+      upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
+   }
+
+   delete @acsl_specs{@exclude_specs};
 }
 
 foreach my $file (keys %index) {
