@@ -272,7 +272,7 @@ sub upd_merge_index
 
 sub move_specs
 {
-   my ($fret, $spec, $file, $module, $begin, $len) = @_;
+   my ($fret, $spec, $file, $sp_index, $begin, $len) = @_;
 
    my @interval;
    my $continue = 0;
@@ -280,7 +280,7 @@ sub move_specs
 
    while ($fret =~ m/$comment_re/g) {
       my ($b, $e) = ($-[0], $+[0]);
-      if (exists $module->{$file}{i}{$1}) {
+      if (exists $sp_index->{$1}) {
          $cb = $b
             unless $continue;
 
@@ -441,7 +441,7 @@ foreach (keys %s) {
       $spec = trim $spec;
       $spec .= "\n";
 
-      move_specs($cm->{ret}, $spec, $file, \%module, @{ $cm->{ret_idx} });
+      move_specs($cm->{ret}, $spec, $file, $module{$file}{i}, @{ $cm->{ret_idx} });
    }
 
    if (contains_specs $cs->{body}, \%acsl_specs) {
