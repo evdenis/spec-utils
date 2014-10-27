@@ -305,6 +305,21 @@ sub move_specs
    upd_merge_index($file, $begin, $len, $fret);
 }
 
+sub check_functions_compliance
+{
+   my $res = 0;
+
+   if (ne_spaces(filter_dup($_[0]->{args}), filter_dup($_[1]->{args}))) {
+      $res = 1
+   }
+
+   if (ne_spaces(filter_dup($_[0]->{ret}), filter_dup($_[1]->{ret}))) {
+      $res = 2
+   }
+
+   $res
+}
+
 
 ### Fetching specifications from dir: $specs_dir
 my %specs = fetch_specifications($specs_dir);
@@ -352,7 +367,7 @@ my %m;
       if (@specs_ids) {
          if (exists $s{$name}) {
             delete @acsl_specs{@specs_ids};
-            print BLUE . "Specifications for function $name have been already parsed: ignoring.\n" . RESET;
+            print BLUE . "Specifications for function $name have been already parsed: ignoring." . RESET . "\n";
             if ($verbose > 1) {
                print join("\n", map { $comments[$_] } sort { $a <=> $b } @specs_ids) . "\n"
             }
@@ -402,14 +417,12 @@ foreach (keys %s) {
 
    #additional checks
    if ($strict) {
-      if (ne_spaces(filter_dup($cs->{args}), filter_dup($cm->{args}))) {
-         warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
-         next
-      }
-
-      if (ne_spaces(filter_dup($cs->{ret}), filter_dup($cm->{ret}))) {
-         warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
-         next
+      if (my $c = check_functions_compliance($cs, $cm)) {
+         if ($c == 1) {
+            warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+         } elsif ($c == 2) {
+            warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+         }
       }
    }
 
