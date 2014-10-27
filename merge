@@ -320,6 +320,26 @@ sub check_functions_compliance
    $res
 }
 
+sub move_pre_function_specs
+{
+   my @exclude_specs;
+
+   if ($_[0] =~ m/($comment_re(\s*+$comment_re)*+)[^${Local::C::Transformation::special_symbols}]*\Z/s) {
+      my $spec = $1;
+
+      push @exclude_specs, restore_specs_only($spec, $_[1], $_[2]);
+      filter $spec;
+      next
+         if is_blank $spec;
+      $spec = trim $spec;
+      $spec .= "\n";
+
+      move_specs($_[3]->{ret}, $spec, $_[4], $_[5], @{ $_[3]->{ret_idx} });
+   }
+
+   @exclude_specs
+}
+
 
 ### Fetching specifications from dir: $specs_dir
 my %specs = fetch_specifications($specs_dir);
@@ -428,21 +448,10 @@ foreach (keys %s) {
 
 
    my $file = $cm->{file};
-   my @exclude_specs;
 
-   restore_comments_only($s{$_}{ret}, \@comments, \%acsl_specs);
-   if ($s{$_}{ret} =~ m/($comment_re(\s*+$comment_re)*+)[^${Local::C::Transformation::special_symbols}]*\Z/s) {
-      my $spec = $1;
-
-      push @exclude_specs, restore_specs_only($spec, \@comments, \%acsl_specs);
-      filter $spec;
-      next
-         if is_blank $spec;
-      $spec = trim $spec;
-      $spec .= "\n";
-
-      move_specs($cm->{ret}, $spec, $file, $module{$file}{i}, @{ $cm->{ret_idx} });
-   }
+   restore_comments_only($cs->{ret}, \@comments, \%acsl_specs);
+   my @exclude_specs =
+      move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $file, $module{$file}{i});
 
    if (contains_specs $cs->{body}, \%acsl_specs) {
       my $fbody_saved = $cs->{body};
