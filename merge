@@ -334,7 +334,7 @@ sub move_pre_function_specs
       $spec = trim $spec;
       $spec .= "\n";
 
-      move_specs($_[3]->{ret}, $spec, $_[4], $_[5], @{ $_[3]->{ret_idx} });
+      move_specs($_[3]->{ret}, $spec, $_[3]->{file}, $_[4], @{ $_[3]->{ret_idx} });
    }
 
    @exclude_specs
@@ -434,24 +434,23 @@ foreach (keys %s) {
 
    my $cs = $s{$_};
    my $cm = $m{$_};
+   my $file = $cm->{file};
 
    #additional checks
    if ($strict) {
       if (my $c = check_functions_compliance($cs, $cm)) {
          if ($c == 1) {
-            warn "$cm->{file}: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+            warn "$file: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
          } elsif ($c == 2) {
-            warn "$cm->{file}: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+            warn "$file: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
          }
       }
    }
 
 
-   my $file = $cm->{file};
-
    restore_comments_only($cs->{ret}, \@comments, \%acsl_specs);
    my @exclude_specs =
-      move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $file, $module{$file}{i});
+      move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $module{$file}{i});
 
    if (contains_specs $cs->{body}, \%acsl_specs) {
       my $fbody_saved = $cs->{body};
