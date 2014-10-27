@@ -262,6 +262,22 @@ sub contains_specs
    0
 }
 
+sub check_functions_compliance
+{
+   my $res = 0;
+
+   if (ne_spaces(filter_dup($_[0]->{args}), filter_dup($_[1]->{args}))) {
+      $res = 1
+   }
+
+   if (ne_spaces(filter_dup($_[0]->{ret}), filter_dup($_[1]->{ret}))) {
+      $res = 2
+   }
+
+   $res
+}
+
+
 my %index;
 sub upd_merge_index
 {
@@ -272,7 +288,9 @@ sub upd_merge_index
 
 sub move_specs
 {
-   my ($fret, $spec, $file, $sp_index, $begin, $len) = @_;
+   my ($cm, $spec, $sp_index) = @_;
+   my $fret = $cm->{ret};
+   my ($begin, $len) = @{ $cm->{ret_idx} };
 
    my @interval;
    my $continue = 0;
@@ -302,22 +320,7 @@ sub move_specs
    }
    $fret =~ s/\b(?=[a-zA-Z_])/$spec/;
 
-   upd_merge_index($file, $begin, $len, $fret);
-}
-
-sub check_functions_compliance
-{
-   my $res = 0;
-
-   if (ne_spaces(filter_dup($_[0]->{args}), filter_dup($_[1]->{args}))) {
-      $res = 1
-   }
-
-   if (ne_spaces(filter_dup($_[0]->{ret}), filter_dup($_[1]->{ret}))) {
-      $res = 2
-   }
-
-   $res
+   upd_merge_index($cm->{file}, $begin, $len, $fret);
 }
 
 sub move_pre_function_specs
@@ -334,7 +337,7 @@ sub move_pre_function_specs
       $spec = trim $spec;
       $spec .= "\n";
 
-      move_specs($_[3]->{ret}, $spec, $_[3]->{file}, $_[4], @{ $_[3]->{ret_idx} });
+      move_specs($_[3], $spec, $_[4]);
    }
 
    @exclude_specs
