@@ -525,8 +525,6 @@ foreach (keys %s) {
                ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
          }
 
-         shift $old_code;
-         shift $new_code;
          my $check = shift $code;
          warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
             if $check ne $function;
