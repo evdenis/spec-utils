@@ -52,6 +52,7 @@ merge - Переложение спецификаций с одной верси
   -t|--to dir           - куда переносятся спецификации
   -s|--skip f1,f2,f3... - пропустить функции f1, f2, f3 ...
   -v|--verbose          - более детальные сообщения
+  -m|--manual           - не пытаться переносить спецификации внутри функций автоматически
   --[no-]strict         - осуществлять дополнительные проверки при сопоставлении функций
   -k|--[no-]kdiff       - использовать kdiff3 вместо meld
   -h|--help             - выводит полное описание программы
@@ -75,6 +76,10 @@ merge - Переложение спецификаций с одной верси
 =item B<-v|--verbose>
 
 Увеличивает детальность сообщений. Флаг может использоваться несколько раз. Каждый раз увеличивается количество выводимой информации. Текущий максимальный уровень - 2.
+
+=item B<-m|--manual>
+
+Отключает функциональность по автоматическому переносу спецификаций внутри тел функций. Запускаются kdiff или meld.
 
 =item B<--[no-]strict>
 
@@ -111,6 +116,7 @@ my $strict = 1;
 my $kdiff = 0;
 my $tr_wh = 0;
 my $verbose = 0;
+my $manual = 0;
 my @skip;
 
 GetOptions(
@@ -119,6 +125,7 @@ GetOptions(
    'skip|s=s{1,}' => \@skip,
    'strict!'      => \$strict,
    'kdiff|k!'     => \$kdiff,
+   'manual|m!'    => \$manual,
    'rtw|r!'       => \$tr_wh, # remove trailing whitespaces
    'verbose|v+'   => \$verbose,
    'help|h'       => \$help,
@@ -507,7 +514,7 @@ foreach (keys %s) {
          $code = str_to_list($code);
       }
 
-      if ($cant_resolve) {
+      if ($cant_resolve || ($manual && !$only_blank)) {
          my $function = $cm->{ret} . ' ' . $_ . $cm->{args};
          filter($function);
          $function = normalize($function) . "\n";
