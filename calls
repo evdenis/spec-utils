@@ -66,12 +66,12 @@ my $only_functions = 0;
 my $only_macro = 0;
 
 GetOptions(
-   'kernel-dir|s=s'   =>  \$kdir,
-   'module-dir|d=s'   =>  \$moduledir,
+   'kernel|k=s'       =>  \$kdir,
+   'module|m=s'       =>  \$moduledir,
    'preprocessed|p=s' =>  \$preprocessed,
-   'kernel|k!'        =>  \$kernel_sw,
-   'module|m!'        =>  \$modules_sw,
-   'unknown|u!'       =>  \$unknown_sw,
+   'kernel-data!'     =>  \$kernel_sw,
+   'module-data!'     =>  \$modules_sw,
+   'unknown-data|u!'  =>  \$unknown_sw,
    'only-names!'      =>  \$only_names,
    'modulename|n=s'   =>  \$modulename,
    'progressbar|b!'   =>  \$progressbar,
