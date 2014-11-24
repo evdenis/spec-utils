@@ -10,6 +10,7 @@ use IPC::Open2;
 use Carp;
 use Cwd qw(realpath);
 
+use constant SPECIAL_MARK => '#pragma <special_mark>';
 
 our @EXPORT_OK = qw(
       get_macro
@@ -77,7 +78,7 @@ sub _uncomment_includes
 #excluding include directives
 sub preprocess_directives_noincl
 {
-   my $code = ($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]};
+   my $code = ($_[1] ? ${$_[1]}: '') . "\n" . SPECIAL_MARK . "\n" . ${$_[0]};
 
    _comment_includes(\$code);
 
@@ -90,7 +91,7 @@ sub preprocess_directives_noincl
    if ($_[2]) {
       my $ind = -1;
       for (my $i = 0; $i < $#$code; ++$i) {
-         if ($code->[$i] eq '//<special_mark>') {
+         if ($code->[$i] eq SPECIAL_MARK) {
             $ind = $i;
             last
          }
@@ -100,8 +101,8 @@ sub preprocess_directives_noincl
       [ splice(@$code, $ind + 1) ]
    } else {
       \substr( $$code,
-               index($$code, '//<special_mark>') +
-               length('//<special_mark>') +
+               index($$code, SPECIAL_MARK) +
+               length(SPECIAL_MARK) +
                1
             )
    }
@@ -112,7 +113,7 @@ sub _generic_preprocess_directives
    my %files;
 
    my $code = call_gcc( shift,
-                        \(($_[1] ? ${$_[1]}: '') . "\n//<special_mark>\n" . ${$_[0]}),
+                        \(($_[1] ? ${$_[1]}: '') . "\n" . SPECIAL_MARK . "\n" . ${$_[0]}),
                         1);
 
    my @order;
@@ -121,7 +122,7 @@ sub _generic_preprocess_directives
       my $current_file;
       foreach (@$code) {
          $ready = 1, next
-            if $_ eq '//<special_mark>';
+            if $_ eq SPECIAL_MARK;
          if (m/#\h++\d++\h++"([^"]++)"/) {
             $current_file = index($1, '<') != -1 ? $1 : realpath($1);
             push @order, $current_file;
