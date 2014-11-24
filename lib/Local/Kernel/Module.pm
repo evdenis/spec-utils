@@ -21,6 +21,7 @@ use Local::GCC::Preprocess qw(
       preprocess_as_kernel_module_simpl
       preprocess_as_kernel_module_get_macro_simpl
       preprocess_as_kernel_module_directives
+      preprocess_as_kernel_module_nocomments
 );
 
 use C::Macro;
@@ -34,7 +35,7 @@ use C::GlobalSet;
 
 
 our @EXPORT = qw(parse_sources);
-our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep preprocess_module_sources prepare_module_sources);
+our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep preprocess_module_sources preprocess_module_sources_nocomments prepare_module_sources);
 
 sub __get_module_folder_c_contents
 {
@@ -189,12 +190,20 @@ sub _generic_handle_sources
 
 sub preprocess_module_sources
 {
-   _generic_handle_sources(@_, \&preprocess_as_kernel_module)
+   push @_, \&preprocess_as_kernel_module;
+   goto \&_generic_handle_sources
+}
+
+sub preprocess_module_sources_nocomments
+{
+   push @_, \&preprocess_as_kernel_module_nocomments;
+   goto \&_generic_handle_sources
 }
 
 sub prepare_module_sources
 {
-   _generic_handle_sources(@_, \&preprocess_as_kernel_module_directives)
+   push @_, \&preprocess_as_kernel_module_directives;
+   goto \&_generic_handle_sources
 }
 
 sub __generic_parse

@@ -26,7 +26,7 @@ use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;
 use Local::C::Parsing qw(parse_calls);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
-use Local::Kernel::Module qw(preprocess_module_sources);
+use Local::Kernel::Module qw(preprocess_module_sources_nocomments);
 use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
 
 use C::FunctionSet;
@@ -261,7 +261,7 @@ my $source;
 if ($preprocessed) {
    $source = read_file($preprocessed, scalar_ref => 1);
 } else {
-   $source = (preprocess_module_sources($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];
+   $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];
 }
 adapt($$source, attributes => 1, comments => 1);
 

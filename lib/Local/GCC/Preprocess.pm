@@ -19,6 +19,7 @@ our @EXPORT_OK = qw(
       preprocess_directives
       preprocess_as_kernel_module
       preprocess_as_kernel_module_simpl
+      preprocess_as_kernel_module_nocomments
       preprocess_as_kernel_module_directives
       preprocess_as_kernel_module_get_macro_simpl
 );
@@ -210,7 +211,7 @@ sub _add_kernel_defines
 # include directories
 # code
 # additional defines
-sub preprocess_as_kernel_module_directives
+sub __generic_preprocess_as_kernel_module
 {
    my ($kdir, $idir) = (shift, shift);
 
@@ -219,9 +220,8 @@ sub preprocess_as_kernel_module_directives
    _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
 
-   my $argline =
-      '-E -CC -fdirectives-only -nostdinc ' .
-      form_gcc_kernel_include_path($kdir);
+   my $argline = pop @_;
+   $argline .= ' ' . form_gcc_kernel_include_path($kdir);
 
    $argline .= " -I " . join(" -I ", @$idir) . " "
       if @$idir;
@@ -231,25 +231,22 @@ sub preprocess_as_kernel_module_directives
             @_[0,1])
 }
 
+sub preprocess_as_kernel_module_directives
+{
+   push @_, '-E -CC -fdirectives-only -nostdinc ';
+   goto \&__generic_preprocess_as_kernel_module
+}
+
 sub preprocess_as_kernel_module
 {
-   my ($kdir, $idir) = (shift, shift);
+   push @_, '-E -CC -nostdinc ';
+   goto \&__generic_preprocess_as_kernel_module
+}
 
-   return ([], {}) unless ${$_[0]};
-
-   _add_kernel_defines(${$_[0]});
-   _add_kernel_kconfig(${$_[0]});
-
-   my $argline =
-      '-E -CC -nostdinc ' .
-      form_gcc_kernel_include_path($kdir);
-
-   $argline .= " -I " . join(" -I ", @$idir) . " "
-      if @$idir;
-
-   _generic_preprocess_directives(
-            $argline,
-            @_[0,1])
+sub preprocess_as_kernel_module_nocomments
+{
+   push @_, '-E -nostdinc ';
+   goto \&__generic_preprocess_as_kernel_module
 }
 
 sub preprocess_as_kernel_module_simpl
