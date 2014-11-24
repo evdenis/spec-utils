@@ -34,7 +34,7 @@ use C::GlobalSet;
 
 
 our @EXPORT = qw(parse_sources);
-our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep prepare_module_sorces preprocess_module_sources prepare_module_sources);
+our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep preprocess_module_sources prepare_module_sources);
 
 sub __get_module_folder_c_contents
 {
