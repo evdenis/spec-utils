@@ -1,0 +1,96 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use feature qw(say);
+
+use utf8::all;
+
+use Graph;
+use Graph::Writer::Dot;
+
+use File::Slurp qw(read_file write_file);
+use File::Which;
+use File::Spec::Functions qw(catfile catdir);
+use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
+
+use lib::abs 'lib';
+
+use Local::List::Utils qw(uniq difference any);
+use Local::C::Transformation;
+use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use Local::Kernel::Module
+   qw(preprocess_module_sources_nocomments
+      preprocess_module_sources);
+use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
+
+use C::FunctionSet;
+
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
+
+
+my $module_dir;
+my $kernel_dir;
+my $direct   = 1;
+my $indirect = 1;
+
+GetOptions(
+   'module|m=s'  => \$module_dir,
+   'kernel|k=s'  => \$kernel_dir,
+   'direct|d!'   => \$direct,
+   'indirect|i!' => \$indirect,
+) or die("Wrong usage.\n");
+
+#die if !kernel || !module
+
+### KERNEL DIRECTORY: $kernel_dir
+### MODULE DIRECTORY: $module_dir
+
+
+#Initializing the library
+Local::Kernel::Module::Graph::init(reverse => 1);
+
+
+my $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];
+adapt($$source, attributes => 1);
+
+#funcs init
+my %sources;
+$sources{module}{function} = C::FunctionSet->parse($source, 'module');
+my $graph = build_sources_graph(\%sources);
+
+if ($direct) {
+   foreach ($graph->vertices) {
+      say "DIRECT: " . $graph->get_vertex_attribute($_, 'object')->name
+         if $graph->has_edge($_, $_)
+   }
+}
+
+if ($indirect) {
+   if ($graph->has_a_cycle) {
+      my $cycle = Graph::Directed->new()->add_cycle(map $graph->get_vertex_attribute($_, 'object')->name, $graph->find_a_cycle);
+      {
+         local $SIG{__WARN__} = sub {};
+         Graph::Writer::Dot->new()->write_graph($cycle, \*STDOUT)
+      }
+   } else {
+      say "There is no direct and indirect recursion";
+   }
+}
+
+__END__
+
+if (which('dot')) {
+   fork and exit;
+   my $output = "${out}.${format}";
+   system('dot', "-T${format}", "${out}.dot", "-o${output}");
+} else {
+   die("Can't find dot program to create the source map.\n");
+}
+
