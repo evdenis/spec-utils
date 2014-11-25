@@ -37,19 +37,25 @@ sub get_code_tags
 {
    my $self = shift;
    my $code = $self->code;
+   my $name = $self->name;
 
-   my $begin = index($code, '(') + 1;
-   $code =~ m/\)${s}*+\{/;
-   my $end = $-[0];
-   $code = substr($code, $begin, $end - $begin);
+   $code =~ s/\b\Q$name\E\b//;
 
-   my $filter = $self->get_code_ids();
-
+   prepare_tags($code, []);
    ##
    # Exclude function argument names from tags.
    # Not effective because argnames coincide with
    # names of other entries.
    ##
+   #my $code = $self->code;
+   #my $begin = index($code, '(') + 1;
+   #$code =~ m/\)${s}*+\{/;
+   #my $end = $-[0];
+   #$code = substr($code, $begin, $end - $begin);
+   #
+   #my $filter;
+   #$filter = $self->get_code_ids();
+   #
    #my @args;
    #if ($code !~ m/\A${s}*+(?:void)?${s}*+\z/) {
    #   foreach(split(/,/, $code)) {
@@ -60,8 +66,7 @@ sub get_code_tags
    #}
    #
    #push @$filter, @args;
-
-   prepare_tags($self->code, $filter)
+   #prepare_tags($self->code, $filter)
 }
 
 sub to_string
