@@ -41,7 +41,7 @@ has 'code' => (
 
 has 'area' => (
    is => 'ro',
-   isa => enum([qw(kernel module)]),
+   isa => enum([qw(kernel module unknown)]),
    required => 1
 );
 
