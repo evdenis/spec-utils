@@ -9,21 +9,18 @@ use utf8::all;
 
 use Graph;
 use Graph::Writer::Dot;
-
-use File::Slurp qw(read_file write_file);
+use List::Util qw(min);
 use File::Which;
-use File::Spec::Functions qw(catfile catdir);
+use File::Slurp qw(write_file);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 
 use lib::abs 'lib';
 
-use Local::List::Utils qw(uniq difference any);
 use Local::C::Transformation;
+use Local::List::Utils qw(any);
 use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
-use Local::Kernel::Module
-   qw(preprocess_module_sources_nocomments
-      preprocess_module_sources);
-use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
+use Local::Kernel::Module qw(preprocess_module_sources_nocomments);
+use Local::Kernel::Module::Graph qw(build_sources_graph);
 
 use C::FunctionSet;
 
@@ -47,7 +44,9 @@ GetOptions(
    'indirect|i!' => \$indirect,
 ) or die("Wrong usage.\n");
 
-#die if !kernel || !module
+die("Kernel directory is not properly specified.\n") unless check_kernel_dir $kernel_dir;
+die("Module directory is not properly specified.\n") unless -d $module_dir;
+die("Nothing to search for.\n") if !$direct && !$indirect;
 
 ### KERNEL DIRECTORY: $kernel_dir
 ### MODULE DIRECTORY: $module_dir
@@ -65,32 +64,66 @@ my %sources;
 $sources{module}{function} = C::FunctionSet->parse($source, 'module');
 my $graph = build_sources_graph(\%sources);
 
-if ($direct) {
-   foreach ($graph->vertices) {
-      say "DIRECT: " . $graph->get_vertex_attribute($_, 'object')->name
-         if $graph->has_edge($_, $_)
+my @dot;
+while ($graph->has_a_cycle) {
+   my @cycle = $graph->find_a_cycle;
+   my $g = Graph::Directed->new(edges =>
+         [ grep { any($_->[0], \@cycle) && any($_->[1], \@cycle) } $graph->edges ]
+   );
+
+   my $allow = 0;
+   my @edge;
+   if (@cycle > 1) {
+      @edge = @cycle[0,1];
+      $allow = $indirect;
+   } else {
+      @edge = @cycle[0,0];
+      $allow = $direct;
    }
+
+   if ($allow) {
+      push @dot, '';
+      open my $fh, '>', \$dot[-1];
+      {
+      local $SIG{__WARN__} = sub {};
+         Graph::Writer::Dot->new()->write_graph(
+            Graph::Directed->new(edges =>,
+               [ map {
+                       [ $graph->get_vertex_attribute($_->[0], 'object')->name,
+                         $graph->get_vertex_attribute($_->[1], 'object')->name
+                       ]
+                     } $g->edges
+               ]),
+            $fh);
+      }
+      close $fh;
+   }
+
+   $graph->delete_edge(@edge);
 }
 
-if ($indirect) {
-   if ($graph->has_a_cycle) {
-      my $cycle = Graph::Directed->new()->add_cycle(map $graph->get_vertex_attribute($_, 'object')->name, $graph->find_a_cycle);
-      {
-         local $SIG{__WARN__} = sub {};
-         Graph::Writer::Dot->new()->write_graph($cycle, \*STDOUT)
-      }
-   } else {
-      say "There is no direct and indirect recursion";
-   }
+my $i = 0;
+foreach (@dot) {
+   write_file("out$i.dot", $_);
+   system('dot', "-Tsvg", "out$i.dot", "-oout$i.svg");
+   ++$i;
 }
 
 __END__
-
 if (which('dot')) {
-   fork and exit;
+   #fork and exit;
    my $output = "${out}.${format}";
    system('dot', "-T${format}", "${out}.dot", "-o${output}");
 } else {
-   die("Can't find dot program to create the source map.\n");
 }
+
+
+__END__
+
+my $num = $cycle->vertices;
+if ($num > 1 && $indirect || $num == 1 && $direct) {
+   local $SIG{__WARN__} = sub {};
+   Graph::Writer::Dot->new()->write_graph($cycle, \*STDOUT)
+}
+
 
