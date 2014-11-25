@@ -278,8 +278,11 @@ sub _form_graph
                      if ($label) {
                         my $type = blessed($from);
 
-                        die("Wrong type: want $label, but get $type. Objects:\n" . $from->code . "\n<->\n" . $to->code)
-                           unless _allow($label, $type);
+                        unless (_allow($label, $type)) {
+                           warn("Wrong type: want $label, but get $type." .
+                                "Objects:\n" . $from->code . "\n<->\n" . $to->code) if $ENV{DEBUG};
+                           next
+                        }
                      }
 
                      __add_edge($graph, $from, $to, $tag)
