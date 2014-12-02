@@ -348,7 +348,7 @@ sub build_sources_graph
 }
 
 
-my %ft = (all_predecessors => 'edges_to', all_sucessors => 'edges_from');
+my %ft = (all_predecessors => 'edges_to', all_successors => 'edges_from');
 sub _generic_get_subgraph
 {
    my ($method, $graph, @id) = @_;
