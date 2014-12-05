@@ -78,9 +78,12 @@ sub to_string
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
    #crop to first spec comment
+   my $prior = index($code, '{');
    foreach (@cmnt) {
       if (is_acsl_spec($comments->[$_])) {
-         $code = substr($code, index($code, $comment_t{L} . $_ . $comment_t{R}));
+         my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
+         $code = substr($code, $pos)
+            if $pos < $prior;
          goto FW_DECL
       }
    }
