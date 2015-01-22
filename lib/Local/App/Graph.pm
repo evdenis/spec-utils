@@ -49,6 +49,7 @@ sub run
       functions    => { required => 0 },
       mark_anyway  => { default => 1 },
       stat         => { default => 0 },
+      keep_dot     => { default => 0 },
       issues       => { default => 0 },
       async        => { default => 0 },
       view         => { default => 0 },
@@ -310,6 +311,9 @@ CACHE: if ($opts->{cache}) {
       }
       my $output = $opts->{out} . '.' . $opts->{format};
       system('dot', "-T" . $opts->{format}, "$dotfile", "-o${output}");
+      unlink $dotfile
+         unless $opts->{keep_dot};
+
       close(STDOUT);
       close(STDERR);
 

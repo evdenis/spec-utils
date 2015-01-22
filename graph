@@ -167,7 +167,10 @@ $opts{stat} = 1;
 $opts{mark_anyway} = 0;
 $opts{view} = 0;
 $opts{open_with} = 'xdg-open';
+
 $opts{async} = 1;
+$opts{keep_dot} = 1;
+
 my $help = 0;
 
 GetOptions(
