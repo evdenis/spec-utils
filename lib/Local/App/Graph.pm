@@ -65,6 +65,11 @@ sub run
    #Initializing the library
    Local::Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
 
+   if ($opts->{cache}) {
+      unless (-r $opts->{cache_file}) {
+         $opts->{cache} = 0
+      }
+   }
    goto CACHE if $opts->{cache};
 
    # read sources
@@ -314,11 +319,10 @@ CACHE: if ($opts->{cache}) {
       unlink $dotfile
          unless $opts->{keep_dot};
 
-      close(STDOUT);
-      close(STDERR);
-
       if ($opts->{view}) {
          if (which($opts->{open_with})) {
+            close STDOUT;
+            close STDERR;
             exec('xdg-open', $output)
          } else {
             die("Can't find $opts->{open_with} program to view the $output\n")
