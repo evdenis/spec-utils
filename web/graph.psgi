@@ -3,15 +3,16 @@ use strict;
 
 use Plack::Request;
 use Plack::Builder;
+use YAML::XS qw/LoadFile/;
 
 use File::Spec::Functions qw/catdir/;
 use lib::abs catdir('..', 'lib');
 
-#use Local::App::Graph;
-#use Plack::App::File;
 use Plack::Util;
 use Plack::MIME;
 use HTTP::Date;
+
+use Local::App::Graph;
 
 my %config;
 sub read_config
@@ -20,7 +21,7 @@ sub read_config
    while (<$fh>) {
       s/#.*+\Z//;
       next if /\A\h*+\Z/;
-      if (/\A\h*+(\w++)\h*+=\h*+(\w++)\h*+\Z/) {
+      if (/\A\h*+(\w++)\h*+=\h*+([\w\/\-\.]++)\h*+\Z/) {
          my ($key, $value) = ($1, $2);
          unless (exists $config{$key}) {
             warn "Option $key has been already set.\n"
@@ -34,6 +35,14 @@ sub read_config
 }
 
 read_config '.config';
+$config{conf} = LoadFile($config{graph_config_file});
+delete $config{graph_config_file};
+
+$config{functions} = [];
+$config{async}     = 0;
+$config{view}      = 0;
+$config{keep_dot}  = 0;
+
 
 sub return_403
 {
@@ -43,24 +52,37 @@ sub return_403
 
 sub generate_image
 {
+   run(\%config);
 }
 
 my $image = sub {
    my $env = shift;
 
+   generate_image();
+
    my $req = Plack::Request->new($env);
    my $res = $req->new_response(200);
 
-   open my $fh, "<:raw", 'graph.svg'
+   if ($req->param('fmt')) {
+      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)|(tiff)/;) {
+         $config{format} = $req->param('fmt')
+      } else {
+         return return_403
+      }
+   }
+   my $file = $config{out} . '.' . $config{format};
+   $config{format} = 'svg';
+
+   open my $fh, "<:raw", $file
       or return return_403;
 
-   my @stat = stat 'graph.svg';
-   Plack::Util::set_io_path($fh, Cwd::realpath('graph.svg'));
+   my @stat = stat $file;
+   Plack::Util::set_io_path($fh, Cwd::realpath($file));
 
    return [
       200,
       [
-         'Content-Type' => 'image/svg+xml',
+         'Content-Type' => Plack::MIME->mime_type($file),
          'Content-Length' => $stat[7],
          'Last-Modified' => HTTP::Date::time2str( $stat[9] )
       ],
@@ -83,8 +105,7 @@ my $page = sub {
 };
 
 my $main_app = builder {
-   mount '/graph/graph.svg' => builder { $image };
-   mount '/graph/map.svg'   => builder { $image };
+   mount '/graph/image' => builder { $image };
    mount '/graph' => builder { $page };
    mount '/map'   => builder { $page };
    mount '/'      => builder { $page };
