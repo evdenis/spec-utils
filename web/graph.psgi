@@ -50,6 +50,12 @@ sub return_403
    return [403, ['Content-Type' => 'text/plain', 'Content-Length' => 9], ['forbidden']];
 }
 
+sub return_404
+{
+   my $self = shift;
+   return [404, ['Content-Type' => 'text/plain', 'Content-Length' => 9], ['not found']];
+}
+
 sub generate_image
 {
    run(\%config);
@@ -58,20 +64,26 @@ sub generate_image
 my $image = sub {
    my $env = shift;
 
-   generate_image();
 
    my $req = Plack::Request->new($env);
    my $res = $req->new_response(200);
 
    if ($req->param('fmt')) {
-      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)|(tiff)/;) {
+      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)|(tiff)/) {
          $config{format} = $req->param('fmt')
       } else {
          return return_403
       }
    }
+   if ($req->param('func')) {
+      $config{functions} = [ split(/,/, $req->param('func')) ]
+   }
+
+   generate_image();
+
    my $file = $config{out} . '.' . $config{format};
    $config{format} = 'svg';
+   $config{functions} = [];
 
    open my $fh, "<:raw", $file
       or return return_403;
@@ -92,16 +104,7 @@ my $image = sub {
 };
 
 my $page = sub {
-   my $env = shift;
-
-   my $req = Plack::Request->new($env);
-   my $res = $req->new_response(200);
-
-   my $params = $req->parameters();
-
-   $res->body('ok');
-
-   return $res->finalize();
+   return return_404;
 };
 
 my $main_app = builder {
