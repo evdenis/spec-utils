@@ -106,8 +106,8 @@ my $page = sub {
 
 my $main_app = builder {
    mount '/graph/image' => builder { $image };
-   mount '/graph' => builder { $page };
-   mount '/map'   => builder { $page };
-   mount '/'      => builder { $page };
+   mount '/graph' => builder { $image };
+   mount '/map'   => builder { $image };
+   mount '/'      => builder { $image };
 };
 
