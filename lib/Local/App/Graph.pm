@@ -328,6 +328,9 @@ CACHE: if ($opts->{cache}) {
             die("Can't find $opts->{open_with} program to view the $output\n")
          }
       }
+      if ($opts->{async}) {
+         exit 0;
+      }
    } else {
       die("Can't find dot program to create the source map.\n");
    }
