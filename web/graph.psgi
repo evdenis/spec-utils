@@ -43,6 +43,9 @@ $config{async}     = 0;
 $config{view}      = 0;
 $config{keep_dot}  = 0;
 
+$config{out}        .= $$;
+$config{cache_file} .= $$;
+
 
 sub return_403
 {
