@@ -20,6 +20,7 @@ use Local::Kernel::Module qw(preprocess_module_sources_nocomments);
 use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
 
 use C::FunctionSet;
+use Carp;
 
 
 BEGIN {
@@ -60,7 +61,7 @@ sub run
    };
 
    check($tmpl, $opts, 1)
-      or die "Arguments could not be parsed.\n";
+      or croak "Arguments could not be parsed.\n";
 
    #Initializing the library
    Local::Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
@@ -325,14 +326,14 @@ CACHE: if ($opts->{cache}) {
             close STDERR;
             exec('xdg-open', $output)
          } else {
-            die("Can't find $opts->{open_with} program to view the $output\n")
+            croak("Can't find $opts->{open_with} program to view the $output\n")
          }
       }
       if ($opts->{async}) {
          exit 0;
       }
    } else {
-      die("Can't find dot program to create the source map.\n");
+      croak("Can't find dot program to create the source map.\n");
    }
 
 }
