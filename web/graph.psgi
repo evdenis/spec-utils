@@ -11,6 +11,7 @@ use lib::abs catdir('..', 'lib');
 use Plack::Util;
 use Plack::MIME;
 use HTTP::Date;
+use File::Slurp qw/read_file write_file/;
 
 use Local::App::Graph;
 
@@ -62,6 +63,29 @@ sub return_404
 sub generate_image
 {
    run(\%config);
+
+   if ($config{format} eq 'svg') {
+      my $filename = $config{out} . '.' . $config{format};
+      my $svg = read_file($filename);
+
+      while ($svg =~ /<g id="node/g) {
+         my $begin = $-[0];
+         my $pos = pos($svg);
+
+         my $end = index($svg, "</g>\n", $begin) + 5;
+         my $area = substr($svg, $begin, $end - $begin);
+         my ($title) = $area =~ m!<title>([a-zA-Z_]\w++)</title>!;
+         next unless $title;
+         my $link_begin = qq|<a xlink:href="/image?func=${title}">\n|;
+         my $link_end   = qq|</a>\n|;
+
+         substr($svg, $end, 0, $link_end);
+         substr($svg, $begin, 0, $link_begin);
+         pos($svg) = $pos + length($link_begin) + length($link_end);
+      }
+
+      write_file($filename, $svg);
+   }
 }
 
 my $image = sub {
