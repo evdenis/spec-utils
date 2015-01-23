@@ -24,7 +24,7 @@ sub read_config
       next if /\A\h*+\Z/;
       if (/\A\h*+(\w++)\h*+=\h*+([\w\/\-\.]++)\h*+\Z/) {
          my ($key, $value) = ($1, $2);
-         unless (exists $config{$key}) {
+         if (exists $config{$key}) {
             warn "Option $key has been already set.\n"
          }
          $config{$key} = $value
