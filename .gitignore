@@ -5,6 +5,7 @@
 
 .graph.conf
 .dismember.conf
+.config
 progress.txt
 
 .cache/
