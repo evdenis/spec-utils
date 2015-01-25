@@ -7,3 +7,4 @@ requires 'Plack::Util;
 requires 'Plack::MIME';
 requires 'HTTP::Date';
 requires 'File::Slurp';
+requires 'Try::Tiny';

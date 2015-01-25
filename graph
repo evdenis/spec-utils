@@ -240,7 +240,7 @@ die("Can't read config file.\n")
    unless $opts{conf};
 
 
-run(\%opts);
+run(\%opts); # Can die.
 
 say;
 say "File $opts{out}.dot contains graph in dot format.";

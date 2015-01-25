@@ -12,6 +12,7 @@ use Plack::Util;
 use Plack::MIME;
 use HTTP::Date;
 use File::Slurp qw/read_file write_file/;
+use Try::Tiny;
 
 use Local::App::Graph;
 
@@ -62,7 +63,11 @@ sub return_404
 
 sub generate_image
 {
-   run(\%config);
+   try {
+      run(\%config)
+   } catch {
+      return -1
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -86,6 +91,8 @@ sub generate_image
 
       write_file($filename, $svg);
    }
+
+   return 0
 }
 
 my $image = sub {
@@ -106,7 +113,8 @@ my $image = sub {
       $config{functions} = [ split(/,/, $req->param('func')) ]
    }
 
-   generate_image();
+   return return_403
+      if generate_image();
 
    my $file = $config{out} . '.' . $config{format};
    $config{format} = 'svg';
