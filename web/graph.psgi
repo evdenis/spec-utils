@@ -67,7 +67,7 @@ sub generate_image
       run(\%config)
    } catch {
       return -1
-   }
+   };
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
