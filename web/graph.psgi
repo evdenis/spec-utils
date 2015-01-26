@@ -81,7 +81,7 @@ sub generate_image
          my $area = substr($svg, $begin, $end - $begin);
          my ($title) = $area =~ m!<title>([a-zA-Z_]\w++)</title>!;
          next unless $title;
-         my $link_begin = qq|<a xlink:href="/image?func=${title}">\n|;
+         my $link_begin = qq|<a xlink:href="/graph/image?func=${title}">\n|;
          my $link_end   = qq|</a>\n|;
 
          substr($svg, $end, 0, $link_end);
@@ -139,13 +139,36 @@ my $image = sub {
 };
 
 my $page = sub {
-   return return_404;
+   #return return_404;
+   my $env = shift;
+   my $html = <<'HTML';
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Functions graph</title>
+</head>
+
+<body>
+<img src="/graph/image" alt="Map">
+</body>
+
+</html>
+HTML
+
+   my $req = Plack::Request->new($env);
+   my $res = $req->new_response(200);
+
+   $res->body($html);
+
+   return $res->finalize();
 };
 
 my $main_app = builder {
    mount '/graph/image' => builder { $image };
-   mount '/graph' => builder { $image };
-   mount '/map'   => builder { $image };
-   mount '/'      => builder { $image };
+   mount '/graph' => builder { \&return_404 };
+   mount '/map'   => builder { \&return_404 };
+   mount '/favicon.ico' => builder { \&return_404 };
+   mount '/'      => builder { \&return_404 };
 };
 
