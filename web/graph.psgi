@@ -144,14 +144,22 @@ my $page = sub {
    my $html = <<'HTML';
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-<title>Functions graph</title>
-</head>
+   <head>
+      <meta charset="UTF-8">
+      <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+      <title>Functions graph</title>
+      <script>
+         $(document).ready(function() {
+            $("image").mouseenter(function() {
+               $(this).stop().animate({transform, scale(2)}, 3000);
+            }
+         }
+      </script>
+   </head>
 
-<body>
-<img src="/graph/image" alt="Map">
-</body>
+   <body>
+      <object data="/graph/image" type="image/svg+xml" id="map"></object>
+   </body>
 
 </html>
 HTML
@@ -166,8 +174,8 @@ HTML
 
 my $main_app = builder {
    mount '/graph/image' => builder { $image };
-   mount '/graph' => builder { \&return_404 };
-   mount '/map'   => builder { \&return_404 };
+   mount '/graph' => builder { $page };
+   mount '/map'   => builder { $page };
    mount '/favicon.ico' => builder { \&return_404 };
    mount '/'      => builder { \&return_404 };
 };
