@@ -73,6 +73,15 @@ sub generate_image
       my $filename = $config{out} . '.' . $config{format};
       my $svg = read_file($filename);
 
+      my $link_begin;
+      my $link_begin_end = qq|">\n|;
+      if ($_[0] eq 'image') {
+         $link_begin = qq|<a xlink:href="/graph/image?func=|;
+      } elsif ($_[0] eq 'page') {
+         $link_begin = qq|<a xlink:href="/graph?func=|;
+      }
+      my $link_end   = qq|</a>\n|;
+
       while ($svg =~ /<g id="node/g) {
          my $begin = $-[0];
          my $pos = pos($svg);
@@ -81,12 +90,11 @@ sub generate_image
          my $area = substr($svg, $begin, $end - $begin);
          my ($title) = $area =~ m!<title>([a-zA-Z_]\w++)</title>!;
          next unless $title;
-         my $link_begin = qq|<a xlink:href="/graph/image?func=${title}">\n|;
-         my $link_end   = qq|</a>\n|;
+         my $link = $link_begin . $title . $link_begin_end;
 
          substr($svg, $end, 0, $link_end);
-         substr($svg, $begin, 0, $link_begin);
-         pos($svg) = $pos + length($link_begin) + length($link_end);
+         substr($svg, $begin, 0, $link);
+         pos($svg) = $pos + length($link) + length($link_end);
       }
 
       write_file($filename, $svg);
@@ -97,13 +105,13 @@ sub generate_image
 
 my $image = sub {
    my $env = shift;
-
+   my %original = (format => $config{format}, functions => $config{functions});
 
    my $req = Plack::Request->new($env);
    my $res = $req->new_response(200);
 
    if ($req->param('fmt')) {
-      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)|(tiff)/) {
+      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
          $config{format} = $req->param('fmt')
       } else {
          return return_403
@@ -114,11 +122,11 @@ my $image = sub {
    }
 
    return return_403
-      if generate_image();
+      if generate_image('image');
 
    my $file = $config{out} . '.' . $config{format};
-   $config{format} = 'svg';
-   $config{functions} = [];
+   $config{format} = $original{format};
+   $config{functions} = $original{functions};
 
    open my $fh, "<:raw", $file
       or return return_403;
@@ -139,35 +147,145 @@ my $image = sub {
 };
 
 my $page = sub {
-   #return return_404;
    my $env = shift;
+   my %original = (format => $config{format}, functions => $config{functions});
+   my $html_svg = <<'HTML';
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="UTF-8">
+      <style type="text/css">
+         body {
+            overflow: hidden;
+         }
+      </style>
+      <title>Functions graph</title>
+   </head>
+
+   <body>
+      ###INLINE###
+   </body>
+   <script>
+var sx = 0, sy = 0;
+function move(e) {
+   var e = window.event || e;
+   var ww = window.innerWidth;
+   var wh = window.innerHeight;
+   var y = e.clientY;
+   var x = e.clientX;
+   var xp = x / ww;
+   var yp = y / wh;
+
+   if (xp <= 0.15) {
+      sx = -10
+   } else if (xp >= 0.85) {
+      sx = 10
+   } else {
+      sx = 0
+   }
+
+   if (yp <= 0.15) {
+      sy = -10
+   } else if (yp >= 0.85) {
+      sy = 10
+   } else {
+      sy = 0
+   }
+
+   return false;
+}
+
+var c = 1;
+var g = document.getElementById("graph0");
+
+function change(e) {
+   var e = window.event || e;
+
+   if (0.1 <= c && c <= 1) {
+      if (e != null) {
+         var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+         c += delta * 0.1;
+      }
+      g.transform.baseVal.getItem(0).setScale(c, c);
+   } else {
+      if (c < 0.1) {
+         c = 0.1
+      } else if (c > 1) {
+         c = 1
+      }
+      change(null)
+   }
+   return false;
+}
+
+window.DOMMouseScroll = window.onwheel = window.onmousewheel = document.onmousewheel = change;
+
+window.onload = function () {
+   document.addEventListener('mousemove', move, false);
+   setInterval(
+      function(){
+         if (sx != 0 || sy != 0) {
+            window.scrollBy(sx, sy)
+         }
+      }, 10);
+}
+   </script>
+</html>
+HTML
    my $html = <<'HTML';
 <!DOCTYPE html>
 <html>
    <head>
       <meta charset="UTF-8">
-      <script src="http://code.jquery.com/jquery-latest.min.js"></script>
       <title>Functions graph</title>
-      <script>
-         $(document).ready(function() {
-            $("image").mouseenter(function() {
-               $(this).stop().animate({transform, scale(2)}, 3000);
-            }
-         }
-      </script>
    </head>
 
    <body>
-      <object data="/graph/image" type="image/svg+xml" id="map"></object>
+   <img src="/graph/image###INLINE###">
    </body>
-
 </html>
 HTML
+
 
    my $req = Plack::Request->new($env);
    my $res = $req->new_response(200);
 
+   if ($req->param('fmt')) {
+      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
+         $config{format} = $req->param('fmt')
+      } else {
+         return return_403
+      }
+   }
+   if ($req->param('func')) {
+      $config{functions} = [ split(/,/, $req->param('func')) ]
+   }
+
+   if ($config{format} eq 'svg') {
+      my $filename = $config{out} . '.' . $config{format};
+
+      return return_403
+         if generate_image('page');
+
+      my $svg = read_file($filename);
+      $html_svg =~ s/###INLINE###/$svg/;
+      $html = $html_svg;
+   } else {
+      my $get = '?';
+      if ($req->param('fmt')) {
+         $get .= 'fmt=' . $req->param('fmt')
+      }
+      if ($req->param('func')) {
+         $get .= '&func=' . $req->param('func')
+      }
+      $html =~ s/###INLINE###/$get/
+         if $get
+   }
+
    $res->body($html);
+
+   $config{format} = $original{format};
+   $config{functions} = $original{functions};
 
    return $res->finalize();
 };
