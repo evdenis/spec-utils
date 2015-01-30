@@ -203,7 +203,7 @@ function change(e) {
 
    if (0.1 <= c && c <= 1) {
       if (e != null) {
-         var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+         var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.deltaY || -e.detail)));
          c += delta * 0.1;
       }
       g.transform.baseVal.getItem(0).setScale(c, c);
