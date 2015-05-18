@@ -13,29 +13,98 @@ use File::Slurp qw(read_file);
 use Getopt::Long qw(:config gnu_getopt);
 use FindBin;
 use lib::abs 'lib';
+use Pod::Usage;
 
 use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
 use constant CAPABILITY_C => catfile('security', 'capability.c');
 
+=encoding utf8
+
+=pod
+
+=head1 stapgen
+
+stapgen - Создаёт systemtap скрипт на основе исходного кода ядра, который отслеживает системные вызовы и вызовы LSM интерфейса
+
+=head1 SYNOPSIS
+
+ stapgen [options]
+
+ Options:
+  -k|--kernel dir      - директория с исходными кодами ядра
+  -v|--verbose         - уровень детализации трассы, 3 уровня
+  -c|--caller          - backtrace для функций LSM интерфейса, 0+ уровней
+  -s|--[no-]syscalls   - отслеживать системные вызовы, по умолчанию включено
+  -f|--[no-]functions  - отслеживать функции в запускаемом процессе, по умолчанию выключено
+  -h|--help            - выводит полное описание программы
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-k|--kernel dir>
+
+Указание на директорию, где расположены исходные коды ядра Linux. По умолчанию директория берётся из переменной окружения I<CURRENT_KERNEL> если она задана.
+
+=item B<-v|--verbose>
+
+Уровень раскрытия аргументов в функциях LSM интерфейса в трассе. Три уровня. 0 - вывод простых типов. 1 - раскрытие указателей, на один шаг. 2 - рекурсивное раскрытие указателей. Аддитивная опция: '-vv' - уровень два. По умолчанию уровень - 0.
+
+=item B<-c|--caller>
+
+Уровень глубины backtrace для функций LSM интерфейса в трассе. Аддитивная опция: '-ccc' - уровень три, в трассу будет выводится backtrace с глубиной 3. По умолчанию уровень 0.
+
+=item B<-s|--[no-]syscalls>
+
+Если опция включена, результирующий скрипт будет отслеживать начало и конец системных вызовов. По умолчанию опция включена.
+
+=item B<-f|--[no-]functions>
+
+Если опция включена, скрипт будет отслеживать вход и выход из функций процесса, на котором запускается мониторинг. По умолчанию опция отключена.
+
+=item B<-h|--help>
+
+Выводит полное описание программы.
+
+=back
+
+=head1 DESCRIPTION
+
+Программа на основе исходных кодов ядра создаёт скрипт для systemtap под конкретную версию ядра. Скрипт предназначен для отслеживания вызовов функций LSM интерфейса ядра. Отслеживание выполняется обязательно только для какого-то конкретного процесса, а не для всей системы в целом. Дополнительно в трассу могут выводиться системные вызовы, функции процесса, точки вызовов LSM интерфейса.
+
+=head1 USAGE EXAMPLE
+
+   ./stapgen -v -cc --kernel /usr/src/linux/ > module.stp
+   stap -p 4 -m lsm_trace ./module.stp
+   staprun lsm_trace.ko -o lsm.log -c echo
+
+=cut
+
+
 my $kernel;
 my $verbose = 0;
-my $caller_lev = 2;
+my $caller_lev = 0;
 my $caller_set = 0;
 my $trace_functions = 0;
 my $trace_syscalls = 1;
+my $help = 0;
 
 GetOptions(
-   'kernel|k=s'     => sub { if (check_kernel_files_readable($_[1], CAPABILITY_C)) { $kernel = $_[1] } else { die('Incorrect path to kernel (required files ' . CAPABILITY_C . "): '$_[1]'\n") } },
+   'kernel|k=s'   => sub { if (check_kernel_files_readable($_[1], CAPABILITY_C)) { $kernel = $_[1] } else { die('Incorrect path to kernel (required files ' . CAPABILITY_C . "): '$_[1]'\n") } },
    'verbose|v+'   => \$verbose,
    'caller|c'     => sub { unless ($caller_set) { $caller_set = 1; $caller_lev = 1 } else { ++$caller_lev } },
    'syscalls|s!'  => \$trace_syscalls,
-   'functions|f!' => \$trace_functions
-) or die "Incorrect usage!\n";
+   'functions|f!' => \$trace_functions,
+   'help|h'       => \$help
+) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0})
+   if $help;
 
 $kernel //= autodetect_kernel_directory(files => [CAPABILITY_C]);
 
-die "Can't find path to linux kernel sources directory (required files " . CAPABILITY_C . ").\n"
+pod2usage({ -msg => "Can't find path to linux kernel sources directory (required files " . CAPABILITY_C . ").\n", -exitval => 2 })
    unless $kernel;
 
 sub generate_caller_func
