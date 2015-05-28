@@ -324,7 +324,7 @@ CACHE: if ($opts->{cache}) {
          if (which($opts->{open_with})) {
             close STDOUT;
             close STDERR;
-            exec('xdg-open', $output)
+            exec($opts->{open_with}, $output)
          } else {
             croak("Can't find $opts->{open_with} program to view the $output\n")
          }
