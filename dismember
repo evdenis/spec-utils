@@ -8,7 +8,9 @@ use re '/aa';
 
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use File::Spec::Functions qw(catfile catdir);
+use File::Which;
 use Storable;
+use POSIX qw/setsid/;
 
 use FindBin;
 use lib::abs 'lib';
@@ -45,6 +47,7 @@ $config{remove_fields}     = 0;
 $config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel_dir}        = undef;
 $config{output_dir}        = catdir $FindBin::Bin, 'result';
+$config{editor}            = 0;
 
 if (defined (my $conf = find_config())) {
    ### CONFIG FILE: $conf
@@ -72,7 +75,8 @@ GetOptions(
    'cache|c:2'             =>  \$cache,
    'single|s!'             =>  \$config{single_file},
    'remove-fields|r!'      =>  \$config{remove_fields},
-   'size_t|workaround|w!'  =>  \$config{size_t_workaround}
+   'size_t|workaround|w!'  =>  \$config{size_t_workaround},
+   'editor|e!'             =>  \$config{editor}
 ) or die "Incorrect usage!\n";
 
 @functions = split(/,/,join(',',@functions));
@@ -180,3 +184,21 @@ print "\n";
       print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
    }
 }
+
+if ($config{editor} && $#functions == 0) {
+   if (which($ENV{EDITOR})) {
+      my $pid = fork();
+      die "can't fork: $!"
+         unless defined $pid;
+      if ($pid) {
+         print "$pid\n";
+         exit 0;
+      }
+
+      setsid();
+      exec(($ENV{EDITOR}, catfile($config{output_dir}, $functions[0], 'module.c')));
+   } else {
+      die "Can't find dot program to create the source map.\n"
+   }
+}
+
