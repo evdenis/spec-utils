@@ -169,7 +169,7 @@ print "\n";
       }
       my $id = $indx->{$function};
 
-      my $fd = catfile $config{output_dir}, $function;
+      my $fd = catdir $config{output_dir}, $function;
       create_directory $fd;
 
       my $spaces = $col - $reserved_colons - length($function) - length($i);
