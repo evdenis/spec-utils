@@ -185,7 +185,7 @@ print "\n";
    }
 }
 
-if ($config{editor} && $#functions == 0) {
+if ($config{editor}) {
    if (which($ENV{EDITOR})) {
       my $pid = fork();
       die "can't fork: $!"
@@ -196,9 +196,13 @@ if ($config{editor} && $#functions == 0) {
       }
 
       setsid();
-      exec(($ENV{EDITOR}, catfile($config{output_dir}, $functions[0], 'module.c')));
+      my @exec = ($ENV{EDITOR});
+      foreach (@functions) {
+         push @exec, catfile($config{output_dir}, $_, 'module.c')
+      }
+      exec(@exec);
    } else {
-      die "Can't find dot program to create the source map.\n"
+      die "Can't find application from EDITOR env variable.\n"
    }
 }
 
