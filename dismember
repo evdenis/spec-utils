@@ -7,11 +7,13 @@ use feature qw(say);
 use re '/aa';
 
 use Pod::Usage;
-use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
+use Getopt::Long qw(:config gnu_compat no_permute no_getopt_compat pass_through);
 use File::Spec::Functions qw(catfile catdir);
 use File::Which;
 use Storable;
 use POSIX qw/setsid/;
+use Module::Loader;
+use Try::Tiny;
 
 use FindBin;
 use lib::abs 'lib';
@@ -138,6 +140,7 @@ $config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel_dir}        = undef;
 $config{output_dir}        = catdir $FindBin::Bin, 'result';
 $config{editor}            = 0;
+$config{plugins} = [];
 
 if (defined (my $conf = find_config())) {
    ### CONFIG FILE: $conf
@@ -169,10 +172,11 @@ GetOptions(
    'remove-fields|r!'      =>  \$config{remove_fields},
    'size_t|workaround|w!'  =>  \$config{size_t_workaround},
    'editor|e!'             =>  \$config{editor},
+   'load-plugins=s@'       =>  \$config{plugins},
    'help|h'                =>  \$help
 ) or pod2usage(1);
-
 @functions = split(/,/,join(',',@functions));
+$config{plugins} = [ split(/,/, join(',', @{$config{plugins}})) ];
 
 pod2usage({-verbose => 2, -exitval => 0})
     if $help;
@@ -185,6 +189,35 @@ pod2usage({ -msg => "$config{module_dir} is not a directory.\n", -exitval => 2 }
     unless -d $config{module_dir};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
     unless check_kernel_dir($config{kernel_dir});
+
+#Loading plugins
+
+my $loader  = Module::Loader->new(max_depth => 1);
+my @plugins;
+my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('Linux::Kernel::Plugin');
+foreach my $p (@{$config{plugins}}) {
+   if (any {$p eq $_} keys %pmap) {
+      ### LOADING PLUGIN: $p
+      $loader->load($pmap{$p});
+      push @plugins, $pmap{$p}->process_options(\%config, \@plugins);
+   } else {
+      die "There is no plugin: $p\n"
+   }
+}
+
+@plugins = sort
+   {
+      die ("Can't use plugin " . (ref $a) . " and " . (ref $b) . " combined.\n")
+         if $a->priority == $b->priority;
+      $a->priority <=> $b->priority
+   } @plugins;
+
+if (@ARGV) {
+   my @unknown_args = grep {my $a = $_; !any { $a eq $_ } @config_options} @ARGV;
+   if (@unknown_args) {
+      die "Unknown command line arguments: " . join(', ', @unknown_args) . "\n"
+   }
+}
 
 ### KERNEL DIRECTORY: $config{kernel_dir}
 ### MODULE DIRECTORY: $config{module_dir}
@@ -253,10 +286,28 @@ if ($config{size_t_workaround}) {
 my $indx = $g->get_graph_attribute('index');
 
 if ($all_flag) {
-   @functions = keys %$indx
+   @functions = keys %$indx # TODO: sorting
 }
 
 print "\n";
+
+$link = $config{version} ? link_to_kernel_version($config{version}) : link_to_latest_kernel($ua);
+if ($link && ($link ne $previous_link)) {
+   my %opts = (link => $link, name => name_from_link($link), version => extract_version($link), ua => $ua);
+   foreach (@plugins) {
+      my $last = 0;
+
+      try { # TODO:
+         $_->action(\%opts)
+      } catch {
+         when (/^FAIL:/) { die $_ }
+         default { $last = 1 }
+      };
+
+      last if $last;
+   }
+   $previous_link = $link
+}
 
 {
    my $total = @functions;
