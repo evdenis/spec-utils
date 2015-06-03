@@ -262,14 +262,16 @@ print "\n";
    my $total = @functions;
    my $i = 1;
    my (undef, $col) = window_size();
-   my $msg = "GENERATING SUBGRAPH FOR FUNCTION: ";
+   my $msg = "GENERATING SUBGRAPH FOR FUNCTIONS: ";
    my $reserved_colons = length($msg) + length($total) + 3;
+
+   # Arguments check
+   @functions = grep {
+         if (exists $indx->{$_}) { 1 }
+         else { warn "Function $_ doesn't exist in module.\n"; 0 }
+      } @functions;
+
    foreach my $function (@functions) {
-      unless (exists $indx->{$function}) {
-         warn "Function $function doesn't exist in module.\n\n";
-         ++$i;
-         next
-      }
       my $id = $indx->{$function};
 
       my $fd = catdir $config{output_dir}, $function;
@@ -286,20 +288,25 @@ print "\n";
 
 if ($config{editor}) {
    if (which($ENV{EDITOR})) {
-      my $pid = fork();
-      die "can't fork: $!"
-         unless defined $pid;
-      if ($pid) {
-         print "$pid\n";
-         exit 0;
-      }
-
-      setsid();
       my @exec = ($ENV{EDITOR});
       foreach (@functions) {
          push @exec, catfile($config{output_dir}, $_, 'module.c')
       }
-      exec(@exec);
+
+      if ($#exec > 0) {
+         my $pid = fork();
+         die "can't fork: $!"
+            unless defined $pid;
+         if ($pid) {
+            print "$pid\n";
+            exit 0;
+         }
+
+         setsid();
+         exec(@exec);
+      } else {
+         warn "EDITOR will not be started since there is no files to work with.\n"
+      }
    } else {
       die "Can't find application from EDITOR env variable.\n"
    }
