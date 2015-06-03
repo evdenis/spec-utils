@@ -88,24 +88,24 @@ sub BUILD
             my $str = substr($_, $+[0]);
             foreach ($self->fields->keys) {
                if ($str =~ m/\b\Q$_\E\b/) {
-                  push $arr, 1
+                  push @$arr, 1
                } else {
-                  push $arr, 0
+                  push @$arr, 0
                }
             }
             my $val = eval "{ use integer; no warnings; $str }";
             unless ($@) {
-               push $field, ('value', $val);
+               push @$field, ('value', $val);
             } else {
                $last_expr_dep = $arr;
-               push $field, ('expr', $str);
+               push @$field, ('expr', $str);
             }
          } else {
             $arr = $last_expr_dep
                if $last_expr_dep;
-            push $field, 'next'
+            push @$field, 'next'
          }
-         push $self->fields_dependence, $arr;
+         push @{$self->fields_dependence}, $arr;
 
          $self->fields->set($f => $field);
       } else {
@@ -155,7 +155,7 @@ sub to_string
    while (my ($i, $v) = each @keys) {
       if ($self->fields->get($v)->[0]) {
          my $dep = $self->fields_dependence->[$#keys - $i];
-         while(my ($i, $b) = each $dep) {
+         while(my ($i, $b) = each @$dep) {
             $self->up($self->fields->[Hash::Ordered::_KEYS]->[$i])
                if $b
          }

@@ -44,7 +44,7 @@ sub __get_module_folder_c_contents
    if (-r $makefile) {
       my $files = get_modules_deps($makefile);
       if (%$files) {
-         $code = merge(map {@{$_}} values $files) # Just use them all
+         $code = merge(map {@{$_}} values %$files) # Just use them all
       } else {
          goto FALLBACK
       }

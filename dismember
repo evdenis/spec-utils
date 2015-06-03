@@ -253,7 +253,7 @@ if ($config{size_t_workaround}) {
 my $indx = $g->get_graph_attribute('index');
 
 if ($all_flag) {
-   @functions = keys $indx
+   @functions = keys %$indx
 }
 
 print "\n";

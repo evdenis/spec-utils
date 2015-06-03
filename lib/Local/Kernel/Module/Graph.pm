@@ -198,7 +198,7 @@ sub _create_edges
 
    my @possible;
    {
-      my @keys = grep {!m/fields/} keys $index;
+      my @keys = grep {!m/fields/} keys %$index;
       return if @keys == 0;
 
       foreach (@keys) {
