@@ -526,16 +526,16 @@ foreach (keys %s) {
          restore_comments($fbody_saved, \@comments);
          $new_code = str_to_list($fbody_saved);
 
-         unshift $old_code, $function;
-         unshift $new_code, $function;
-         unshift $code,     $function;
+         unshift @$old_code, $function;
+         unshift @$new_code, $function;
+         unshift @$code,     $function;
 
          if (call_meld($old_code, $code, $new_code)) {
             warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
                ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
          }
 
-         my $check = shift $code;
+         my $check = shift @$code;
          warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
             if $check ne $function;
       }
@@ -547,7 +547,7 @@ foreach (keys %s) {
 
 foreach my $file (keys %index) {
    my $offset = 0;
-   foreach my $pos (sort { $a <=> $b } keys $index{$file}) {
+   foreach my $pos (sort { $a <=> $b } keys %{$index{$file}}) {
       substr($module{$file}{code}, $pos + $offset, $index{$file}{$pos}{length}, $index{$file}{$pos}{code});
       $offset += length($index{$file}{$pos}{code}) - $index{$file}{$pos}{length};
    }
@@ -568,7 +568,7 @@ foreach my $f (keys %module) {
 
    my %existed_hash;
    foreach my $file (keys %module) {
-      foreach my $id (keys $module{$file}{i}) {
+      foreach my $id (keys %{$module{$file}{i}}) {
          $existed_hash{md5_hex(remove_spaces($module{$file}{c}[$id]))} = undef
       }
    }
