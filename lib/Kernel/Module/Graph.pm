@@ -1,4 +1,4 @@
-package Local::Kernel::Module::Graph;
+package Kernel::Module::Graph;
 
 use warnings;
 use strict;
@@ -15,8 +15,8 @@ use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
 
-use Local::C::Transformation qw(restore);
-use Local::C::Cycle qw(resolve);
+use C::Util::Transformation qw(restore);
+use C::Util::Cycle qw(resolve);
 
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
@@ -44,7 +44,7 @@ sub init
 init();
 
 #dependency graph
-my $dg = Graph::Reader::Dot->new()->read_graph(\*Local::Kernel::Module::Graph::DATA);
+my $dg = Graph::Reader::Dot->new()->read_graph(\*Kernel::Module::Graph::DATA);
 
 
 sub __dependencies_graph_iterator_generic

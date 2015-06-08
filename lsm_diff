@@ -16,9 +16,9 @@ use Class::CSV;
 
 use lib::abs 'lib';
 
-use Local::C::Transformation;
-use Local::String::Utils qw(normalize);
-use Local::Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
+use C::Util::Transformation;
+use Local::String::Util qw(normalize);
+use Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
 
 use constant SECURITY_H => catfile(qw(include linux security.h));

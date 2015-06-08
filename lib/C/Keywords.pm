@@ -6,12 +6,12 @@ use strict;
 use Exporter qw(import);
 
 use RE::Common qw($varname);
-use Local::C::Parsing;
+use C::Util::Parsing;
 
 our @EXPORT = qw(@keywords);
 our @EXPORT_OK = qw(prepare_tags);
 
-our @keywords = @Local::C::Parsing::keywords;
+our @keywords = @C::Util::Parsing::keywords;
 
 my @special_labels = qw(struct union enum);
 

@@ -1,4 +1,4 @@
-package Local::GCC::Preprocess;
+package GCC::Preprocess;
 
 use strict;
 use warnings;

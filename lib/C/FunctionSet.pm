@@ -5,8 +5,8 @@ use Carp;
 
 use RE::Common qw($varname);
 use C::Function;
-use Local::C::Transformation qw(:RE);
-use Local::List::Utils qw(any);
+use C::Util::Transformation qw(:RE);
+use Local::List::Util qw(any);
 use C::Keywords;
 use namespace::autoclean;
 
@@ -32,7 +32,7 @@ sub parse
    my $area = $_[1];
    my %functions;
 
-   my $ret  = qr/(?<ret>[\w$Local::C::Transformation::special_symbols][\w\s\*$Local::C::Transformation::special_symbols]+)/;
+   my $ret  = qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
    my $name = qr/(?<name>$varname)/;
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';

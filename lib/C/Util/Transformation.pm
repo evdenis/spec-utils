@@ -1,4 +1,4 @@
-package Local::C::Transformation;
+package C::Util::Transformation;
 
 use re '/aa';
 
@@ -11,7 +11,7 @@ use Exporter qw(import);
 use Data::Alias;
 use Carp;
 
-use Local::List::Utils qw(uniq);
+use Local::List::Util qw(uniq);
 
 
 our @EXPORT = qw(adapt);

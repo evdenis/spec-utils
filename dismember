@@ -18,9 +18,9 @@ use lib::abs 'lib';
 
 use Local::Config qw(find_config);
 use Local::Terminal qw(window_size);
-use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
-use Local::Kernel::Module qw(parse_sources);
-use Local::Kernel::Module::Graph qw(
+use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use Kernel::Module qw(parse_sources);
+use Kernel::Module::Graph qw(
    build_sources_graph
    get_predecessors_subgraph
    output_sources_graph

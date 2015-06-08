@@ -1,4 +1,4 @@
-package Local::C::Cycle;
+package C::Util::Cycle;
 
 use warnings;
 use strict;
@@ -7,8 +7,8 @@ use re '/aa';
 
 use Exporter qw(import);
 use Scalar::Util qw(blessed);
-use Local::C::Transformation qw(:RE);
-use Local::String::Utils qw(normalize);
+use C::Util::Transformation qw(:RE);
+use Local::String::Util qw(normalize);
 
 our @EXPORT = qw/resolve/;
 

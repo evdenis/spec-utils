@@ -2,10 +2,10 @@ package C::Enum;
 use Moose;
 
 use RE::Common qw($varname);
-use Local::C::Transformation qw(:RE);
-use Local::String::Utils qw(normalize);
+use C::Util::Transformation qw(:RE);
+use Local::String::Util qw(normalize);
 use C::Keywords qw(prepare_tags);
-use Local::String::Utils qw(trim);
+use Local::String::Util qw(trim);
 use Hash::Ordered;
 
 use namespace::autoclean;

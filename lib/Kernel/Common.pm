@@ -1,10 +1,10 @@
-package Local::Kernel::Common;
+package Kernel::Common;
 
 use strict;
 use warnings;
 
 use feature qw(state);
-use Local::List::Utils qw(any);
+use Local::List::Util qw(any);
 use File::Spec::Functions qw(catfile);
 use Exporter qw(import);
 

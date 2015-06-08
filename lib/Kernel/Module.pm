@@ -1,4 +1,4 @@
-package Local::Kernel::Module;
+package Kernel::Module;
 
 use strict;
 use warnings;
@@ -9,11 +9,11 @@ use Exporter qw(import);
 use File::Spec::Functions qw(splitpath catfile);
 use Cwd qw(realpath);
 
-use Local::File::C::Merge qw(merge_headers merge_sources find_headers);
-use Local::File::Merge qw(merge);
-use Local::C::Transformation qw(adapt);
-use Local::Kernel::Makefile qw(get_modules_deps);
-use Local::GCC::Preprocess qw(
+use File::C::Merge qw(merge_headers merge_sources find_headers);
+use File::Merge qw(merge);
+use C::Util::Transformation qw(adapt);
+use Kernel::Makefile qw(get_modules_deps);
+use GCC::Preprocess qw(
       get_macro
       preprocess
       preprocess_directives_noincl

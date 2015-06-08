@@ -1,4 +1,4 @@
-package Local::App::Graph;
+package App::Graph;
 use warnings;
 use strict;
 
@@ -14,10 +14,10 @@ use File::Which;
 use Params::Check qw(check);
 use Storable;
 
-use Local::List::Utils qw(uniq difference any);
-use Local::C::Transformation;
-use Local::Kernel::Module qw(preprocess_module_sources_nocomments);
-use Local::Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
+use Local::List::Util qw(uniq difference any);
+use C::Util::Transformation;
+use Kernel::Module qw(preprocess_module_sources_nocomments);
+use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
 
 use C::FunctionSet;
 use Carp;
@@ -64,7 +64,7 @@ sub run
       or croak "Arguments could not be parsed.\n";
 
    #Initializing the library
-   Local::Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
+   Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
 
    if ($opts->{cache}) {
       unless (-r $opts->{cache_file}) {

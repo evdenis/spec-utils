@@ -4,7 +4,7 @@ use Data::Printer;
 use common::sense;
 use lib::abs '../lib';
 
-use Local::C::Parsing qw/_get_structure_wo_field_names _get_structure_fields/;
+use C::Util::Parsing qw/_get_structure_wo_field_names _get_structure_fields/;
 
 my $data = join('', <DATA>);
 

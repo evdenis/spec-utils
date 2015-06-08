@@ -3,7 +3,7 @@ use Moose;
 
 use RE::Common qw($varname);
 use C::Typedef;
-use Local::C::Transformation qw(:RE);
+use C::Util::Transformation qw(:RE);
 use namespace::autoclean;
 
 use re '/aa';

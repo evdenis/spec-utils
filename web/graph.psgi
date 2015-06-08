@@ -14,7 +14,7 @@ use HTTP::Date;
 use File::Slurp qw/read_file write_file/;
 use Try::Tiny;
 
-use Local::App::Graph;
+use App::Graph;
 
 my %config;
 sub read_config

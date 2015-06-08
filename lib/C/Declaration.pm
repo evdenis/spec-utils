@@ -1,10 +1,10 @@
 package C::Declaration;
 use Moose;
 
-use Local::C::Parsing qw(_argname);
+use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
-use Local::C::Transformation qw(:RE);
-use Local::List::Utils qw(difference);
+use C::Util::Transformation qw(:RE);
+use Local::List::Util qw(difference);
 use namespace::autoclean;
 
 use re '/aa';

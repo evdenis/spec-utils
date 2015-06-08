@@ -19,13 +19,13 @@ use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 use Digest::MD5 qw(md5_hex);
 
-use Local::String::Utils qw(trim is_blank ne_spaces normalize remove_spaces);
-use Local::List::Utils qw(str_to_list uniq);
+use Local::String::Util qw(trim is_blank ne_spaces normalize remove_spaces);
+use Local::List::Util qw(str_to_list uniq);
 use Local::Terminal qw(window_size);
-use Local::C::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
-use Local::GCC::Preprocess qw(preprocess_directives_noincl);
-use Local::File::Merge qw(merge);
-use Local::File::C::Merge qw(merge_all_files_simple find_all_files);
+use C::Util::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
+use GCC::Preprocess qw(preprocess_directives_noincl);
+use File::Merge qw(merge);
+use File::C::Merge qw(merge_all_files_simple find_all_files);
 use ACSL::Common qw(is_acsl_spec);
 
 BEGIN {
@@ -140,7 +140,7 @@ pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $module_dir 
 my (undef, $col) = window_size();
 my $delimeter = '-' x $col;
 
-#Global variables from Local::C::Transformation
+#Global variables from C::Util::Transformation
 my $comment_re = $comment_t{pattern};
 my $macro_re   = $macro_t{pattern};
 
@@ -334,7 +334,7 @@ sub move_pre_function_specs
 {
    my @exclude_specs;
 
-   if ($_[0] =~ m/($comment_re(\s*+$comment_re)*+)[^${Local::C::Transformation::special_symbols}]*\Z/s) {
+   if ($_[0] =~ m/($comment_re(\s*+$comment_re)*+)[^${C::Util::Transformation::special_symbols}]*\Z/s) {
       my $spec = $1;
 
       push @exclude_specs, restore_specs_only($spec, $_[1], $_[2]);

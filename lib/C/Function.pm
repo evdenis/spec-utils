@@ -1,10 +1,10 @@
 package C::Function;
 use Moose;
 
-use Local::C::Parsing qw(_argname_exists);
+use C::Util::Parsing qw(_argname_exists);
 use C::Keywords qw(prepare_tags);
-use Local::C::Transformation qw(:RE %comment_t);
-use Local::List::Utils qw(difference);
+use C::Util::Transformation qw(:RE %comment_t);
+use Local::List::Util qw(difference);
 use ACSL::Common qw(is_acsl_spec);
 
 use namespace::autoclean;

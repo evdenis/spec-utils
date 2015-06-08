@@ -1,4 +1,4 @@
-package Local::List::Utils;
+package Local::List::Util;
 
 use Exporter qw(import);
 
