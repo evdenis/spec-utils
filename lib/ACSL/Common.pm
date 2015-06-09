@@ -7,7 +7,7 @@ use re '/aa';
 
 use Exporter qw(import);
 
-use Local::List::Utils qw(any);
+use Local::List::Util qw(any);
 use RE::Common qw($acsl_varname);
 
 our @EXPORT_OK = qw(is_acsl_spec);

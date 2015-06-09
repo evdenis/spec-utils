@@ -10,8 +10,8 @@ package TS {
 
    use MooseX::App::Simple qw(Color Env);
 
-   use Local::Kernel::Module qw(prepare_module_sources preprocess_module_sources);
-   use Local::C::Transformation;
+   use Kernel::Module qw(prepare_module_sources preprocess_module_sources);
+   use C::Util::Transformation;
 
    option 'preprocess' => (
       is  => 'ro',

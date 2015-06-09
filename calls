@@ -20,11 +20,11 @@ use YAML::XS qw(LoadFile);
 
 use Class::CSV;
 
-use Local::C::Transformation;
-use Local::File::Merge qw(merge find_all);
-use Local::File::C::Merge qw(merge_all_files_simple);
-use Local::C::Parsing qw(parse_calls);
-use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use C::Util::Transformation;
+use File::Merge qw(merge find_all);
+use File::C::Merge qw(merge_all_files_simple);
+use C::Util::Parsing qw(parse_calls);
+use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Config qw(find_config);
 
 BEGIN {

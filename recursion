@@ -16,11 +16,11 @@ use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 
 use lib::abs 'lib';
 
-use Local::C::Transformation;
-use Local::List::Utils qw(any);
-use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
-use Local::Kernel::Module qw(preprocess_module_sources_nocomments);
-use Local::Kernel::Module::Graph qw(build_sources_graph);
+use C::Util::Transformation;
+use Local::List::Util qw(any);
+use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use Kernel::Module qw(preprocess_module_sources_nocomments);
+use Kernel::Module::Graph qw(build_sources_graph);
 
 use C::FunctionSet;
 
@@ -53,7 +53,7 @@ die("Nothing to search for.\n") if !$direct && !$indirect;
 
 
 #Initializing the library
-Local::Kernel::Module::Graph::init(reverse => 1);
+Kernel::Module::Graph::init(reverse => 1);
 
 
 my $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];

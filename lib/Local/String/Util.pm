@@ -1,4 +1,4 @@
-package Local::String::Utils;
+package Local::String::Util;
 
 use Exporter qw(import);
 

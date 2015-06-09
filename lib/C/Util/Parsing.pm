@@ -1,4 +1,4 @@
-package Local::C::Parsing;
+package C::Util::Parsing;
 
 use warnings;
 use strict;
@@ -8,8 +8,8 @@ use re '/aa';
 use Exporter qw(import);
 
 use RE::Common qw($varname);
-use Local::List::Utils qw(uniq any);
-use Local::C::Transformation qw(:RE);
+use Local::List::Util qw(uniq any);
+use C::Util::Transformation qw(:RE);
 
 our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields _get_structure_wo_field_names);
 

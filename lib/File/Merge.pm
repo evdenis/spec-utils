@@ -1,4 +1,4 @@
-package Local::File::Merge;
+package File::Merge;
 
 use strict;
 use warnings;

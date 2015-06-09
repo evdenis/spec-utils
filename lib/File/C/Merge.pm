@@ -1,4 +1,4 @@
-package Local::File::C::Merge;
+package File::C::Merge;
 
 use strict;
 use warnings;
@@ -12,8 +12,8 @@ use File::Slurp qw(read_file);
 use Cwd qw(realpath);
 use File::Spec::Functions qw(catfile splitpath);
 
-use Local::File::Merge qw(find_all merge);
-use Local::List::Utils qw(intersection difference);
+use File::Merge qw(find_all merge);
+use Local::List::Util qw(intersection difference);
 
 
 our @EXPORT_OK = qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files_simple merge_all_files);

@@ -2,8 +2,8 @@ package C::Structure;
 use Moose;
 
 use Moose::Util::TypeConstraints;
-use Local::C::Parsing qw(_get_structure_wo_field_names);
-use Local::C::Transformation qw(:RE);
+use C::Util::Parsing qw(_get_structure_wo_field_names);
+use C::Util::Transformation qw(:RE);
 use C::Keywords qw(prepare_tags);
 use namespace::autoclean;
 

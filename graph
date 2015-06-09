@@ -16,8 +16,8 @@ use FindBin;
 use lib::abs 'lib';
 
 use Local::Config qw(find_config);
-use Local::Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
-use Local::App::Graph;
+use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
+use App::Graph;
 
 BEGIN {
    eval {
