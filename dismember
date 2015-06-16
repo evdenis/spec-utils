@@ -3,11 +3,13 @@
 use warnings;
 use strict;
 
-use feature qw(say);
+use feature qw/switch say/;
+no if $] >= 5.018, warnings => "experimental::smartmatch";
 use re '/aa';
 
 use Pod::Usage;
-use Getopt::Long qw(:config gnu_compat no_permute no_getopt_compat pass_through);
+use List::Util qw/any/;
+use Getopt::Long qw(:config gnu_compat no_getopt_compat pass_through);
 use File::Spec::Functions qw(catfile catdir);
 use File::Which;
 use Storable;
@@ -57,7 +59,6 @@ dismember - программа для выборки из общего набо�
   -a|--all                    - построить выборки для всех функций модуля ядра
   -s|--single                 - поместить все зависимости функции -f в единый файл
   -r|--remove-fields          - адаптивно убрать неиспользуемые поля из enum
-  -w|--workaround|--size_t    - не включать в выборку определения для size_t из ядра
 
   -c|--cache num - три уровня кэша:
                       0 - отсутствует,
@@ -99,10 +100,6 @@ dismember - программа для выборки из общего набо�
 
 Убрать неиспользуемые константы из определений enum. Значения остальных изменяются так, чтобы соответствовать оригинальному определению.
 
-=item B<-w|--workaround|--size_t>
-
-Не включать определение size_t из ядра в результирующий набор исходных кодов.
-
 =item B<-c|cache num>
 
 Опция указывает кэш какого уровня использовать. По умолчанию кэширование отключено и исходные коды модуля и ядра каждый раз анализируются заново. Если выполняется разбор исходных кодов, кэшированная версия не используется, то результаты анализа сериализуются и сохраняются для возможного последующего использования в качестве кэша. Уровни num: 0 - кэш не используется; 1 - используется кэш, связанный с исходными кодами ядра (в исходных кодах модуля не должны меняться подключаемые заголовки, исходный код ядра не должен меняться, в обратном случае будет наблюдаться расхождение между результатом работы программы с кэшированием и без кэширования); 2 - используется результаты кэширования как разбора исходных кодов ядра, так и исходных кодов модуля ядра (код ядра, код модуля ядра должны оставаться неизменными с прошлого запуска программы)
@@ -134,22 +131,27 @@ my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my %config;
 $config{single_file}       = 0;
-$config{size_t_workaround} = 0;
 $config{remove_fields}     = 0;
 $config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel_dir}        = undef;
 $config{output_dir}        = catdir $FindBin::Bin, 'result';
 $config{editor}            = 0;
-$config{plugins} = [];
+$config{plugins}           = [];
 
 if (defined (my $conf = find_config())) {
    ### CONFIG FILE: $conf
    open(my $conf, '<', $conf);
    foreach (<$conf>) {
+      chomp;
       next if m/\A\h*+#?\h*+\Z/;
+
       if (m/(\w++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))/) {
          if (exists $config{$1}) {
-            $config{$1} = $2
+            if (ref $config{$1} eq 'ARRAY') {
+               push @{$config{$1}}, $2
+            } else {
+               $config{$1} = $2
+            }
          } else {
             warn "Unknown configuration option '$1'\n"
          }
@@ -159,6 +161,7 @@ if (defined (my $conf = find_config())) {
    }
    close($conf);
 }
+
 
 my $help = 0;
 
@@ -170,12 +173,12 @@ GetOptions(
    'cache|c:2'             =>  \$cache,
    'single|s!'             =>  \$config{single_file},
    'remove-fields|r!'      =>  \$config{remove_fields},
-   'size_t|workaround|w!'  =>  \$config{size_t_workaround},
    'editor|e!'             =>  \$config{editor},
    'load-plugins=s@'       =>  \$config{plugins},
    'help|h'                =>  \$help
 ) or pod2usage(1);
-@functions = split(/,/,join(',',@functions));
+@functions = split(/,/, join(',', @functions));
+$config{functions} = \@functions;
 $config{plugins} = [ split(/,/, join(',', @{$config{plugins}})) ];
 
 pod2usage({-verbose => 2, -exitval => 0})
@@ -190,37 +193,59 @@ pod2usage({ -msg => "$config{module_dir} is not a directory.\n", -exitval => 2 }
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
     unless check_kernel_dir($config{kernel_dir});
 
-#Loading plugins
-
-my $loader  = Module::Loader->new(max_depth => 1);
-my @plugins;
-my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('Linux::Kernel::Plugin');
-foreach my $p (@{$config{plugins}}) {
-   if (any {$p eq $_} keys %pmap) {
-      ### LOADING PLUGIN: $p
-      $loader->load($pmap{$p});
-      push @plugins, $pmap{$p}->process_options(\%config, \@plugins);
-   } else {
-      die "There is no plugin: $p\n"
-   }
-}
-
-@plugins = sort
-   {
-      die ("Can't use plugin " . (ref $a) . " and " . (ref $b) . " combined.\n")
-         if $a->priority == $b->priority;
-      $a->priority <=> $b->priority
-   } @plugins;
-
-if (@ARGV) {
-   my @unknown_args = grep {my $a = $_; !any { $a eq $_ } @config_options} @ARGV;
-   if (@unknown_args) {
-      die "Unknown command line arguments: " . join(', ', @unknown_args) . "\n"
-   }
-}
-
 ### KERNEL DIRECTORY: $config{kernel_dir}
 ### MODULE DIRECTORY: $config{module_dir}
+
+my @plugins;
+my %level = (full_graph => 1, reduced_graph => 2, pre_output => 3);
+if (@{$config{plugins}}) {
+   my $loader  = Module::Loader->new(max_depth => 1);
+   my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
+   foreach my $p (@{$config{plugins}}) {
+      if (any {$p eq $_} keys %pmap) {
+         ### LOADING PLUGIN: $p
+         my $plugin = $pmap{$p};
+         $loader->load($plugin);
+
+         foreach (qw/priority level action process_options/) {
+            unless (eval { $plugin->can($_) }) {
+               die "plugin $p $plugin: doesn't have method '$_'\n"
+            }
+         }
+
+         # process_options should be called first
+         my $obj = $pmap{$p}->process_options(\%config, \@plugins);
+
+         unless ($obj->priority >= 0 && $obj->priority < 100) {
+            die "plugin $p: only priority levels 0..99 supported\n"
+         }
+         unless (exists $level{$obj->level}) {
+            die "plugin $p: unknown level\n"
+         }
+
+         push @plugins, $obj;
+      } else {
+         die "There is no plugin: $p\n"
+      }
+   }
+}
+
+
+sub plugins_sort
+{
+   my $l = $level{$b->level} <=> $level{$a->level};
+   unless ($l) {
+      my $p = $a->priority <=> $b->priority;
+      die "Can't use plugin " . (ref $a) . " and " . (ref $b) . " combined.\n"
+         unless $p;
+      $p
+   } else {
+      $l
+   }
+}
+
+@plugins = sort plugins_sort @plugins;
+
 
 sub create_directory
 {
@@ -274,15 +299,6 @@ if ($cache == 2) {
    store($g, $cache_file[2])
 }
 
-if ($config{size_t_workaround}) {
-   foreach($g->vertices) {
-      if ($g->get_vertex_attribute($_, 'object')->name eq 'size_t') {
-         $g->delete_vertex($_);
-         last
-      }
-   }
-}
-
 my $indx = $g->get_graph_attribute('index');
 
 if ($all_flag) {
@@ -291,23 +307,21 @@ if ($all_flag) {
 
 print "\n";
 
-$link = $config{version} ? link_to_kernel_version($config{version}) : link_to_latest_kernel($ua);
-if ($link && ($link ne $previous_link)) {
-   my %opts = (link => $link, name => name_from_link($link), version => extract_version($link), ua => $ua);
-   foreach (@plugins) {
-      my $last = 0;
+sub call_plugins
+{
+   my %opts = (level => $_[0], graph => $_[1], index => $indx, config => \%config);
 
-      try { # TODO:
+   foreach (grep {$_->level eq $_[0]} @plugins) {
+      try {
          $_->action(\%opts)
       } catch {
-         when (/^FAIL:/) { die $_ }
-         default { $last = 1 }
+         when (/^FAIL:/) { die $_ };
+         default { warn "Plugin $_ fails at level $_[0].\n" }
       };
-
-      last if $last;
    }
-   $previous_link = $link
 }
+
+call_plugins 'full_graph', $g;
 
 {
    my $total = @functions;
@@ -331,6 +345,8 @@ if ($link && ($link ne $previous_link)) {
       my $spaces = $col - $reserved_colons - length($function) - length($i);
       print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
       my $g2 = get_predecessors_subgraph($g, $id);
+
+      call_plugins 'reduced_graph', $g2;
 
       output_sources_graph($g2, $fd, $config{single_file}, $config{remove_fields});
       print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
