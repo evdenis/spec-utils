@@ -26,7 +26,7 @@ sub process_options
 
 sub priority
 {
-   99
+   0
 }
 
 sub level
