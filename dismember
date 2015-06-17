@@ -311,12 +311,12 @@ sub call_plugins
 {
    my %opts = (level => $_[0], graph => $_[1], index => $indx, config => \%config);
 
-   foreach (grep {$_->level eq $_[0]} @plugins) {
+   foreach my $plugin (grep {$_->level eq $_[0]} @plugins) {
       try {
-         $_->action(\%opts)
+         $plugin->action(\%opts)
       } catch {
          when (/^FAIL:/) { die $_ };
-         default { warn "Plugin $_ fails at level $_[0].\n" }
+         default { warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n" }
       };
    }
 }
