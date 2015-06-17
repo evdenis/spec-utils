@@ -23,6 +23,8 @@ our @EXPORT_OK = qw(
          restore_macro
          filter
          filter_dup
+         filter_comments
+         filter_comments_dup
 
          %comment_t
          %attribute_t
@@ -266,6 +268,19 @@ sub restore
    undef
 }
 
+sub filter_comments ($)
+{
+   $_[0] =~ s/$comment_t{pattern}//g;
+
+   undef
+}
+
+sub filter_comments_dup ($)
+{
+   $_[0] =~ s/$comment_t{pattern}//gr
+}
+
+
 sub filter ($)
 {
    $_[0] =~ s/$replacement//g;
@@ -275,7 +290,7 @@ sub filter ($)
 
 sub filter_dup ($)
 {
-   $_[0] =~ s/$replacement//gr;
+   $_[0] =~ s/$replacement//gr
 }
 
 

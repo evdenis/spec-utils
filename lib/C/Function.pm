@@ -3,7 +3,7 @@ use Moose;
 
 use C::Util::Parsing qw(_argname_exists);
 use C::Keywords qw(prepare_tags);
-use C::Util::Transformation qw(:RE %comment_t);
+use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
 use Local::List::Util qw(difference);
 use ACSL::Common qw(is_acsl_spec);
 
@@ -67,6 +67,24 @@ sub get_code_tags
    #
    #push @$filter, @args;
    #prepare_tags($self->code, $filter)
+}
+
+sub clean_comments
+{
+   $_[0]->code(filter_comments_dup($_[0]->code));
+
+   undef
+}
+
+sub add_spec
+{
+   my $code = $_[0]->code;
+   $code =~ s/\A\s++//;
+
+   $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
+
+   undef
+
 }
 
 sub to_string
