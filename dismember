@@ -188,6 +188,8 @@ $config{kernel_dir} //= autodetect_kernel_directory();
 
 pod2usage({ -msg => "You should provide at least one function name.\n", -exitval => 2 })
     if !@functions && !$all_flag;
+pod2usage({ -msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2 })
+    if @functions && $all_flag;
 pod2usage({ -msg => "$config{module_dir} is not a directory.\n", -exitval => 2 })
     unless -d $config{module_dir};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
@@ -302,8 +304,46 @@ if ($cache == 2) {
 my $indx = $g->get_graph_attribute('index');
 
 if ($all_flag) {
-   @functions = keys %$indx # TODO: sorting
+   my @edges;
+   my %rindx = reverse %$indx;
+   my $subgraph = Graph::Directed->new(
+                     edges    => [ map {
+                                          grep {
+                                             exists $rindx{$_->[1]}
+                                          } $g->edges_from($_)
+                                   } values %$indx ],
+                     vertices => [ values %$indx ]
+                  );
+   my %vertices = map { ($_ => 0) } $subgraph->vertices;
+
+   while ($subgraph->has_a_cycle) {
+      my @cycle = $subgraph->find_a_cycle();
+      if (@cycle == 1) {
+         $subgraph->delete_edge(@cycle[0,0])
+      } else {
+         $subgraph->delete_edge(@cycle[0,1])
+      }
+   }
+
+   my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
+   while (%vertices) {
+      my @zv;
+
+      foreach(keys %vertices) {
+         push @zv, $_ if 0 == $vd{$_};
+      }
+      die("Cycle in graph") unless @zv;
+
+      push @functions, sort @rindx{@zv};
+
+      foreach (@zv) {
+         --$vd{$_->[1]} foreach $subgraph->edges_from($_);
+         delete $vertices{$_}
+      }
+      $subgraph->delete_vertices(@zv);
+   }
 }
+
 
 print "\n";
 
