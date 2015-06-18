@@ -199,7 +199,7 @@ pod2usage({ -msg => "You should provide proper kernel directory with --kernel op
 ### MODULE DIRECTORY: $config{module_dir}
 
 my @plugins;
-my %level = (full_graph => 1, reduced_graph => 2, pre_output => 3);
+my %level = (full_graph => 1, reduced_graph => 2, pre_output => 3, post_output => 4);
 if (@{$config{plugins}}) {
    my $loader  = Module::Loader->new(max_depth => 1);
    my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
@@ -349,9 +349,9 @@ print "\n";
 
 sub call_plugins
 {
-   my %opts = (level => $_[0], graph => $_[1], index => $indx, config => \%config);
+   my %opts = (@_, config => \%config);
 
-   foreach my $plugin (grep {$_->level eq $_[0]} @plugins) {
+   foreach my $plugin (grep {$_->level eq $opts{level}} @plugins) {
       try {
          $plugin->action(\%opts)
       } catch {
@@ -361,7 +361,7 @@ sub call_plugins
    }
 }
 
-call_plugins 'full_graph', $g;
+call_plugins level => 'full_graph', graph => $g;
 
 {
    my $total = @functions;
@@ -386,10 +386,12 @@ call_plugins 'full_graph', $g;
       print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
       my $g2 = get_predecessors_subgraph($g, $id);
 
-      call_plugins 'reduced_graph', $g2;
+      call_plugins level => 'reduced_graph', graph => $g2;
 
       output_sources_graph($g2, $fd, $config{single_file}, $config{remove_fields});
+
       print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
+      call_plugins level => 'post_output', dir => $fd;
    }
 }
 
