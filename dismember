@@ -370,11 +370,13 @@ call_plugins level => 'full_graph', graph => $g;
    my $msg = "GENERATING SUBGRAPH FOR FUNCTIONS: ";
    my $reserved_colons = length($msg) + length($total) + 3;
 
-   # Arguments check
-   @functions = grep {
-         if (exists $indx->{$_}) { 1 }
-         else { warn "Function $_ doesn't exist in module.\n"; 0 }
-      } @functions;
+   unless (!$all_flag) {
+      # Arguments check
+      @functions = grep {
+            if (exists $indx->{$_}) { 1 }
+            else { warn "Function $_ doesn't exist in module.\n"; 0 }
+         } @functions;
+   }
 
    foreach my $function (@functions) {
       my $id = $indx->{$function};
