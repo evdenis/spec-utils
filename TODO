@@ -11,3 +11,10 @@
 PARSEC_PACKED workaround plugin?
 раскрывать макросы, которые содержат attribute plugin?
 удалять макросы, которые содержат attribute plugin?
+
+Plugins:
+include
+copy additional library files
+modeline
+advanced execution strategy
+
