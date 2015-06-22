@@ -67,7 +67,10 @@ sub action
    }
 
    if ($self->{wait}) {
-      waitpid $pid, 0
+      waitpid $pid, 0;
+      if ($?) {
+         die "EXEC: $self->{file} failed with code $?\n"
+      }
    }
 
    undef
