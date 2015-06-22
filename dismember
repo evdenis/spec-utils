@@ -363,13 +363,26 @@ sub call_plugins
 
 call_plugins level => 'full_graph', graph => $g;
 
+sub generate_files ($$)
 {
-   my $total = @functions;
-   my $i = 1;
-   my (undef, $col) = window_size();
-   my $msg = "GENERATING SUBGRAPH FOR FUNCTIONS: ";
-   my $reserved_colons = length($msg) + length($total) + 3;
+   my ($graph, $function) = @_;
+   my $id = $indx->{$function};
 
+   my $fd = catdir $config{output_dir}, $function;
+   create_directory $fd;
+
+   my $rgraph = get_predecessors_subgraph($graph, $id);
+   call_plugins
+      level => 'reduced_graph',
+      graph => $rgraph;
+
+   output_sources_graph($rgraph, $fd, $config{single_file}, $config{remove_fields});
+   print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
+
+   {dir => $fd}
+}
+
+{
    unless (!$all_flag) {
       # Arguments check
       @functions = grep {
@@ -378,22 +391,17 @@ call_plugins level => 'full_graph', graph => $g;
          } @functions;
    }
 
-   foreach my $function (@functions) {
-      my $id = $indx->{$function};
+   my $i = 1;
+   my $total = @functions;
+   my (undef, $col) = window_size();
+   my $msg = "GENERATING SUBGRAPH FOR FUNCTION: ";
+   my $reserved_colons = length($msg) + length($total) + 3;
 
-      my $fd = catdir $config{output_dir}, $function;
-      create_directory $fd;
-
-      my $spaces = $col - $reserved_colons - length($function) - length($i);
-      print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
-      my $g2 = get_predecessors_subgraph($g, $id);
-
-      call_plugins level => 'reduced_graph', graph => $g2;
-
-      output_sources_graph($g2, $fd, $config{single_file}, $config{remove_fields});
-
-      print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
-      call_plugins level => 'post_output', dir => $fd;
+   foreach (@functions) {
+      my $spaces = $col - $reserved_colons - length($_) - length($i);
+      print $msg . $_ . ' ' x $spaces . "[" . $i++ . "/$total]\n";
+      my $output = generate_files $g, $_;
+      call_plugins level => 'post_output', %$output;
    }
 }
 
