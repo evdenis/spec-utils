@@ -142,7 +142,7 @@ $config{module}              = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}              = undef;
 $config{output}              = catdir $FindBin::Bin, 'result';
 $config{editor}              = 0;
-$config{plugin}             = [];
+$config{plugin}              = [];
 
 if ($config_file && -r $config_file || (defined ($config_file = find_config()))) {
    ### CONFIG FILE: $config_file
@@ -159,7 +159,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
                $config{$1} = $2
             }
          } else {
-            warn "Unknown configuration option '$1'\n"
+            unshift @ARGV, "--$1=$2";
          }
       } else {
          warn "Wrong config format in line $.: '$_'\n"
@@ -167,7 +167,6 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
    }
    close($conf);
 }
-
 
 my $help = 0;
 
