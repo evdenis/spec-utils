@@ -15,8 +15,17 @@ sub find_config
    my $r = undef;
    my $pname = basename $0;
    my @paths = (
+      catfile($FindBin::Bin, ".${pname}.cfg"),
       catfile($FindBin::Bin, ".${pname}.conf"),
-      catfile($ENV{HOME}, '.config', $pname, 'config')
+      catfile($FindBin::Bin, ".${pname}.config"),
+
+      catfile($ENV{HOME}, '.config', "${pname}.cfg"),
+      catfile($ENV{HOME}, '.config', "${pname}.conf"),
+      catfile($ENV{HOME}, '.config', "${pname}.config"),
+
+      catfile($ENV{HOME}, '.config', $pname, 'cfg'),
+      catfile($ENV{HOME}, '.config', $pname, 'conf'),
+      catfile($ENV{HOME}, '.config', $pname, 'config'),
    );
 
    foreach (@paths) {
