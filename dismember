@@ -233,6 +233,9 @@ if (@{$config{plugins}}) {
    }
 }
 
+if (@ARGV) {
+   pod2usage({ -msg => "Unknown options: @ARGV\n", -exitval => 2 })
+}
 
 sub plugins_sort
 {
