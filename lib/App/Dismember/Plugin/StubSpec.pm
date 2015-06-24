@@ -29,6 +29,8 @@ sub level
    $_[0]->{reduced} ? 'reduced_graph' : 'full_graph'
 }
 
+my %processed_objects;
+
 sub action
 {
    my ($self, $opts) = @_;
@@ -55,8 +57,12 @@ sub action
          }
       }
 
-      $o->clean_comments();
-      $o->add_spec('ensures \false;');
+      # check already processed
+      unless (exists $processed_objects{$_}) {
+         $o->clean_comments();
+         $o->add_spec('ensures \false;');
+         $processed_objects{$_} = undef;
+      }
    }
 
    undef
