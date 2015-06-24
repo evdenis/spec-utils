@@ -136,13 +136,13 @@ GetOptions(
    'config=s' => \$config_file,
 ) or pod2usage(1);
 
-$config{single_file}       = 0;
-$config{remove_fields}     = 0;
-$config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
-$config{kernel_dir}        = undef;
-$config{output_dir}        = catdir $FindBin::Bin, 'result';
-$config{editor}            = 0;
-$config{plugins}           = [];
+$config{single}              = 0;
+$config{'remove-fields'}     = 0;
+$config{module}              = $ENV{CURRENT_PROJECT} // '.';
+$config{kernel}              = undef;
+$config{output}              = catdir $FindBin::Bin, 'result';
+$config{editor}              = 0;
+$config{plugin}             = [];
 
 if ($config_file && -r $config_file || (defined ($config_file = find_config()))) {
    ### CONFIG FILE: $config_file
@@ -151,7 +151,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
       chomp;
       next if m/\A\h*+#?\h*+\Z/;
 
-      if (m/(\w++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))/) {
+      if (m/\A([\w-]++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))\Z/) {
          if (exists $config{$1}) {
             if (ref $config{$1} eq 'ARRAY') {
                push @{$config{$1}}, $2
@@ -162,7 +162,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
             warn "Unknown configuration option '$1'\n"
          }
       } else {
-         warn "Wrong config format in line '$.'\n"
+         warn "Wrong config format in line $.: '$_'\n"
       }
    }
    close($conf);
@@ -174,42 +174,42 @@ my $help = 0;
 GetOptions(
    'all|a!'                =>  \$all_flag,
    'functions|f=s{1,}'     =>  \@functions,
-   'module|m=s'            =>  \$config{module_dir},
-   'kernel|k=s'            =>  \$config{kernel_dir},
+   'module|m=s'            =>  \$config{module},
+   'kernel|k=s'            =>  \$config{kernel},
    'cache|c:2'             =>  \$cache,
-   'single|s!'             =>  \$config{single_file},
-   'remove-fields|r!'      =>  \$config{remove_fields},
+   'single|s!'             =>  \$config{single},
+   'remove-fields|r!'      =>  \$config{'remove-fields'},
    'editor|e!'             =>  \$config{editor},
-   'load-plugins=s@'       =>  \$config{plugins},
+   'plugin=s@'             =>  \$config{plugin},
    'help|h'                =>  \$help
 ) or pod2usage(1);
 @functions = split(/,/, join(',', @functions));
 $config{functions} = \@functions;
-$config{plugins} = [ split(/,/, join(',', @{$config{plugins}})) ];
+$config{plugin} = [ split(/,/, join(',', @{$config{plugin}})) ];
 
 pod2usage({-verbose => 2, -exitval => 0})
     if $help;
 
-$config{kernel_dir} //= autodetect_kernel_directory();
+$config{kernel} //= autodetect_kernel_directory();
 
 pod2usage({ -msg => "You should provide at least one function name.\n", -exitval => 2 })
     if !@functions && !$all_flag;
 pod2usage({ -msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2 })
     if @functions && $all_flag;
-pod2usage({ -msg => "$config{module_dir} is not a directory.\n", -exitval => 2 })
-    unless -d $config{module_dir};
+pod2usage({ -msg => "$config{module} is not a directory.\n", -exitval => 2 })
+    unless -d $config{module};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
-    unless check_kernel_dir($config{kernel_dir});
+    unless check_kernel_dir($config{kernel});
 
-### KERNEL DIRECTORY: $config{kernel_dir}
-### MODULE DIRECTORY: $config{module_dir}
+### KERNEL DIRECTORY: $config{kernel}
+### MODULE DIRECTORY: $config{module}
 
 my @plugins;
 my %level = (full_graph => 1, reduced_graph => 2, pre_output => 3, post_output => 4);
-if (@{$config{plugins}}) {
+if (@{$config{plugin}}) {
    my $loader  = Module::Loader->new(max_depth => 1);
    my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
-   foreach my $p (@{$config{plugins}}) {
+   foreach my $p (@{$config{plugin}}) {
       if (any {$p eq $_} keys %pmap) {
          ### LOADING PLUGIN: $p
          my $plugin = $pmap{$p};
@@ -270,7 +270,7 @@ sub create_directory
    0
 }
 
-create_directory $config{output_dir};
+create_directory $config{output};
 
 {
    my $c = 0;
@@ -295,7 +295,7 @@ goto CACHED_GRAPH
    if $cache == 2;
 
 ### PARSING SOURCES...
-my %sources = parse_sources($config{kernel_dir}, $config{module_dir}, ["#define SPECIFICATION 1\n"], !$cache);
+my %sources = parse_sources($config{kernel}, $config{module}, ["#define SPECIFICATION 1\n"], !$cache);
 
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $cache, file => $cache_file[1]}});
@@ -340,7 +340,7 @@ sub generate_files ($$)
    my ($graph, $function) = @_;
    my $id = $indx->{$function};
 
-   my $fd = catdir $config{output_dir}, $function;
+   my $fd = catdir $config{output}, $function;
    create_directory $fd;
 
    my $rgraph = get_predecessors_subgraph($graph, $id);
@@ -348,8 +348,8 @@ sub generate_files ($$)
       level => 'reduced_graph',
       graph => $rgraph;
 
-   output_sources_graph($rgraph, $fd, $config{single_file}, $config{remove_fields});
-   print "OUTPUT: " . ($config{single_file} ? catfile($fd, 'module.c') : $fd) . "\n\n";
+   output_sources_graph($rgraph, $fd, $config{single}, $config{'remove-fields'});
+   print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";
 
    {dir => $fd}
 }
@@ -445,7 +445,7 @@ if ($config{editor}) {
    if (which($ENV{EDITOR})) {
       my @exec = ($ENV{EDITOR});
       foreach (@functions) {
-         push @exec, catfile($config{output_dir}, $_, 'module.c')
+         push @exec, catfile($config{output}, $_, 'module.c')
       }
 
       if ($#exec > 0) {
