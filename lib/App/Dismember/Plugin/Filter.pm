@@ -9,7 +9,7 @@ sub process_options
 {
    my ($self, $config) = @_;
    my @filter;
-   my $reduced = 0;
+   my $reduced = @{$config->{functions}} > 1 ? 0 : 1;
 
    GetOptions(
       'plugin-filter-name=s'   => \@filter,
