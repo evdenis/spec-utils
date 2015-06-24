@@ -131,6 +131,11 @@ my @cache_dir  = (catdir($ENV{HOME}, '.cache', 'dismember'), catdir($FindBin::Bi
 my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my %config;
+my $config_file;
+GetOptions(
+   'config=s' => \$config_file,
+) or pod2usage(1);
+
 $config{single_file}       = 0;
 $config{remove_fields}     = 0;
 $config{module_dir}        = $ENV{CURRENT_PROJECT} // '.';
@@ -139,10 +144,10 @@ $config{output_dir}        = catdir $FindBin::Bin, 'result';
 $config{editor}            = 0;
 $config{plugins}           = [];
 
-if (defined (my $conf = find_config())) {
-   ### CONFIG FILE: $conf
-   open(my $conf, '<', $conf);
-   foreach (<$conf>) {
+if ($config_file && -r $config_file || (defined ($config_file = find_config()))) {
+   ### CONFIG FILE: $config_file
+   open(my $conf, '<', $config_file);
+   while (<$conf>) {
       chomp;
       next if m/\A\h*+#?\h*+\Z/;
 
@@ -157,7 +162,7 @@ if (defined (my $conf = find_config())) {
             warn "Unknown configuration option '$1'\n"
          }
       } else {
-         warn "Wrong config format in line '$conf'\n"
+         warn "Wrong config format in line '$.'\n"
       }
    }
    close($conf);
