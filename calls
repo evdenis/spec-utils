@@ -367,6 +367,29 @@ sub check_kernel_function {
    return 0;
 }
 
+my $specs_column = 0;
+my %specs_status;
+if (defined $specs) {
+   if (-r $specs) {
+### READING STATUS FILE: $specs
+      $specs_column = 1;
+
+      my $specs = LoadFile($specs);
+      foreach my $a (keys %{ $specs }) {
+         foreach my $s (keys %{ $specs->{$a} }) {
+            my $st = ($s =~ /\A\w+\Z/) ? uc(substr($s, 0, 1)) : $s;
+            foreach (@{ $specs->{$a}{$s} }) {
+               $specs_status{$_} = $st
+            }
+         }
+      }
+
+   } else {
+      warn "Can't open '$specs' file. Status column omitted.\n";
+   }
+} 
+
+
 ### READING SOURCES...
 my $source;
 unless ($preprocessed) {
@@ -480,34 +503,15 @@ foreach (keys %status) {
    }
 }
 
-my $specs_column = 0;
-
-if (defined $specs) {
-   if (-r $specs) {
-      $specs_column = 1;
-
-      my $specs = LoadFile($specs);
-      my %specs_status;
-      foreach my $a (keys %{ $specs }) {
-         foreach my $s (keys %{ $specs->{$a} }) {
-            my $st = uc(substr($s, 0, 1));
-            foreach (@{ $specs->{$a}{$s} }) {
-               $specs_status{$_} = $st
-            }
-         }
+if (%specs_status) {
+   foreach (keys %status) {
+      if (defined $specs_status{$_}) {
+         $status{$_} =  [@{ $status{$_} }, $specs_status{$_}];
+      } else {
+         $status{$_} =  [@{ $status{$_} }, ''];
       }
-
-      foreach (keys %status) {
-         if (defined $specs_status{$_}) {
-            $status{$_} =  [@{ $status{$_} }, $specs_status{$_}];
-         } else {
-            $status{$_} =  [@{ $status{$_} }, ''];
-         }
-      }
-   } else {
-      warn "Can't open '$specs' file. Status column omitted.\n";
    }
-} 
+}
 
 
 my $column_names = ['Idx', 'Function', 'Calls', 'Module', 'Type', 'Status'];
