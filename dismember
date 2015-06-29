@@ -152,7 +152,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
       next if m/\A\h*+#/;
       next if m/\A\h*+\Z/;
 
-      if (m/\A([\w-]++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))\Z/) {
+      if (m/\A([\w-]++)\h*+=\h*+(.*?)\h*\Z/) {
          if (exists $config{$1}) {
             if (ref $config{$1} eq 'ARRAY') {
                push @{$config{$1}}, $2
