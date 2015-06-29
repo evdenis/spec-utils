@@ -149,7 +149,8 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
    open(my $conf, '<', $config_file);
    while (<$conf>) {
       chomp;
-      next if m/\A\h*+#?\h*+\Z/;
+      next if m/\A\h*+#/;
+      next if m/\A\h*+\Z/;
 
       if (m/\A([\w-]++)\h*+=\h*+(?|"([^"]++)"|'([^']++)'|(\S++))\Z/) {
          if (exists $config{$1}) {
