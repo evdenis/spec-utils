@@ -10,7 +10,7 @@ sub process_options
 {
    my ($self, $config) = @_;
 
-   my $reduced = 1;
+   my $reduced = @{$config->{functions}} > 1 || $config->{all} ? 0 : 1;
 
    GetOptions(
       'plugin-stubspec-reduced!' => \$reduced
