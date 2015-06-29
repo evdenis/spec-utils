@@ -123,7 +123,6 @@ dismember - программа для выборки из общего набо�
 
 
 my @functions;
-my $all_flag = 0;
 
 #cache options
 my $cache = 0;
@@ -136,6 +135,7 @@ GetOptions(
    'config=s' => \$config_file,
 ) or pod2usage(1);
 
+$config{all}                 = 0;
 $config{single}              = 0;
 $config{'remove-fields'}     = 0;
 $config{module}              = $ENV{CURRENT_PROJECT} // '.';
@@ -171,7 +171,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
 my $help = 0;
 
 GetOptions(
-   'all|a!'                =>  \$all_flag,
+   'all|a!'                =>  \$config{all},
    'functions|f=s{1,}'     =>  \@functions,
    'module|m=s'            =>  \$config{module},
    'kernel|k=s'            =>  \$config{kernel},
@@ -192,9 +192,9 @@ pod2usage({-verbose => 2, -exitval => 0})
 $config{kernel} //= autodetect_kernel_directory();
 
 pod2usage({ -msg => "You should provide at least one function name.\n", -exitval => 2 })
-    if !@functions && !$all_flag;
+    if !@functions && !$config{all};
 pod2usage({ -msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2 })
-    if @functions && $all_flag;
+    if @functions && $config{all};
 pod2usage({ -msg => "$config{module} is not a directory.\n", -exitval => 2 })
     unless -d $config{module};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
@@ -359,7 +359,7 @@ sub generate_files ($$)
    my $msg = "GENERATING SUBGRAPH FOR FUNCTION: ";
    my $total = 0;
 
-   unless ($all_flag) {
+   unless ($config{all}) {
       # Arguments check
       @functions = grep {
             if (exists $indx->{$_}) { 1 }
