@@ -140,7 +140,7 @@ $config{single}              = 0;
 $config{'remove-fields'}     = 0;
 $config{module}              = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}              = undef;
-$config{output}              = catdir $FindBin::Bin, 'result';
+$config{output_dir}          = catdir $FindBin::Bin, 'result';
 $config{editor}              = 0;
 $config{plugin}              = [];
 
@@ -270,7 +270,7 @@ sub create_directory
    0
 }
 
-create_directory $config{output};
+create_directory $config{output_dir};
 
 {
    my $c = 0;
@@ -340,7 +340,7 @@ sub generate_files ($$)
    my ($graph, $function) = @_;
    my $id = $indx->{$function};
 
-   my $fd = catdir $config{output}, $function;
+   my $fd = catdir $config{output_dir}, $function;
    create_directory $fd;
 
    my $rgraph = get_predecessors_subgraph($graph, $id);
@@ -348,7 +348,13 @@ sub generate_files ($$)
       level => 'reduced_graph',
       graph => $rgraph;
 
-   output_sources_graph($rgraph, $fd, $config{single}, $config{'remove-fields'});
+   output_sources_graph($rgraph, $fd,
+                                 $config{single},
+                                 $config{'remove-fields'},
+                                 sub {
+                                    call_plugins level => 'pre_output', function => $function, @_
+                                 }
+                        );
    print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";
 
    {dir => $fd}
@@ -445,7 +451,7 @@ if ($config{editor}) {
    if (which($ENV{EDITOR})) {
       my @exec = ($ENV{EDITOR});
       foreach (@functions) {
-         push @exec, catfile($config{output}, $_, 'module.c')
+         push @exec, catfile($config{output_dir}, $_, 'module.c')
       }
 
       if ($#exec > 0) {
@@ -466,4 +472,3 @@ if ($config{editor}) {
       die "Can't find application from EDITOR env variable.\n"
    }
 }
-

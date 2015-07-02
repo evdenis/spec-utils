@@ -386,7 +386,7 @@ sub get_successors_subgraph
 
 sub _write_to_files
 {
-   my ($output_dir, $single_file, $content) = @_;
+   my ($output_dir, $single_file, $content, $call) = @_;
 
    $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r
       foreach keys %out_file;
@@ -395,6 +395,13 @@ sub _write_to_files
       if $output_dir;
 
    if ($single_file) {
+
+      $out_file{module_h} = '';
+      $out_file{kernel_h} = '';
+      $out_file{extern_h} = '';
+
+      $call->(files => \%out_file, output_dir => $output_dir, output => $content);
+
       write_file($out_file{module_c}, join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
                                    $content->{kernel_h},
@@ -405,6 +412,8 @@ sub _write_to_files
                             )
                 );
    } else {
+
+      $call->(files => \%out_file, output_dir => $output_dir, output => $content);
 
       $content->{module_c} =
          qq(#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n#include "$out_file{module_h}"\n\n) .
@@ -447,7 +456,7 @@ my %sp = (
 
 sub output_sources_graph
 {
-   my ($graph, $output_dir, $single_file, $remove_fields) = @_;
+   my ($graph, $output_dir, $single_file, $remove_fields, $call) = @_;
 
    my %out = map { $_ => [] } qw/
       kernel_h
@@ -550,7 +559,8 @@ sub output_sources_graph
    _write_to_files(
       $output_dir,
       $single_file,
-      \%out
+      \%out,
+      $call
    )
 }
 
