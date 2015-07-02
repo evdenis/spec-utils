@@ -21,7 +21,14 @@ use C::Util::Cycle qw(resolve);
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
-our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph);
+our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph %out_file);
+
+our %out_file = (
+   module_c => [],
+   module_h => [],
+   kernel_h => [],
+   extern_h => [],
+);
 
 my %_order  = (0 => sub { @_ }, 1 => sub { ($_[1], $_[0]) });
 my $_orderp = 0;
@@ -270,7 +277,7 @@ sub _form_graph
             if (exists $index->{$tag}) {
                my $from = $index->{$tag};
                my $to = $set->get_from_index($i);
-            
+
                if (ref $from eq HASH) {
                   _create_edges($graph, $from, $to, $label, $tag)
                } else {
@@ -381,16 +388,14 @@ sub _write_to_files
 {
    my ($output_dir, $single_file, $content) = @_;
 
-   my $module_c = 'module.c';
-   my $module_h = 'module.h';
-   my $kernel_h = 'kernel.h';
-   my $extern_h = 'extern.h';
+   $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r
+      foreach keys %out_file;
 
-   $module_c = catfile $output_dir, $module_c
+   $out_file{module_c} = catfile $output_dir, $out_file{module_c}
       if $output_dir;
 
    if ($single_file) {
-      write_file($module_c, join("\n" . '//' . '-' x 78 . "\n\n",
+      write_file($out_file{module_c}, join("\n" . '//' . '-' x 78 . "\n\n",
                                  (
                                    $content->{kernel_h},
                                    $content->{extern_h},
@@ -402,14 +407,14 @@ sub _write_to_files
    } else {
 
       $content->{module_c} =
-         qq(#include "$kernel_h"\n#include "$extern_h"\n#include "$module_h"\n\n) .
+         qq(#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n#include "$out_file{module_h}"\n\n) .
          $content->{module_c};
       $content->{module_h} =
-         qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n#include "$kernel_h"\n#include "$extern_h"\n\n) .
+         qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n\n) .
          $content->{module_h} .
          qq(\n\n#endif // __MODULE_H__);
       $content->{extern_h} =
-         qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n#include "$kernel_h"\n\n) .
+         qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n#include "$out_file{kernel_h}"\n\n) .
          $content->{extern_h} .
          qq(\n\n#endif // __EXTERN_H__);
       $content->{kernel_h} =
@@ -417,17 +422,14 @@ sub _write_to_files
          $content->{kernel_h} .
          qq(\n\n#endif // __KERNEL_H__);
 
-
       if ($output_dir) {
-         $module_h = catfile $output_dir, $module_h;
-         $kernel_h = catfile $output_dir, $kernel_h;
-         $extern_h = catfile $output_dir, $extern_h;
+         $out_file{module_h} = catfile $output_dir, $out_file{module_h};
+         $out_file{kernel_h} = catfile $output_dir, $out_file{kernel_h};
+         $out_file{extern_h} = catfile $output_dir, $out_file{extern_h};
       }
 
-      write_file($module_c, $content->{module_c});
-      write_file($module_h, $content->{module_h});
-      write_file($kernel_h, $content->{kernel_h});
-      write_file($extern_h, $content->{extern_h});
+      write_file($out_file{$_}, $content->{$_})
+         foreach keys %out_file;
    }
 }
 
@@ -675,4 +677,3 @@ digraph g
       kernel_global -> module_function;
    }
 }
-
