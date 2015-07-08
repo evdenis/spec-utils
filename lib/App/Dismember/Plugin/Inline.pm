@@ -24,11 +24,18 @@ sub process_options
    my %inline;
    foreach (@inline) {
       chomp;
-      if (m/\A(begin|end)\^([a-zA-Z_]\w+)\^(.*)\Z/) {
+      if (m/\A(begin|end)\^([a-zA-Z_]\w+|\d)\^(.*)\Z/) {
          my ($pos, $area, $path) = ($1, $2, $3);
-         unless (exists $Kernel::Module::Graph::out_file{$area}) {
+         if ($area =~ m/\A\d\Z/) {
+            if ($area > 0 && $area < @Kernel::Module::Graph::out_order + 1) {
+               $area = $Kernel::Module::Graph::out_order[$area - 1]
+            } else {
+               die "There is no such area $area\n"
+            }
+         } elsif (!exists $Kernel::Module::Graph::out_file{$area}) {
             die "There is no such area $area\n"
          }
+
          unless (-r $path) {
             die "Can't read file $path\n"
          }
