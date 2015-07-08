@@ -38,10 +38,10 @@ sub process_options
          } elsif (!exists $Kernel::Module::Graph::out_file{$area}) {
             die "There is no such area $area\n"
          }
-
          unless (-r $path) {
             die "Can't read file $path\n"
          }
+
          push @{ $include{$area} }, $path
       } else {
          die "Can't parse include id '$_'\n"
