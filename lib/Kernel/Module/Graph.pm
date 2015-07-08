@@ -21,13 +21,20 @@ use C::Util::Cycle qw(resolve);
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
-our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph %out_file);
+our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph %out_file @out_order);
 
 our %out_file = (
-   module_c => [],
-   module_h => [],
-   kernel_h => [],
-   extern_h => [],
+   module_c => undef,
+   module_h => undef,
+   kernel_h => undef,
+   extern_h => undef,
+);
+
+our @out_order = (
+   'kernel_h',
+   'extern_h',
+   'module_h',
+   'module_c',
 );
 
 my %_order  = (0 => sub { @_ }, 1 => sub { ($_[1], $_[0]) });
@@ -402,15 +409,11 @@ sub _write_to_files
 
       $call->(files => \%out_file, output_dir => $output_dir, output => $content);
 
-      write_file($out_file{module_c}, join("\n" . '//' . '-' x 78 . "\n\n",
-                                 (
-                                   $content->{kernel_h},
-                                   $content->{extern_h},
-                                   $content->{module_h},
-                                   $content->{module_c}
-                                 )
-                            )
-                );
+      write_file($out_file{module_c},
+                     join("\n" . '//' . '-' x 78 . "\n\n",
+                        map { $content->{$_} } @out_order
+                     )
+      )
    } else {
 
       $call->(files => \%out_file, output_dir => $output_dir, output => $content);
