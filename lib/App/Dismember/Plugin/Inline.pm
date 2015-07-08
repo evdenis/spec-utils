@@ -24,15 +24,15 @@ sub process_options
    my %inline;
    foreach (@inline) {
       chomp;
-      if (m/\A([a-zA-Z_]\w+)\^(.*)\Z/) {
-         my ($area, $path) = ($1, $2);
+      if (m/\A(begin|end)\^([a-zA-Z_]\w+)\^(.*)\Z/) {
+         my ($pos, $area, $path) = ($1, $2, $3);
          unless (exists $Kernel::Module::Graph::out_file{$area}) {
             die "There is no such area $area\n"
          }
          unless (-r $path) {
             die "Can't read file $path\n"
          }
-         push @{ $inline{$area} }, $path
+         push @{ $inline{$area}{$pos} }, $path
       } else {
          die "Can't parse inline id '$_'\n"
       }
@@ -61,14 +61,21 @@ sub action
       unless exists $opts->{output} && exists $opts->{output_dir};
 
    foreach my $area (keys %{$self->{inline}}) {
-      foreach (@{$self->{inline}{$area}}) {
+      foreach (@{$self->{inline}{$area}{begin}}) {
          my $name = basename $_;
          $opts->{'output'}{$area} = "\n//INLINE $name BEGIN\n\n" .
                                        read_file($_) .
                                     "\n//INLINE $name END\n\n" .
                                     $opts->{'output'}{$area};
       }
-   }
+      foreach (@{$self->{inline}{$area}{end}}) {
+         my $name = basename $_;
+         $opts->{'output'}{$area} = $opts->{'output'}{$area} .
+                                    "\n\n//INLINE $name BEGIN\n\n" .
+                                       read_file($_) .
+                                    "\n//INLINE $name END\n";
+      }
+  }
 
    undef
 }
