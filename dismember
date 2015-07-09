@@ -352,7 +352,7 @@ sub generate_files ($$)
                                  $config{single},
                                  $config{'remove-fields'},
                                  sub {
-                                    call_plugins function => $function, @_
+                                    call_plugins function => $function, graph => $rgraph, @_
                                  }
                         );
    print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";
