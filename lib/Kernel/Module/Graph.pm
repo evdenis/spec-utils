@@ -407,7 +407,15 @@ sub _write_to_files
       $out_file{kernel_h} = '';
       $out_file{extern_h} = '';
 
-      $call->(files => \%out_file, output_dir => $output_dir, output => $content);
+      $call->( level      => 'raw_data',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
+
+      $call->( level      => 'pre_output',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
 
       write_file($out_file{module_c},
                      join("\n" . '//' . '-' x 78 . "\n\n",
@@ -416,7 +424,10 @@ sub _write_to_files
       )
    } else {
 
-      $call->(files => \%out_file, output_dir => $output_dir, output => $content);
+      $call->( level      => 'raw_data',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
 
       $content->{module_c} =
          qq(#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n#include "$out_file{module_h}"\n\n) .
@@ -439,6 +450,11 @@ sub _write_to_files
          $out_file{kernel_h} = catfile $output_dir, $out_file{kernel_h};
          $out_file{extern_h} = catfile $output_dir, $out_file{extern_h};
       }
+
+      $call->( level      => 'pre_output',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
 
       write_file($out_file{$_}, $content->{$_})
          foreach keys %out_file;

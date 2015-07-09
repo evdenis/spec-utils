@@ -205,7 +205,7 @@ pod2usage({ -msg => "You should provide proper kernel directory with --kernel op
 ### MODULE DIRECTORY: $config{module}
 
 my @plugins;
-my %level = (full_graph => 1, reduced_graph => 2, pre_output => 3, post_output => 4);
+my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5);
 if (@{$config{plugin}}) {
    my $loader  = Module::Loader->new(max_depth => 1);
    my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
@@ -352,7 +352,7 @@ sub generate_files ($$)
                                  $config{single},
                                  $config{'remove-fields'},
                                  sub {
-                                    call_plugins level => 'pre_output', function => $function, @_
+                                    call_plugins function => $function, @_
                                  }
                         );
    print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";

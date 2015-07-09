@@ -80,7 +80,7 @@ sub priority
 
 sub level
 {
-   'pre_output'
+   'raw_data'
 }
 
 sub action
