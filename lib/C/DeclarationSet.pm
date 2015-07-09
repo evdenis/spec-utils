@@ -1,5 +1,6 @@
 package C::DeclarationSet;
 use Moose;
+use Hash::Ordered;
 
 use RE::Common qw($varname);
 use C::Util::Transformation qw(:RE);
@@ -21,7 +22,7 @@ sub parse
 {
    my $self = shift;
 
-   my %declarations;
+   my $declarations = Hash::Ordered->new();
 
    my $ret  = qr/(?<ret>[\w\s\*$C::Util::Transformation::special_symbols]+)/;
    my $name = qr/(?<name>$varname)/;
@@ -36,12 +37,12 @@ sub parse
       my $code = $1 . ';';
       $code = normalize($code);
 
-      unless (exists $declarations{$name}) {
-         $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $_[1])
+      unless ($declarations->exists($name)) {
+         $declarations->push($name => C::Declaration->new(name => $name, code => $code, area => $_[1]))
       }
    }
 
-   return $self->new(set => [values %declarations]);
+   return $self->new(set => [$declarations->values]);
 }
 
 
