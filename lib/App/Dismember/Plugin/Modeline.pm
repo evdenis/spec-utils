@@ -24,7 +24,7 @@ sub process_options
 
    $config->{'modeline'} = $modeline;
 
-   bless { modeline => $modeline }, $self
+   bless { modeline => $modeline, single => $config->{single} }, $self
 }
 
 sub level
@@ -40,9 +40,14 @@ sub action
       unless exists $opts->{output};
 
    print "plugin: modeline: adding modeline to files\n";
-   foreach (keys %{$opts->{output}}) {
-      $opts->{output}{$_} = $opts->{output}{$_} .
-                              "\n\n/* $self->{modeline} */";
+   unless ($self->{single}) {
+      foreach (keys %{$opts->{output}}) {
+         $opts->{output}{$_} = $opts->{output}{$_} .
+                                 "\n\n/* $self->{modeline} */";
+      }
+   } else {
+         $opts->{output}{module_c} = $opts->{output}{module_c} .
+                                     "\n\n/* $self->{modeline} */";
    }
 
    undef
