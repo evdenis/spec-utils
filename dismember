@@ -171,6 +171,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
 
 my $help = 0;
 
+my @args_plugins;
 GetOptions(
    'all|a!'                =>  \$config{all},
    'functions|f=s{1,}'     =>  \@functions,
@@ -180,12 +181,13 @@ GetOptions(
    'single|s!'             =>  \$config{single},
    'remove-fields|r!'      =>  \$config{'remove-fields'},
    'editor|e!'             =>  \$config{editor},
-   'plugin=s@'             =>  \$config{plugin},
+   'plugin=s@'             =>  \@args_plugins,
    'help|h'                =>  \$help
 ) or pod2usage(1);
 @functions = split(/,/, join(',', @functions));
 $config{functions} = \@functions;
 $config{plugin} = [ split(/,/, join(',', @{$config{plugin}})) ];
+push @{$config{plugin}}, @args_plugins;
 
 pod2usage({-verbose => 2, -exitval => 0})
     if $help;
