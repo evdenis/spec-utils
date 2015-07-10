@@ -35,7 +35,12 @@ sub parse
       next if (any($name, \@keywords));
 
       my $code = $1 . ';';
-      $code = normalize($code);
+      $code =~ m/\A\s++(${s}++)/;
+      my $spec = '';
+      if ($+[1] > 0) {
+         $spec = substr($code, $-[1], $+[1] - $-[1])
+      }
+      $code = $spec . normalize(substr($code, $+[1]));
 
       unless ($declarations->exists($name)) {
          $declarations->push($name => C::Declaration->new(name => $name, code => $code, area => $_[1]))
