@@ -73,14 +73,9 @@ sub process_options
    bless { inline => \%inline, text => \%text }, $self
 }
 
-sub priority
-{
-   80
-}
-
 sub level
 {
-   'raw_data'
+   raw_data => 80
 }
 
 sub action

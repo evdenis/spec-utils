@@ -19,14 +19,9 @@ sub process_options
    bless { reduced => $reduced }, $self
 }
 
-sub priority
-{
-   99
-}
-
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph'
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 99
 }
 
 my %processed_objects;

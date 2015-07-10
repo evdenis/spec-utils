@@ -34,14 +34,9 @@ sub process_options
    bless { rewrite => \%rewrite, reduced => $reduced }, $self
 }
 
-sub priority
-{
-   10
-}
-
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph'
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 10
 }
 
 sub action

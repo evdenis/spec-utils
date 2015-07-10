@@ -27,14 +27,9 @@ sub process_options
    bless { modeline => $modeline }, $self
 }
 
-sub priority
-{
-   99
-}
-
 sub level
 {
-   'pre_output'
+   pre_output => 99
 }
 
 sub action

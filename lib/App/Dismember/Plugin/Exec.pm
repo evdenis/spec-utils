@@ -28,14 +28,9 @@ sub process_options
    bless { file => $file, wait => $wait }, $self
 }
 
-sub priority
-{
-   99
-}
-
 sub level
 {
-   'post_output'
+   post_output => 99
 }
 
 sub action

@@ -24,14 +24,9 @@ sub process_options
    bless { filter => \@filter, reduced => $reduced }, $self
 }
 
-sub priority
-{
-   0
-}
-
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph'
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 0
 }
 
 sub action

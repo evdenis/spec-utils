@@ -215,7 +215,7 @@ if (@{$config{plugin}}) {
          my $plugin = $pmap{$p};
          $loader->load($plugin);
 
-         foreach (qw/priority level action process_options/) {
+         foreach (qw/level action process_options/) {
             unless (eval { $plugin->can($_) }) {
                die "plugin $p $plugin: doesn't have method '$_'\n"
             }
@@ -224,11 +224,17 @@ if (@{$config{plugin}}) {
          # process_options should be called first
          my $obj = $pmap{$p}->process_options(\%config, \@plugins);
 
-         unless ($obj->priority >= 0 && $obj->priority < 100) {
-            die "plugin $p: only priority levels 0..99 supported\n"
-         }
-         unless (exists $level{$obj->level}) {
-            die "plugin $p: unknown level\n"
+         my %lvl = $obj->level;
+         foreach (keys %lvl) {
+            unless (defined $lvl{$_}) {
+               die "plugin $p: level priority is not specified\n"
+            }
+            unless (exists $level{$_}) {
+               die "plugin $p: unknown level\n"
+            }
+            unless ($lvl{$_} >= 0 && $lvl{$_} < 100) {
+               die "plugin $p: only priority levels 0..99 supported\n"
+            }
          }
 
          push @plugins, $obj;
@@ -238,25 +244,24 @@ if (@{$config{plugin}}) {
    }
 }
 
+my %schedule;
+foreach my $p (@plugins) {
+   my %l = $p->level;
+   foreach (keys %l) {
+      my $pr = $l{$_};
+      if (exists $schedule{$_}{$pr}) {
+         die "Can't use plugin " . (ref $p) . " and " . (ref $schedule{$_}{$pr}) . " combined.\n"
+      }
+      $schedule{$_}{$pr} = $p;
+   }
+}
+foreach my $l (keys %schedule) {
+   $schedule{$l} = [ map {$schedule{$l}{$_}} sort keys %{$schedule{$l}} ]
+}
+
 if (@ARGV) {
    pod2usage({ -msg => "Unknown options: @ARGV\n", -exitval => 2 })
 }
-
-sub plugins_sort
-{
-   my $l = $level{$b->level} <=> $level{$a->level};
-   unless ($l) {
-      my $p = $a->priority <=> $b->priority;
-      die "Can't use plugin " . (ref $a) . " and " . (ref $b) . " combined.\n"
-         unless $p;
-      $p
-   } else {
-      $l
-   }
-}
-
-@plugins = sort plugins_sort @plugins;
-
 
 sub create_directory
 {
@@ -318,13 +323,15 @@ sub call_plugins
    my %opts = (@_, config => \%config);
    my $res = 0;
 
-   foreach my $plugin (grep {$_->level eq $opts{level}} @plugins) {
-      try {
-         $plugin->action(\%opts)
-      } catch {
-         when (/^FAIL:/) { die $_ };
-         default { $res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n" }
-      };
+   if (exists $schedule{$opts{level}}) {
+      foreach my $plugin (@{$schedule{$opts{level}}}) {
+         try {
+            $plugin->action(\%opts)
+         } catch {
+            when (/^FAIL:/) { die $_ };
+            default { $res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n" }
+         };
+      }
    }
 
    $res

@@ -53,14 +53,9 @@ sub process_options
    bless { include => \%include, base_dir => $config->{output_dir}, link => $link }, $self
 }
 
-sub priority
-{
-   90
-}
-
 sub level
 {
-   'raw_data'
+   raw_data => 90
 }
 
 sub action
