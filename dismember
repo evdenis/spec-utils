@@ -260,7 +260,7 @@ foreach my $l (keys %schedule) {
 }
 
 if (@ARGV) {
-   pod2usage({ -msg => "Unknown options: @ARGV\n", -exitval => 2 })
+   pod2usage({ -msg => "Unknown options: " . join("\n", @ARGV) . "\n", -exitval => 2 })
 }
 
 sub create_directory
