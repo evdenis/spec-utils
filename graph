@@ -242,7 +242,7 @@ die("Can't read config file.\n")
 
 run(\%opts); # Can die.
 
-say;
+say '';
 say "File $opts{out}.dot contains graph in dot format.";
 say "File $opts{out}.$opts{format} contains graph in $opts{format} format.";
 
