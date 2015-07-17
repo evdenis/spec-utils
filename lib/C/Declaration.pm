@@ -54,7 +54,7 @@ sub add_spec
 sub to_string
 {
    my $code = $_[0]->code;
-   $code = 'extern ' . $code if $code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
+   $code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
 
    $code
 }
