@@ -5,7 +5,8 @@ use Plack::Request;
 use Plack::Builder;
 use YAML::XS qw/LoadFile/;
 
-use File::Spec::Functions qw/catdir/;
+use File::Spec::Functions qw/catdir catfile/;
+use FindBin;
 use lib::abs catdir('..', 'lib');
 
 use Plack::Util;
@@ -36,7 +37,7 @@ sub read_config
    close $fh;
 }
 
-read_config '.config';
+read_config catfile $FindBin::Bin, '.config';
 $config{conf} = LoadFile($config{graph_config_file});
 delete $config{graph_config_file};
 
@@ -143,7 +144,7 @@ my $image = sub {
       ],
       $fh,
    ];
- 
+
 };
 
 my $page = sub {
@@ -292,9 +293,8 @@ HTML
 
 my $main_app = builder {
    mount '/graph/image' => builder { $image };
-   mount '/graph' => builder { $page };
-   mount '/map'   => builder { $page };
+   mount '/graph'       => builder { $page };
+   mount '/map'         => builder { $page };
    mount '/favicon.ico' => builder { \&return_404 };
-   mount '/'      => builder { \&return_404 };
+   mount '/'            => builder { \&return_404 };
 };
-
