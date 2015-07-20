@@ -48,6 +48,7 @@ $config{keep_dot}  = 0;
 
 $config{out}        .= $$;
 $config{cache_file} .= $$;
+my $cache_default = $config{cache};
 
 
 sub return_403
@@ -65,6 +66,7 @@ sub return_404
 sub generate_image
 {
    try {
+      $config{cache} = $cache_default;
       run(\%config)
    } catch {
       return -1
