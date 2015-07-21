@@ -24,9 +24,10 @@ OUT=$(frama-c -jessie -jessie-target why3prove -jessie-why3-opt "\ -a split_goal
 
 ERR=$?
 
-echo $OUT | grep -qPie '\b(timeout|invalid)\b'
+OUT=$(echo "$OUT" | grep -Fe $FUNC)
+echo "$OUT" | grep -qPie '\b(timeout|invalid)\b'
 ERR_INVALID=$?
-echo $OUT | grep -qPie '\bvalid\b'
+echo "$OUT" | grep -qPie '\bvalid\b'
 ERR_VALID=$?
 
 if [[ $ERR -eq 0 && $ERR_INVALID -eq 0 ]]
