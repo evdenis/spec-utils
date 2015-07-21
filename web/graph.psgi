@@ -63,14 +63,25 @@ sub return_404
    return [404, ['Content-Type' => 'text/plain', 'Content-Length' => 9], ['not found']];
 }
 
+sub return_500
+{
+   my $self = shift;
+   return [500, ['Content-Type' => 'text/plain', 'Content-Length' => 37], ["Internal error. Can't generate image."]];
+}
+
 sub generate_image
 {
+   my $fail = 0;
    try {
       $config{cache} = $cache_default;
       run(\%config)
    } catch {
-      return -1
+      $fail = 1;
    };
+
+   if ($fail) {
+      return -1
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -124,7 +135,7 @@ my $image = sub {
       $config{functions} = [ split(/,/, $req->param('func')) ]
    }
 
-   return return_403
+   return return_500
       if generate_image('image');
 
    my $file = $config{out} . '.' . $config{format};
@@ -132,7 +143,7 @@ my $image = sub {
    $config{functions} = $original{functions};
 
    open my $fh, "<:raw", $file
-      or return return_403;
+      or return return_500;
 
    my @stat = stat $file;
    my $mime = Plack::MIME->mime_type($file);
@@ -268,7 +279,7 @@ HTML
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
 
-      return return_403
+      return return_500
          if generate_image('page');
 
       my $svg = read_file($filename);
