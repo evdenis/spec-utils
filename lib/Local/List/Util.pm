@@ -15,6 +15,8 @@ sub uniq
    my %uniq;
    if ($#_ == 0) {
       $_[0] = [ grep { !$uniq{$_}++ } @{$_[0]} ]
+         if ref $_[0] eq 'ARRAY';
+      $_[0]
    } else {
       grep { !$uniq{$_}++ } @_
    }
