@@ -76,7 +76,7 @@ sub generate_image
    if (my (@cf) = $cmonitor->changed) {
       try {
          $config{conf} = LoadFile($cf[0]);
-         print "Loadin updated configuration\n";
+         warn "Loading updated configuration\n";
       } catch {
          warn "Can't load updated configuration\n"
       };
