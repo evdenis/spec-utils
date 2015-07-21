@@ -135,14 +135,15 @@ my $image = sub {
       or return return_403;
 
    my @stat = stat $file;
+   my $mime = Plack::MIME->mime_type($file);
    Plack::Util::set_io_path($fh, Cwd::realpath($file));
 
    return [
       200,
       [
-         'Content-Type' => Plack::MIME->mime_type($file),
+         'Content-Type'   => $mime,
          'Content-Length' => $stat[7],
-         'Last-Modified' => HTTP::Date::time2str( $stat[9] )
+         'Last-Modified'  => HTTP::Date::time2str( $stat[9] )
       ],
       $fh,
    ];
