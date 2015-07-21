@@ -272,6 +272,7 @@ HTML
          if generate_image('page');
 
       my $svg = read_file($filename);
+      unlink $filename;
       $html_svg =~ s/###INLINE###/$svg/;
       $html = $html_svg;
    } else {
