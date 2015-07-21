@@ -1,6 +1,7 @@
 requires 'Algorithm::Diff';
 requires 'Class::CSV';
 requires 'Data::Alias';
+requires 'File::Modified';
 requires 'File::Slurp';
 requires 'File::Which';
 requires 'Graph';

@@ -14,6 +14,7 @@ use Plack::MIME;
 use HTTP::Date;
 use File::Slurp qw/read_file write_file/;
 use Try::Tiny;
+use File::Modified;
 
 use App::Graph;
 
@@ -39,6 +40,7 @@ sub read_config
 
 read_config catfile $FindBin::Bin, '.config';
 $config{conf} = LoadFile($config{graph_config_file});
+my $cmonitor = File::Modified->new(files => [$config{graph_config_file}]);
 delete $config{graph_config_file};
 
 $config{functions} = [];
@@ -71,6 +73,15 @@ sub return_500
 
 sub generate_image
 {
+   if (my (@cf) = $cmonitor->changed) {
+      try {
+         $config{conf} = LoadFile($cf[0]);
+         print "Loadin updated configuration\n";
+      } catch {
+         warn "Can't load updated configuration\n"
+      };
+   }
+
    my $fail = 0;
    try {
       $config{cache} = $cache_default;
