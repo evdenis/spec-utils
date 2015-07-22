@@ -1,0 +1,10 @@
+/var/log/starman/*log {
+    missingok
+    notifempty
+    weekly
+    rotate 5
+
+    copytruncate
+    compress
+    delaycompress
+}
