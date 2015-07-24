@@ -225,7 +225,7 @@ if ($view || $keep_output) {
 say "Image: $output" if $keep_output;
 
 unless ($keep_dot) {
-   unlink $fname
+   unlink $fname_dot
 } else {
    say "Dot file: $fname_dot"
 }
