@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+use FindBin;
+use File::Slurp qw/read_file/;
+use Data::Printer;
+
+my @deps;
+foreach (read_file "$FindBin::Bin/../cpanfile") {
+   if (m/'([^']+)'/) {
+      push @deps, 'perl-' . ($1 =~ s/::/-/gr)
+   } else {
+      die "Parse fail\n";
+   }
+}
+
+p @deps;
+
+exec(dnf => list => @deps);
+
