@@ -15,6 +15,7 @@ requires 'Module::Loader';
 requires 'Moose';
 requires 'Moose::Role';
 requires 'Moose::Util::TypeConstraints';
+requires 'Pod::Find';
 requires 'Term::ProgressBar';
 requires 'Text::ANSITable';
 requires 'Try::Tiny';
