@@ -55,7 +55,7 @@ sub action
       # check already processed
       unless (exists $processed_objects{$_}) {
          $o->clean_comments();
-         $o->add_spec('ensures \false;');
+         $o->add_spec('terminates \true;');
          $processed_objects{$_} = undef;
       }
    }
