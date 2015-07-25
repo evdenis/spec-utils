@@ -117,6 +117,10 @@ dismember - программа для выборки из общего набо�
 
 Запустить редактор по окончании работы программы. Открываются файлы module.c для всех функций опции --functions. Используется редактор из переменной окружения EDITOR.
 
+=item B<--list-plugins>
+
+Вывести доступные плагины и завершить программу.
+
 =item B<-h|--help>
 
 Выводит полное описание программы.
@@ -178,7 +182,7 @@ if ($config_file && -r $config_file || (defined ($config_file = find_config())))
 }
 
 my $help = 0;
-
+my $list_plugins = 0;
 my @args_plugins;
 GetOptions(
    'all|a!'                =>  \$config{all},
@@ -190,6 +194,7 @@ GetOptions(
    'remove-fields|r!'      =>  \$config{'remove-fields'},
    'editor|e!'             =>  \$config{editor},
    'plugin=s@'             =>  \@args_plugins,
+   'list-plugins'          =>  \$list_plugins,
    'help|h'                =>  \$help
 ) or pod2usage(1);
 @functions = split(/,/, join(',', @functions));
@@ -199,6 +204,14 @@ push @{$config{plugin}}, @args_plugins;
 
 pod2usage({-verbose => 2, -exitval => 0})
     if $help;
+
+if ($list_plugins) {
+   my @plugins =  map {lc(substr($_, rindex($_, ':') + 1))}
+                  Module::Loader->new(max_depth => 1)
+                               ->search('App::Dismember::Plugin');
+   print join("\n", @plugins) . "\n";
+   exit 0;
+}
 
 $config{kernel} //= autodetect_kernel_directory();
 
