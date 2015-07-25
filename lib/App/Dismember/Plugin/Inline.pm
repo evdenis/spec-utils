@@ -3,24 +3,65 @@ package App::Dismember::Plugin::Inline;
 use warnings;
 use strict;
 
+use Pod::Usage;
+use Pod::Find qw(pod_where);
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 use Kernel::Module::Graph;
 use File::Slurp qw(read_file);
 use File::Basename;
 use Cwd qw(abs_path);
 
+=encoding utf8
+
+=pod
+
+=head1 Plugin::Inline
+
+Plugin::Inline - плагин для включения указанных данных в выводимые файлы
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--plugin-inline-file string>
+
+В string содержится указание на то, в какой файл и какую его часть добавлять данные и путь до файла с данными. string имеет формат 'area^file^path', где area - begin или end, file - это kernel_h(1), external_h(2), module_h(3), module_c(4), а path - это путь до файла с включаемым содержимым.
+
+=item B<--plugin-inline-text string>
+
+В string содержится указание на то, в какой файл и какую его часть добавлять данные и сами данные. string имеет формат 'area^file^text', где area - begin или end, file - это kernel_h(1), external_h(2), module_h(3), module_c(4), а text - это данные для включения.
+
+=item B<--plugin-inline-help>
+
+Выводит полное описание плагина.
+
+=back
+
+=cut
+
+
 sub process_options
 {
    my ($self, $config) = @_;
    my @inline;
+   my $help = 0;
    my @text;
 
    GetOptions(
       'plugin-inline-file=s' => \@inline,
       'plugin-inline-text=s' => \@text,
+      'plugin-inline-help'   => \$help,
    ) or die("Error in command line arguments\n");
 
-   die "Option --plugin-inline-file or --plugin-inline-text should be provided.\n"
+   my $input = pod_where({-inc => 1}, __PACKAGE__);
+   pod2usage({ -input   => $input,
+               -verbose => 2,
+               -exitval => 0 })
+       if $help;
+
+   pod2usage({ -input => $input,
+               -msg => "Option --plugin-inline-file or --plugin-inline-text should be provided.\n",
+               -exitval => 1 })
       unless @inline || @text;
 
    my %inline;
