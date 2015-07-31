@@ -101,6 +101,10 @@ dismember - программа для выборки из общего набо�
 
 Результирующий редуцированный набор исходных кодов размещается в нескольких файлах. Флаг --single убирает это разделение по файлам и выводит всё в один файл module.c
 
+=item B<--merge>
+
+По умолчанию для каждой функции создаётся отдельный файл с её зависимостями. Эта опция переключает подобное поведение, и теперь для всех функций, указанных в аргументе --functions, создаётся единый файл.
+
 =item B<-r|--remove-fields>
 
 Убрать неиспользуемые константы из определений enum. Значения остальных изменяются так, чтобы соответствовать оригинальному определению.
@@ -149,6 +153,7 @@ GetOptions(
 
 $config{all}                 = 0;
 $config{single}              = 0;
+$config{merge}               = 0;
 $config{'remove-fields'}     = 0;
 $config{module}              = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}              = undef;
@@ -191,6 +196,7 @@ GetOptions(
    'kernel|k=s'            =>  \$config{kernel},
    'cache|c:2'             =>  \$cache,
    'single|s!'             =>  \$config{single},
+   'merge!'                =>  \$config{merge},
    'remove-fields|r!'      =>  \$config{'remove-fields'},
    'editor|e!'             =>  \$config{editor},
    'plugin=s@'             =>  \@args_plugins,
@@ -366,15 +372,15 @@ call_plugins level => 'full_graph', graph => $g;
 
 my $indx = $g->get_graph_attribute('index');
 
-sub generate_files ($$)
+sub generate_files
 {
-   my ($graph, $function) = @_;
-   my $id = $indx->{$function};
+   my ($graph, @functions) = @_;
+   my @ids = map { $indx->{$_} } @functions;
 
-   my $fd = catdir $config{output_dir}, $function;
+   my $fd = catdir $config{output_dir}, @functions == 1 ? $functions[0] : 'merged_' . $functions[0];
    create_directory $fd;
 
-   my $rgraph = get_predecessors_subgraph($graph, $id);
+   my $rgraph = get_predecessors_subgraph($graph, @ids);
    call_plugins
       level => 'reduced_graph',
       graph => $rgraph;
@@ -383,7 +389,7 @@ sub generate_files ($$)
                                  $config{single},
                                  $config{'remove-fields'},
                                  sub {
-                                    call_plugins function => $function, graph => $rgraph, @_
+                                    call_plugins function => \@functions, graph => $rgraph, @_
                                  }
                         );
    print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";
@@ -406,74 +412,87 @@ sub generate_files ($$)
       $total = @functions;
       my $reserved_colons = length($msg) + length($total) + 3;
 
-      foreach (@functions) {
-         my $spaces = $col - $reserved_colons - length($_) - length($i);
-         print $msg . $_ . ' ' x $spaces . "[" . $i++ . "/$total]\n";
-         my $output = generate_files $g, $_;
-         call_plugins level => 'post_output', %$output;
+      unless ($config{merge}) {
+         foreach (@functions) {
+            my $spaces = $col - $reserved_colons - length($_) - length($i);
+            print $msg . $_ . ' ' x $spaces . "[" . $i++ . "/$total]\n";
+            my $output = generate_files $g, $_;
+            call_plugins level => 'post_output', %$output;
+         }
+      } else {
+            my $spaces = $col - $reserved_colons - length('merged') - 1;
+            print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
+            my $output = generate_files $g, @functions;
+            call_plugins level => 'post_output', %$output;
       }
    } else {
       $total = keys %$indx;
       my $reserved_colons = length($msg) + length($total) + 3;
+      if ($config{merge}) {
+            my $spaces = $col - $reserved_colons - length('merged') - 1;
+            print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
+            my $output = generate_files $g, keys %$indx;
+            call_plugins level => 'post_output', %$output;
+      } else {
+         my @edges;
+         my %rindx = reverse %$indx;
+         my $subgraph = Graph::Directed->new(
+                           edges    => [ map {
+                                                grep {
+                                                   exists $rindx{$_->[1]}
+                                                } $g->edges_from($_)
+                                         } values %$indx ],
+                           vertices => [ values %$indx ]
+                        );
+         my %vertices = map { ($_ => 0) } $subgraph->vertices;
 
-      my @edges;
-      my %rindx = reverse %$indx;
-      my $subgraph = Graph::Directed->new(
-                        edges    => [ map {
-                                             grep {
-                                                exists $rindx{$_->[1]}
-                                             } $g->edges_from($_)
-                                      } values %$indx ],
-                        vertices => [ values %$indx ]
-                     );
-      my %vertices = map { ($_ => 0) } $subgraph->vertices;
-
-      while ($subgraph->has_a_cycle) {
-         my @cycle = $subgraph->find_a_cycle();
-         if (@cycle == 1) {
-            $subgraph->delete_edge(@cycle[0,0])
-         } else {
-            $subgraph->delete_edge(@cycle[0,1])
-         }
-      }
-
-      my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
-      my @all_failed;
-      while (%vertices) {
-         my @zv;
-
-         foreach(keys %vertices) {
-            push @zv, $_ if 0 == $vd{$_};
-         }
-
-         unless (@zv) {
-            warn "There is no possibility to continue. All available functions was generated.\n";
-            warn "Plugins execution fail:\n\t" . join("\n\t", map {$rindx{$_}} @all_failed) . "\n";
-            print "\n\n";
-            warn "Failed to generate:\n\t" . join("\n\t", map {$rindx{$_}} keys %vertices) . "\n";
-            last;
-         }
-
-         my @fail;
-         foreach (sort @zv) {
-            my $function = $rindx{$_};
-            my $spaces = $col - $reserved_colons - length($function) - length($i);
-            print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
-            my $output = generate_files $g, $function;
-            if (call_plugins(level => 'post_output', %$output)) {
-               push @fail, $_
+         while ($subgraph->has_a_cycle) {
+            my @cycle = $subgraph->find_a_cycle();
+            if (@cycle == 1) {
+               $subgraph->delete_edge(@cycle[0,0])
+            } else {
+               $subgraph->delete_edge(@cycle[0,1])
             }
          }
-         push @all_failed, @fail;
 
-         foreach (@fail, $subgraph->all_successors(@fail)) {
-            $vd{$_} = -1;
+         my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
+         my @all_failed;
+         while (%vertices) {
+            my @zv;
+
+            foreach(keys %vertices) {
+               push @zv, $_ if 0 == $vd{$_};
+            }
+
+            unless (@zv) {
+               warn "There is no possibility to continue. All available functions was generated.\n";
+               warn "Plugins execution fail:\n\t" . join("\n\t", map {$rindx{$_}} @all_failed) . "\n";
+               print "\n\n";
+               warn "Failed to generate:\n\t" . join("\n\t", map {$rindx{$_}} keys %vertices) . "\n";
+               last;
+            }
+
+            my @fail;
+            foreach (sort @zv) {
+               my $function = $rindx{$_};
+               my $spaces = $col - $reserved_colons - length($function) - length($i);
+               print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
+               my $output = generate_files $g, $function;
+               if (call_plugins(level => 'post_output', %$output)) {
+                  push @fail, $_
+               }
+            }
+            push @all_failed, @fail;
+
+            foreach (@fail, $subgraph->all_successors(@fail)) {
+               $vd{$_} = -1;
+            }
+
+            # @zv / @fail
+            @zv = difference \@zv, \@fail;
+            --$vd{$_->[1]} foreach $subgraph->edges_from(@zv);
+            delete @vertices{@zv};
          }
-
-         # @zv / @fail
-         @zv = difference \@zv, \@fail;
-         --$vd{$_->[1]} foreach $subgraph->edges_from(@zv);
-         delete @vertices{@zv};
       }
    }
 }
