@@ -570,7 +570,6 @@ sub output_sources_graph
                unless (exists $ids{$_->id}) {
                   $_ = $_->to_string($c, 0, $full)
                } else {
-                  print $_->name . " FULL\n";
                   $_ = $_->to_string($c, 0, 1)
                }
             }

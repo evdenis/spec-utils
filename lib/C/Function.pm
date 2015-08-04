@@ -94,7 +94,6 @@ sub to_string
    my $comments = $_[1];
    #my $remove_fields = $_[2];
    my $full     = $_[3];
-   print $_[0]->name . " $full\n";
 
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
