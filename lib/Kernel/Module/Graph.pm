@@ -475,7 +475,7 @@ my %sp = (
 
 sub output_sources_graph
 {
-   my ($graph, $output_dir, $single_file, $remove_fields, $call) = @_;
+   my ($graph, $ids, $output_dir, $single_file, $remove_fields, $full, $call) = @_;
 
    my %out = map { $_ => [] } qw/
       kernel_h
@@ -561,9 +561,19 @@ sub output_sources_graph
    {
       my $c = $graph->get_graph_attribute('comments');
 
+      my %ids = map {$_ => undef} @$ids;
       foreach (keys %out) {
          foreach (@{ $out{$_} }) {
-            $_ = $_->to_string($c, $_->area eq 'kernel' ? $remove_fields : 0)
+            if ($_->area eq 'kernel') {
+               $_ = $_->to_string($c, $remove_fields, 0)
+            } else {
+               unless (exists $ids{$_->id}) {
+                  $_ = $_->to_string($c, 0, $full)
+               } else {
+                  print $_->name . " FULL\n";
+                  $_ = $_->to_string($c, 0, 1)
+               }
+            }
          }
       }
 

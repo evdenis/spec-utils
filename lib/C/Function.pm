@@ -89,9 +89,12 @@ sub add_spec
 
 sub to_string
 {
-   my $str = '';
+   my $str      = '';
+   my $code     = $_[0]->code;
    my $comments = $_[1];
-   my $code = $_[0]->code;
+   #my $remove_fields = $_[2];
+   my $full     = $_[3];
+   print $_[0]->name . " $full\n";
 
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
@@ -105,14 +108,21 @@ sub to_string
          goto FW_DECL
       }
    }
-   $code =~ s/^${s}++//;
-
+   # remove all comments since there is no specification binded to function
+   # note that specification in function will be removed since they have no
+   # meaning
+   $code =~ s/^${s}++//; 
 
 FW_DECL:
 
-   my $fw_decl = $_[0]->forward_declaration;
-   if (@$fw_decl) {
-      $str = join("\n", @$fw_decl) . "\n\n";
+   unless ($full) {
+      $prior = index($code, '{'); # we need to recalculate it
+      $code = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
+   } else {
+      my $fw_decl = $_[0]->forward_declaration;
+      if (@$fw_decl) {
+         $str = join("\n", @$fw_decl) . "\n\n";
+      }
    }
 
    $str .= $code;
