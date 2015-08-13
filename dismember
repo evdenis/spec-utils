@@ -421,6 +421,7 @@ sub generate_files
             if (exists $indx->{$_}) { 1 }
             else { warn "Function $_ doesn't exist in module.\n"; 0 }
          } @functions;
+      die "There is no valid functions.\n" unless @functions;
       $total = @functions;
       my $reserved_colons = length($msg) + length($total) + 3;
 
