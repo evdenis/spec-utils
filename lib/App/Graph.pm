@@ -56,6 +56,7 @@ sub run
       view         => { default => 0 },
       priority     => { default => 1 },
       reverse      => { default => 0 },
+      level        => { default => undef },
       out          => { default => 'graph' },
       format       => { default => 'svg' },
       open_with    => { default => 'xdg-open' },
@@ -63,6 +64,16 @@ sub run
 
    check($tmpl, $opts, 1)
       or croak "Arguments could not be parsed.\n";
+
+   if (defined $opts->{level}) {
+      my $level = $opts->{level};
+      my $max = @{$opts->{conf}{priority}{lists}};
+      if ($level <= 0 || $level > $max) {
+         warn "Level option is out of bounds. Ignoring.\n";
+         $opts->{level} = undef;
+      }
+      $opts->{functions} = $opts->{conf}{priority}{lists}[$opts->{level} - 1];
+   }
 
    #Initializing the library
    Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
@@ -96,7 +107,6 @@ CACHE: if ($opts->{cache}) {
    } else {
       store($graph, $opts->{cache_file})
    }
-
 
    #1
    $graph->set_vertex_attribute($_, shape => 'octagon')
