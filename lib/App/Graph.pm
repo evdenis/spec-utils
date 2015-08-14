@@ -17,7 +17,7 @@ use Storable;
 use Local::List::Util qw(uniq difference any);
 use C::Util::Transformation;
 use Kernel::Module qw(preprocess_module_sources_nocomments);
-use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph);
+use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
 
 use C::FunctionSet;
 use Carp;
@@ -55,6 +55,7 @@ sub run
       async        => { default => 0 },
       view         => { default => 0 },
       priority     => { default => 1 },
+      reverse      => { default => 0 },
       out          => { default => 'graph' },
       format       => { default => 'svg' },
       open_with    => { default => 'xdg-open' },
@@ -256,7 +257,11 @@ CACHE: if ($opts->{cache}) {
       }
 
       if (@e) {
-         $graph = get_successors_subgraph($graph, @e);
+         unless ($opts->{reverse}) {
+            $graph = get_successors_subgraph($graph, @e);
+         } else {
+            $graph = get_predecessors_subgraph($graph, @e);
+         }
 
          say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
             if $opts->{stat};
