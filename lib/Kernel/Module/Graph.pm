@@ -149,6 +149,9 @@ RECHECK:
                         warn("$tn '" . $n->name . "' redefinition\n");
                         $index{$_}{$tn} = $n if ($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module')
                      }
+                  } elsif ($tn eq 'C::Acslcomment') {
+                     $index{$_}{$tn} = [ $index{$_}{$tn} ];
+                     push @{$index{$_}{$tn}}, $n
                   } else {
                      die("Internal error: $tn duplicate. ID: $_")
                   }
@@ -186,10 +189,11 @@ sub _allow
 
 
 my %__sort_priority = (
-   'C::Macro'     => 1,
-   'C::Structure' => 2,
-   'C::Enum'      => 3,
-   'C::Typedef'   => 4,
+   'C::Macro'       => 1,
+   'C::Structure'   => 2,
+   'C::Enum'        => 3,
+   'C::Typedef'     => 4,
+   'C::Acslcomment' => 5,
 );
 sub __sort_cmp
 {
@@ -216,8 +220,15 @@ sub _create_edges
       return if @keys == 0;
 
       foreach (@keys) {
-         push @possible, $index->{$_}
-            if $dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))
+         if (ref $index->{$_} eq ARRAY) {
+            if ($dg->has_edge(__to_vertex($index->{$_}[0]), __to_vertex($to))) {
+               push @possible, @{$index->{$_}}
+            }
+         } else {
+            if ($dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))) {
+               push @possible, $index->{$_}
+            }
+         }
       }
       return
          unless @possible;
@@ -358,6 +369,32 @@ sub build_sources_graph
                _dependencies_graph_iterator_module($sources)
             );
 
+   # ACSL handling
+   my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
+   foreach (@{ $sources->{module}{function}->set }) {
+      foreach my $id (@{ $_->spec_ids }) {
+         if (exists $spec_index{$id}) {
+            $spec_index{$id}->function_spec($_->id);
+            $graph->add_edge($spec_index{$id}->id, $_->id);
+         }
+      }
+   }
+
+   # functions dependence by specs
+   foreach ($graph->edges) {
+      my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
+      my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
+
+      if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
+         if ($v1->function_spec && $v2->function_spec) {
+            print $v1->name . " " . $v2->name;
+            $graph->delete_edge($_);
+            $graph->add_edge($v1->function_spec, $v2->function_spec);
+         }
+      }
+   }
+
+
    $graph
 }
 
@@ -470,7 +507,8 @@ my %sp = (
              'C::Macro'       => 1,
              'C::Global'      => 5,
              'C::Declaration' => 6,
-             'C::Function'    => 7
+             'C::Acslcomment' => 7,
+             'C::Function'    => 8
          );
 
 sub output_sources_graph
@@ -645,6 +683,7 @@ digraph g
       module_typedef;
       module_enum;
       module_global;
+      module_acslcomment;
 
       module_macro -> module_macro;
       module_macro -> module_structure;
@@ -652,6 +691,7 @@ digraph g
       module_macro -> module_typedef;
       module_macro -> module_enum;
       module_macro -> module_global;
+      module_macro -> module_acslcomment;
       //
       kernel_macro -> module_macro;
       kernel_macro -> module_structure;
@@ -659,6 +699,7 @@ digraph g
       kernel_macro -> module_typedef;
       kernel_macro -> module_enum;
       kernel_macro -> module_global;
+      kernel_macro -> module_acslcomment;
 
       module_structure -> module_macro;
       module_structure -> module_structure;
@@ -666,6 +707,7 @@ digraph g
       module_structure -> module_typedef;
       module_structure -> module_enum; //sizeof
       module_structure -> module_global;
+      module_structure -> module_acslcomment;
       //
       kernel_structure -> module_macro;
       kernel_structure -> module_structure;
@@ -673,6 +715,7 @@ digraph g
       kernel_structure -> module_typedef;
       kernel_structure -> module_enum; //sizeof
       kernel_structure -> module_global;
+      kernel_structure -> module_acslcomment;
 
       module_function -> module_macro;
       module_function -> module_function;
@@ -686,6 +729,7 @@ digraph g
       module_typedef -> module_typedef;
       module_typedef -> module_enum;
       module_typedef -> module_global;
+      module_typedef -> module_acslcomment;
       //
       kernel_typedef -> module_macro;
       kernel_typedef -> module_structure;
@@ -693,6 +737,7 @@ digraph g
       kernel_typedef -> module_typedef;
       kernel_typedef -> module_enum;
       kernel_typedef -> module_global;
+      kernel_typedef -> module_acslcomment;
 
       module_enum -> module_macro;
       module_enum -> module_structure;
@@ -700,6 +745,7 @@ digraph g
       module_enum -> module_typedef;
       module_enum -> module_enum;
       module_enum -> module_global;
+      module_enum -> module_acslcomment;
       //
       kernel_enum -> module_macro;
       kernel_enum -> module_structure;
@@ -707,11 +753,16 @@ digraph g
       kernel_enum -> module_typedef;
       kernel_enum -> module_enum;
       kernel_enum -> module_global;
+      kernel_enum -> module_acslcomment;
 
       module_global -> module_macro;
       module_global -> module_function;
+      module_global -> module_acslcomment;
       //
       kernel_global -> module_macro;
       kernel_global -> module_function;
+      kernel_global -> module_acslcomment;
+
+      module_acslcomment -> module_acslcomment;
    }
 }

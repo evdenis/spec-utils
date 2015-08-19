@@ -32,6 +32,7 @@ use C::EnumSet;
 use C::FunctionSet;
 use C::DeclarationSet;
 use C::GlobalSet;
+use C::AcslcommentSet;
 
 
 our @EXPORT = qw(parse_sources);
@@ -238,6 +239,9 @@ sub _parse_module_part
 
    $module{macro} = \@module_macro
       if @module_macro;
+
+   $module{acslcomment} = \@comments
+      if @comments;
 
    __generic_parse(\%module, 'module');
 

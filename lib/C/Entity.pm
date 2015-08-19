@@ -19,7 +19,9 @@ has 'id' => (
    init_arg => undef
 );
 
-our $_NEXT_ID = 0;
+# zero is a special value
+# id should be always true
+our $_NEXT_ID = 1;
 
 sub _compose_id
 {

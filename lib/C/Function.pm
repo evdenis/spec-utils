@@ -26,12 +26,24 @@ has 'forward_declaration' => (
    }
 );
 
+has 'spec_ids' => (
+   isa => 'ArrayRef[Int]',
+   is => 'ro',
+   lazy => 1,
+   init_arg => undef,
+   builder => '_build_specs'
+);
+
 has [qw/ret args body/] => (
    is => 'ro',
    isa => 'Str',
    required => 1
 );
 
+sub _build_specs
+{
+   [ $_[0]->code =~ m/$comment_t{pattern}/g ]
+}
 
 sub get_code_tags
 {
@@ -84,7 +96,6 @@ sub add_spec
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
    undef
-
 }
 
 sub to_string
@@ -110,7 +121,7 @@ sub to_string
    # remove all comments since there is no specification binded to function
    # note that specification in function will be removed since they have no
    # meaning
-   $code =~ s/^${s}++//; 
+   $code =~ s/^${s}++//;
 
 FW_DECL:
 

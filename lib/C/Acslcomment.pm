@@ -1,46 +1,67 @@
-package ACSL::Entity;
+package C::Acslcomment;
 use Moose;
 
 use Moose::Util::TypeConstraints;
 use Local::List::Util qw(difference);
-use C::Keywords qw(prepare_tags);
+use ACSL::Common qw(prepare_tags);
 use namespace::autoclean;
 
 use feature qw(state);
 use re '/aa';
 
+extends 'C::Entity';
 
-#comment id
-has 'id' => (
+has 'replacement_id' => (
    is       => 'ro',
-   isa      => 'int',
+   isa      => 'Int',
    required => 1
 );
 
-has 'names' => (
-   is => 'rw',
-   isa => 'ArrayRef[Str]',
-);
-
-has 'specification' => (
+has 'get_code_ids' => (
    is => 'ro',
-   isa => 'Str',
-   required => 1
+   isa => 'ArrayRef[Str]',
+   lazy => 1,
+   builder => '_build_code_ids',
+   init_arg => undef
 );
 
-sub to_string
-{
-   $_[0]->specification
-}
+has 'function_spec' => (
+   isa => 'Int',
+   is => 'rw',
+   default => 0,
+   init_arg => undef
+);
 
-sub get_code_ids
+sub _build_code_ids
 {
-   [ $_[0]->names ]
+   #logic
+   #predicates
+   #types
+   my $code = $_[0]->code;
+   #remove oneline comments; nested multile are not possible
+   $code =~ s!//.*!!g;
+
+   my @ids = $code =~ m/(?|
+                           (?:predicate\s+(\w++))|
+                           (?:type\s+(\w++))|
+                           (?:logic[\w\s\*]+\b(\w++)\s*+(?:\(|=))
+                        )/gx;
+
+   \@ids;
 }
 
 sub get_code_tags
 {
    prepare_tags($_[0]->code, $_[0]->get_code_ids())
+}
+
+sub to_string
+{
+   if ($_[0]->function_spec) {
+      undef
+   } else {
+      $_[0]->code
+   }
 }
 
 

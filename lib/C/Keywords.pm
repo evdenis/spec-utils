@@ -9,7 +9,7 @@ use RE::Common qw($varname);
 use C::Util::Parsing;
 
 our @EXPORT = qw(@keywords);
-our @EXPORT_OK = qw(prepare_tags);
+our @EXPORT_OK = qw(prepare_tags not_special_label %c_keywords_filter);
 
 our @keywords = @C::Util::Parsing::keywords;
 
@@ -24,7 +24,7 @@ sub not_special_label
 
 
 our @keywords_to_filter = grep { not_special_label($_) } @keywords;
-my %keywords_filter = map { $_ => undef } @keywords_to_filter;
+our %c_keywords_filter = map { $_ => undef } @keywords_to_filter;
 
 
 sub prepare_tags
@@ -55,7 +55,7 @@ sub prepare_tags
       if (ref $_ eq 'ARRAY') {
          $id = $_->[0] . ' ' . $_->[1]
       } else {
-         next if exists $keywords_filter{$_};
+         next if exists $c_keywords_filter{$_};
          $id = $_
       }
 

@@ -7,17 +7,17 @@ use re '/aa';
 
 use Exporter qw(import);
 
-use Local::List::Util qw(any);
 use RE::Common qw($acsl_varname);
+use C::Keywords qw(%c_keywords_filter not_special_label);
 
-our @EXPORT_OK = qw(is_acsl_spec);
+our @EXPORT_OK = qw(is_acsl_spec prepare_tags);
 
 sub is_acsl_spec ($)
 {
    $_[0] =~ m!^\s*+(?:/\*\@|//\@)!
 }
 
-my @keywords = qw/
+my @acsl_keywords = qw/
 char
 short
 int
@@ -81,12 +81,14 @@ LoopEntry
 LoopCurrent
 /;
 
+my %acsl_keywords_filter = map { $_ => undef } @acsl_keywords;
+
 sub is_acsl_keyword
 {
    my $r = 0;
-   if (index($_[0], '/') == 0) {
+   if (index($_[0], '\\') == 0) {
       $r = 1
-   } elsif (any($_[0], \@keywords)) {
+   } elsif (exists $acsl_keywords_filter{$_[0]}) {
       $r = 1
    }
 
@@ -97,20 +99,41 @@ sub prepare_tags
 {
    my $code = $_[0];
    my %filter = map { $_ => undef } @{$_[1]};
-   my $token = qr/($acsl_varname)\b/;
+   my $token = qr/($acsl_varname)\b/; #Don't append \b to the beginning
 
    #remove strings
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
+   #remove behaviors with labels
+   $code =~ s/behavior\s+\w+://g;
+   #remove oneline comments; nested multile are not possible
+   $code =~ s!//.*!!g;
 
-   my @tokens = $code =~ m/$token/g;
+
+   my @tokens;
+   while ($code =~ m/$token/g) {
+      if (not_special_label($1)) {
+         push @tokens, $1
+      } else {
+         my $special = $1;
+
+         push @tokens, [$special, $1]
+            if $code =~ m/\G\s*+$token/gc
+      }
+   }
 
    my @tags;
    my %uniq;
    foreach (@tokens) {
-      next unless is_acsl_keyword($_);
+      my $id;
+      if (ref $_ eq 'ARRAY') {
+         $id = $_->[0] . ' ' . $_->[1]
+      } else {
+         next if exists $c_keywords_filter{$_} || is_acsl_keyword($_);
+         $id = $_
+      }
 
       push @tags, $_
-         unless $uniq{$_}++
+         if !$uniq{$id}++ && !exists $filter{$id}
    }
 
    \@tags
