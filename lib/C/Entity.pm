@@ -12,7 +12,7 @@ use re '/aa';
 
 has 'id' => (
    is => 'ro',
-   isa => 'Str',
+   isa => 'Int',
    lazy => 1,
    required => 1,
    builder => '_compose_id',
