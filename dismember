@@ -386,9 +386,12 @@ my $indx = $g->get_graph_attribute('index');
 sub generate_files
 {
    my ($graph, @functions) = @_;
+   @functions = sort @functions;
    my @ids = map { $indx->{$_} } @functions;
 
-   my $fd = catdir $config{output_dir}, @functions == 1 ? $functions[0] : 'merged_' . $functions[0];
+   my $fd = catdir $config{output_dir},
+                   @functions == 1 ? $functions[0] :
+                   'merged_' . ($config{all} ? 'all' : $functions[0]);
    create_directory $fd;
 
    my $rgraph = get_predecessors_subgraph($graph, @ids);
