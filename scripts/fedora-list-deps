@@ -1,8 +1,15 @@
 #!/usr/bin/env perl
 
 use FindBin;
-use File::Slurp qw/read_file/;
-use Data::Printer;
+
+sub read_file
+{
+   open my $fh, '<', "$_[0]"
+      or die "Can't open file $_[0]: $!\n";
+   my @str = <$fh>;
+   close $fh;
+   @str;
+}
 
 my @deps;
 foreach (read_file "$FindBin::Bin/../cpanfile") {
@@ -12,8 +19,6 @@ foreach (read_file "$FindBin::Bin/../cpanfile") {
       die "Parse fail\n";
    }
 }
-
-p @deps;
 
 exec(dnf => list => @deps);
 
