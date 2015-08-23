@@ -16,11 +16,12 @@ use Storable;
 use POSIX qw/setsid/;
 use Module::Loader;
 use Try::Tiny;
+use YAML::XS qw(LoadFile);
 
 use FindBin;
 use lib::abs 'lib';
 
-use Local::List::Util qw(difference);
+use Local::List::Util qw(uniq difference);
 use Local::Config qw(find_config);
 use Local::Terminal qw(window_size);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
@@ -60,6 +61,7 @@ dismember - программа для выборки из общего набо�
   -f|--functions f1,f2,...
   -f|--functions f1 f2 ...    - построить выборки для функций f1,f2,...
   -a|--all                    - построить выборки для всех функций модуля ядра
+  -d|--done <conf>            - построить выборки для функций из конфигурации
   -s|--single                 - поместить все зависимости функции -f в единый файл
   --merge                     - объединить вывод для нескольких функций
   --full                      - не сокращать нецелевые функции модуля до деклараций
@@ -101,6 +103,10 @@ dismember - программа для выборки из общего набо�
 =item B<-a|--[no-]all>
 
 Если флаг all включён, программа строит выборку для всех функций из модуля ядра. В таком случае опция --functions не обязательна. Флаг all необходим, главным образом, для целей тестирования.
+
+=item B<-d|--done conf>
+
+Если опция указана, то из файла conf формата YAML (например, .graph.conf) считается список функций, помеченных как done. Эти функции будут рассматриваться таким образом, будто указаны в аргументе --functions. Аргументы --functions, --done, --all, не сочетаются друг с другом.
 
 =item B<-s|--[no-]single>
 
@@ -170,6 +176,7 @@ $config{output_dir}          = catdir $FindBin::Bin, 'result';
 $config{editor}              = 0;
 $config{plugin}              = [];
 $config{full}                = 0;
+$config{done}                = undef;
 
 if ($config_file && -r $config_file || (defined ($config_file = find_config()))) {
    ### CONFIG FILE: $config_file
@@ -201,6 +208,7 @@ my $list_plugins = 0;
 my @args_plugins;
 GetOptions(
    'all|a!'                =>  \$config{all},
+   'done|d=s'              =>  \$config{done},
    'functions|f=s{1,}'     =>  \@functions,
    'module|m=s'            =>  \$config{module},
    'kernel|k=s'            =>  \$config{kernel},
@@ -239,6 +247,9 @@ pod2usage({ -msg => "You should provide proper kernel directory with --kernel op
 
 ### KERNEL DIRECTORY: $config{kernel}
 ### MODULE DIRECTORY: $config{module}
+
+pod2usage({ -msg => "File $config{done} is not readable.\n", -exitval => 2 })
+    if $config{done} && ! -r $config{done};
 
 my @plugins;
 my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5);
@@ -296,13 +307,28 @@ foreach my $l (keys %schedule) {
 }
 
 pod2usage({ -msg => "You should provide at least one function name.\n", -exitval => 2 })
-    if !@functions && !$config{all};
+    unless @functions || $config{all} || $config{done};
 pod2usage({ -msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2 })
     if @functions && $config{all};
+pod2usage({ -msg => "Can't use --done flag with --functions simultaneously.\n", -exitval => 2 })
+    if @functions && $config{done};
+pod2usage({ -msg => "Can't use --all flag with --done simultaneously.\n", -exitval => 2 })
+    if $config{done} && $config{all};
 
 if (@ARGV) {
    pod2usage({ -msg => "Unknown options: " . join("\n", @ARGV) . "\n", -exitval => 2 })
 }
+
+# after these check we can handle $config{done}
+if ($config{done}) {
+   my $conf = LoadFile($config{done});
+   die "Can't read $config{done} file.\n"
+      unless $conf;
+   die "File $config{done} has improper format.\n"
+      unless exists $conf->{done};
+   push @functions, uniq @{$conf->{done}};
+}
+
 
 sub create_directory
 {
