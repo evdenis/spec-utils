@@ -37,7 +37,7 @@ our @EXPORT = qw/run/;
 
 sub run
 {
-   my $opts = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
+   my $args = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
 
    my $tmpl = {
       kernel_dir   => { required => 1, defined => 1 },
@@ -62,35 +62,35 @@ sub run
       open_with    => { default => 'xdg-open' },
    };
 
-   check($tmpl, $opts, 1)
+   check($tmpl, $args, 1)
       or croak "Arguments could not be parsed.\n";
 
-   if (defined $opts->{level}) {
-      my $level = $opts->{level};
-      my $max = @{$opts->{conf}{priority}{lists}};
+   if (defined $args->{level}) {
+      my $level = $args->{level};
+      my $max = @{$args->{conf}{priority}{lists}};
       if ($level <= 0 || $level > $max) {
          warn "Level option is out of bounds. Ignoring.\n";
-         $opts->{level} = undef;
+         $args->{level} = undef;
       }
-      $opts->{functions} = $opts->{conf}{priority}{lists}[$opts->{level} - 1];
+      $args->{functions} = $args->{conf}{priority}{lists}[$args->{level} - 1];
    }
 
    #Initializing the library
    Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
 
-   if ($opts->{cache}) {
-      unless (-r $opts->{cache_file}) {
-         $opts->{cache} = 0
+   if ($args->{cache}) {
+      unless (-r $args->{cache_file}) {
+         $args->{cache} = 0
       }
    }
-   goto CACHE if $opts->{cache};
+   goto CACHE if $args->{cache};
 
    # read sources
    my $source;
-   if ($opts->{preprocessed}) {
-      $source = read_file($opts->{preprocessed}, scalar_ref => 1);
+   if ($args->{preprocessed}) {
+      $source = read_file($args->{preprocessed}, scalar_ref => 1);
    } else {
-      $source = (preprocess_module_sources_nocomments($opts->{kernel_dir}, $opts->{module_dir}, ["#define SPECIFICATION 1\n"]))[1];
+      $source = (preprocess_module_sources_nocomments($args->{kernel_dir}, $args->{module_dir}, ["#define SPECIFICATION 1\n"]))[1];
    }
    adapt($$source, attributes => 1, comments => 1);
 
@@ -102,10 +102,10 @@ sub run
    #these are special kernel functions generated after preprocessing
    $graph->delete_vertices( qw(__check_enabled __inittest) );
 
-CACHE: if ($opts->{cache}) {
-      $graph = retrieve($opts->{cache_file})
+CACHE: if ($args->{cache}) {
+      $graph = retrieve($args->{cache_file})
    } else {
-      store($graph, $opts->{cache_file})
+      store($graph, $args->{cache_file})
    }
 
    #1
@@ -115,18 +115,18 @@ CACHE: if ($opts->{cache}) {
    my $stat_done = 0;
    my @marked_as_done;
 
-   if ($opts->{done}) {
+   if ($args->{done}) {
       ### MARKING VERIFIED FUNCTIONS
       #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
       #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
       sub label_done { state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0] }
 
-      if (my @set = intersection $opts->{conf}{done}, $opts->{conf}{'specs-only'}) {
+      if (my @set = intersection $args->{conf}{done}, $args->{conf}{'specs-only'}) {
          die "These functions are in done and specs-only lists: \n" .
              join("\n", @set) . "\n";
       }
 
-      foreach (uniq @{ $opts->{conf}{done} }) {
+      foreach (uniq @{ $args->{conf}{done} }) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, 'label', label_done($_));
             $graph->set_vertex_attribute($_, style   => 'dashed');
@@ -138,7 +138,7 @@ CACHE: if ($opts->{cache}) {
          }
       }
 
-      foreach (uniq @{ $opts->{conf}{'specs-only'} }) {
+      foreach (uniq @{ $args->{conf}{'specs-only'} }) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, 'label', label_done($_));
             $graph->set_vertex_attribute($_, style   => 'dotted');
@@ -157,10 +157,10 @@ CACHE: if ($opts->{cache}) {
    }
 
    my @stat_priority;
-   if ($opts->{priority}) {
+   if ($args->{priority}) {
       ### MARKING PRIORITIES
-      while ( my ($i, $list) = each @{ $opts->{conf}{priority}{lists} } ) {
-         my $color = $opts->{conf}{priority}{colors}{$list};
+      while ( my ($i, $list) = each @{ $args->{conf}{priority}{lists} } ) {
+         my $color = $args->{conf}{priority}{colors}{$list};
          my %stat = ( done => 0, remains => 0);
 
          foreach (uniq @$list) {
@@ -177,7 +177,7 @@ CACHE: if ($opts->{cache}) {
                   }
                   $graph->set_vertex_attribute($_, priority => $i + 1);
                } else {
-                  if ($opts->{mark_anyway}) {
+                  if ($args->{mark_anyway}) {
                      $graph->set_vertex_attribute($_, fillcolor => $color );
                      $graph->set_vertex_attribute($_, shape => 'tripleoctagon' );
                   }
@@ -209,12 +209,12 @@ CACHE: if ($opts->{cache}) {
 
 #4
    my %used_issues;
-   if ($opts->{issues}) {
+   if ($args->{issues}) {
       ### MARKING ISSUES
       my $mark = "\N{SALTIRE}";
-      foreach (keys %{ $opts->{conf}{issues} }) {
+      foreach (keys %{ $args->{conf}{issues} }) {
          foreach my $v ($graph->vertices) {
-            if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$opts->{conf}{issues}{$_}{re}/) {
+            if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$args->{conf}{issues}{$_}{re}/) {
                $used_issues{$_} = undef;
 
                unless ($graph->has_vertex_attribute($v, 'done')) {
@@ -234,17 +234,17 @@ CACHE: if ($opts->{cache}) {
          }
       }
 
-      my @diff = difference([ keys %{ $opts->{conf}{issues} } ], [ keys %used_issues ]);
+      my @diff = difference([ keys %{ $args->{conf}{issues} } ], [ keys %used_issues ]);
       if (@diff) {
          warn "Issues @diff is/are useless, since there is no vertices marked.\n"
       }
    }
 
-   if ($opts->{stat}) {
+   if ($args->{stat}) {
       ### GATHERING STATISTICS
       say "\n--- Статистика ---";
       say "Общее количество функций: " . $graph->vertices;
-      if ($opts->{priority}) {
+      if ($args->{priority}) {
          say "Функции по уровням приоритета:";
          print map
             {
@@ -267,13 +267,13 @@ CACHE: if ($opts->{cache}) {
          my $total = $done + $remains;
          say "Не вошедших в очереди приоритетов: $total; из них сделано $done; осталось $remains";
       }
-      say "Всего сделано: " . $stat_done if $opts->{done};
+      say "Всего сделано: " . $stat_done if $args->{done};
    }
 
-   if (@{ $opts->{functions} }) {
+   if (@{ $args->{functions} }) {
       ### GRAPH REDUCING
       my @e;
-      foreach (@{ $opts->{functions} }) {
+      foreach (@{ $args->{functions} }) {
          unless ($graph->has_vertex($_)) {
             warn "There is no such function: '$_'.\n"
          } else {
@@ -282,30 +282,30 @@ CACHE: if ($opts->{cache}) {
       }
 
       if (@e) {
-         unless ($opts->{reverse}) {
+         unless ($args->{reverse}) {
             $graph = get_successors_subgraph($graph, @e);
          } else {
             $graph = get_predecessors_subgraph($graph, @e);
          }
 
          say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
-            if $opts->{stat};
+            if $args->{stat};
       } else {
          warn "--functions parameter will not be taken into account.\n"
       }
    }
 
-   my $dotfile = $opts->{out} . '.dot';
+   my $dotfile = $args->{out} . '.dot';
 
    {
       local $SIG{__WARN__} = sub {};
       Graph::Writer::Dot->new()->write_graph($graph, $dotfile)
    }
 
-   if ($opts->{priority} || $opts->{issues}) {
+   if ($args->{priority} || $args->{issues}) {
       my @legenda;
 
-      if ($opts->{issues} && %used_issues) {
+      if ($args->{issues} && %used_issues) {
          push @legenda, qq(  subgraph "cluster_issues_legenda" {\n);
          push @legenda, qq(    style = "filled";\n);
          push @legenda, qq(    color = "lightgrey";\n);
@@ -316,19 +316,19 @@ CACHE: if ($opts->{cache}) {
             push @legenda, qq(    $edges [style = "invis"];\n);
          }
          foreach (keys %used_issues) {
-            push @legenda, qq(    "$_" [label = "$_: $opts->{conf}{issues}{$_}{description}", fillcolor = "white"];\n);
+            push @legenda, qq(    "$_" [label = "$_: $args->{conf}{issues}{$_}{description}", fillcolor = "white"];\n);
          }
          push @legenda, qq(  }\n);
       }
 
-      if ($opts->{priority}) {
+      if ($args->{priority}) {
          push @legenda, qq(  subgraph "cluster_priority_legenda" {\n);
          push @legenda, qq(    style = "filled";\n);
          push @legenda, qq(    color = "lightgrey";\n);
          push @legenda, qq(    label = "Priority levels";\n);
          push @legenda, qq(    node [shape = "box", style = "filled"];\n);
          push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
-         my @colors = map { $opts->{conf}{priority}{colors}{$_} } @{ $opts->{conf}{priority}{lists} };
+         my @colors = map { $args->{conf}{priority}{colors}{$_} } @{ $args->{conf}{priority}{lists} };
          while (my ($idx, $color) = each @colors) {
             ++$idx;
             push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
@@ -342,24 +342,24 @@ CACHE: if ($opts->{cache}) {
    }
 
    if (which('dot')) {
-      if ($opts->{async}) {
+      if ($args->{async}) {
          fork and return;
       }
-      my $output = $opts->{out} . '.' . $opts->{format};
-      system('dot', "-T" . $opts->{format}, "$dotfile", "-o${output}");
+      my $output = $args->{out} . '.' . $args->{format};
+      system('dot', "-T" . $args->{format}, "$dotfile", "-o${output}");
       unlink $dotfile
-         unless $opts->{keep_dot};
+         unless $args->{keep_dot};
 
-      if ($opts->{view}) {
-         if (which($opts->{open_with})) {
+      if ($args->{view}) {
+         if (which($args->{open_with})) {
             close STDOUT;
             close STDERR;
-            exec($opts->{open_with}, $output)
+            exec($args->{open_with}, $output)
          } else {
-            croak("Can't find $opts->{open_with} program to view the $output\n")
+            croak("Can't find $args->{open_with} program to view the $output\n")
          }
       }
-      if ($opts->{async}) {
+      if ($args->{async}) {
          exit 0;
       }
    } else {

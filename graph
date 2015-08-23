@@ -165,70 +165,70 @@ graph - построить граф вызовов функций модуля �
 =cut
 
 
-my %opts;
-$opts{functions} = [];
-$opts{format} = 'svg';
-$opts{out} = 'graph';
-$opts{cache} = 0;
+my %args;
+$args{functions} = [];
+$args{format} = 'svg';
+$args{out} = 'graph';
+$args{cache} = 0;
 my @cache_dir = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
-$opts{cache_file} = 'graph_map.cache';
-$opts{done} = 1;
-$opts{priority} = 1;
-$opts{issues} = 0;
-$opts{stat} = 1;
-$opts{mark_anyway} = 0;
-$opts{view} = 0;
-$opts{open_with} = 'xdg-open';
+$args{cache_file} = 'graph_map.cache';
+$args{done} = 1;
+$args{priority} = 1;
+$args{issues} = 0;
+$args{stat} = 1;
+$args{mark_anyway} = 0;
+$args{view} = 0;
+$args{open_with} = 'xdg-open';
 
-$opts{async} = 1;
-$opts{keep_dot} = 1;
-$opts{reverse} = 0;
-$opts{level} = undef;
+$args{async} = 1;
+$args{keep_dot} = 1;
+$args{reverse} = 0;
+$args{level} = undef;
 
 my $help = 0;
 
 GetOptions(
-   'functions|f=s{1,}'       =>  \@{ $opts{functions} },
-   'format=s'                =>  \$opts{format},
-   'output|o=s'              =>  \$opts{out},
-   'preprocessed|p=s'        =>  \$opts{preprocessed},
-   'module|m=s'              =>  \$opts{module_dir},
-   'kernel|k=s'              =>  \$opts{kernel_dir},
-   'cache!'                  =>  \$opts{cache},
-   'done!'                   =>  \$opts{done},
-   'priority!'               =>  \$opts{priority},
-   'issues|i!'               =>  \$opts{issues},
-   'mark-anyway|a!'          =>  \$opts{mark_anyway},
-   'view|v!'                 =>  \$opts{view},
-   'reverse|r!'              =>  \$opts{reverse},
-   'level|l=i'               =>  \$opts{level},
+   'functions|f=s{1,}'       =>  \@{ $args{functions} },
+   'format=s'                =>  \$args{format},
+   'output|o=s'              =>  \$args{out},
+   'preprocessed|p=s'        =>  \$args{preprocessed},
+   'module|m=s'              =>  \$args{module_dir},
+   'kernel|k=s'              =>  \$args{kernel_dir},
+   'cache!'                  =>  \$args{cache},
+   'done!'                   =>  \$args{done},
+   'priority!'               =>  \$args{priority},
+   'issues|i!'               =>  \$args{issues},
+   'mark-anyway|a!'          =>  \$args{mark_anyway},
+   'view|v!'                 =>  \$args{view},
+   'reverse|r!'              =>  \$args{reverse},
+   'level|l=i'               =>  \$args{level},
    'help|h'                  =>  \$help
 ) or pod2usage(1);
 
-$opts{functions} = [ split(/,/,join(',', @{ $opts{functions} })) ];
+$args{functions} = [ split(/,/,join(',', @{ $args{functions} })) ];
 
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-unless ($opts{preprocessed}) {
-   $opts{module_dir} //= $ENV{CURRENT_PROJECT} // '.';
-   $opts{kernel_dir} //= autodetect_kernel_directory(dirs => ['..']);
+unless ($args{preprocessed}) {
+   $args{module_dir} //= $ENV{CURRENT_PROJECT} // '.';
+   $args{kernel_dir} //= autodetect_kernel_directory(dirs => ['..']);
 
-   pod2usage({ -msg => "You should provide kernel directory with -k option.\n", -exitval => 2 }) unless defined $opts{kernel_dir};
-   pod2usage({ -msg => "$opts{module_dir} is not a directory.\n",        -exitval => 2 }) unless -d $opts{module_dir};
-   pod2usage({ -msg => "$opts{kernel_dir} is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($opts{kernel_dir});
+   pod2usage({ -msg => "You should provide kernel directory with -k option.\n", -exitval => 2 }) unless defined $args{kernel_dir};
+   pod2usage({ -msg => "$args{module_dir} is not a directory.\n",        -exitval => 2 }) unless -d $args{module_dir};
+   pod2usage({ -msg => "$args{kernel_dir} is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($args{kernel_dir});
 } else {
-   pod2usage({ -msg => "$opts{preprocessed} file is not readable.\n",    -exitval => 2 }) unless -r $opts{preprocessed};
-   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $opts{module_dir};
+   pod2usage({ -msg => "$args{preprocessed} file is not readable.\n",    -exitval => 2 }) unless -r $args{preprocessed};
+   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $args{module_dir};
 }
 
-if (!@{$opts{functions}} && $opts{reverse}) {
+if (!@{$args{functions}} && $args{reverse}) {
    warn "There is not point in using reverse option without --functions\n"
 }
 
-### KERNEL DIRECTORY: $opts{kernel_dir}
-### MODULE DIRECTORY: $opts{module_dir}
+### KERNEL DIRECTORY: $args{kernel_dir}
+### MODULE DIRECTORY: $args{module_dir}
 
-$opts{cache} = 0 if $opts{preprocessed};
+$args{cache} = 0 if $args{preprocessed};
 
 {
    my $c = 0;
@@ -240,7 +240,7 @@ $opts{cache} = 0 if $opts{preprocessed};
          }
       }
 
-      $opts{cache_file} = catfile $_, $opts{cache_file};
+      $args{cache_file} = catfile $_, $args{cache_file};
       $c = 1;
       last
    }
@@ -248,33 +248,33 @@ $opts{cache} = 0 if $opts{preprocessed};
       unless $c
 }
 
-### CACHE FILE: $opts{cache_file}
-$opts{cache} = 0 unless -r $opts{cache_file};
+### CACHE FILE: $args{cache_file}
+$args{cache} = 0 unless -r $args{cache_file};
 
 my $conf;
 if (defined ($conf = find_config())) {
    ### CONFIG FILE: $conf
-   $opts{conf} = LoadFile($conf)
+   $args{conf} = LoadFile($conf)
 }
 die("Can't read config file.\n")
-   unless $opts{conf};
+   unless $args{conf};
 
 
 # level checks
-if (defined $opts{level}) {
-   my $level = $opts{level};
-   my $max = @{$opts{conf}{priority}{lists}};
+if (defined $args{level}) {
+   my $level = $args{level};
+   my $max = @{$args{conf}{priority}{lists}};
    if ($level <= 0 || $level > $max) {
       die "Level option is out of bounds.\n"
    }
 }
 
 
-run(\%opts); # Can die.
+run(\%args); # Can die.
 
 say '';
-say "File $opts{out}.dot contains graph in dot format.";
-say "File $opts{out}.$opts{format} contains graph in $opts{format} format.";
+say "File $args{out}.dot contains graph in dot format.";
+say "File $args{out}.$args{format} contains graph in $args{format} format.";
 
 
 
