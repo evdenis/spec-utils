@@ -139,7 +139,6 @@ CACHE: if ($args->{cache}) {
 
       foreach (uniq @{ $args->{config}{'specs-only'} }) {
          if ($graph->has_vertex($_)) {
-            $graph->set_vertex_attribute($_, 'label', label_done($_));
             $graph->set_vertex_attribute($_, style   => 'dotted');
             $graph->set_vertex_attribute($_, done    => 1);
             push @marked_as_done, $_; # no stat but should be marked
