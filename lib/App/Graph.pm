@@ -14,7 +14,7 @@ use File::Which;
 use Params::Check qw(check);
 use Storable;
 
-use Local::List::Util qw(uniq difference any);
+use Local::List::Util qw(uniq difference intersection any);
 use C::Util::Transformation;
 use Kernel::Module qw(preprocess_module_sources_nocomments);
 use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
@@ -121,6 +121,11 @@ CACHE: if ($opts->{cache}) {
       #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
       sub label_done { state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0] }
 
+      if (my @set = intersection $opts->{conf}{done}, $opts->{conf}{'specs-only'}) {
+         die "These functions are in done and specs-only lists: \n" .
+             join("\n", @set) . "\n";
+      }
+
       foreach (uniq @{ $opts->{conf}{done} }) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, 'label', label_done($_));
@@ -133,13 +138,23 @@ CACHE: if ($opts->{cache}) {
          }
       }
 
+      foreach (uniq @{ $opts->{conf}{'specs-only'} }) {
+         if ($graph->has_vertex($_)) {
+            $graph->set_vertex_attribute($_, 'label', label_done($_));
+            $graph->set_vertex_attribute($_, style   => 'dotted');
+            $graph->set_vertex_attribute($_, done    => 1);
+            push @marked_as_done, $_; # no stat but should be marked
+         } else {
+            warn "Specs-only: there is no function: '$_'\n"
+         }
+      }
+
       #check @marked_as_done
       foreach($graph->all_successors(@marked_as_done)) {
          warn "Predecessor of '$_' is marked as done, but this function isn't.\n"
             unless any($_, @marked_as_done);
       }
    }
-
 
    my @stat_priority;
    if ($opts->{priority}) {
