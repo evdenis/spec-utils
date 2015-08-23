@@ -11,6 +11,7 @@ use Pod::Usage;
 use File::Spec::Functions qw(catfile catdir);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 use YAML::XS qw(LoadFile);
+use File::Which;
 use FindBin;
 
 use lib::abs 'lib';
@@ -239,6 +240,10 @@ unless ($args{preprocessed}) {
 
 if (!@{$args{functions}} && $args{reverse}) {
    warn "There is not point in using reverse option without --functions\n"
+}
+
+if (defined $args{view} && !which($args{view})) {
+   die "Can't find program $args{view}.\n"
 }
 
 ### KERNEL DIRECTORY: $args{kernel_dir}
