@@ -53,13 +53,12 @@ sub run
       keep_dot     => { default => 0 },
       issues       => { default => 0 },
       async        => { default => 0 },
-      view         => { default => 0 },
+      view         => { default => undef },
       priority     => { default => 1 },
       reverse      => { default => 0 },
       level        => { default => undef },
       out          => { default => 'graph' },
       format       => { default => 'svg' },
-      open_with    => { default => 'xdg-open' },
    };
 
    check($tmpl, $args, 1)
@@ -350,13 +349,13 @@ CACHE: if ($args->{cache}) {
       unlink $dotfile
          unless $args->{keep_dot};
 
-      if ($args->{view}) {
-         if (which($args->{open_with})) {
+      if (defined $args->{view}) {
+         if (which($args->{view})) {
             close STDOUT;
             close STDERR;
-            exec($args->{open_with}, $output)
+            exec($args->{view}, $output)
          } else {
-            croak("Can't find $args->{open_with} program to view the $output\n")
+            croak("Can't find $args->{view} program to view the $output\n")
          }
       }
       if ($args->{async}) {
