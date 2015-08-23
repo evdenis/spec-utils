@@ -39,7 +39,7 @@ sub read_config
 }
 
 read_config catfile $FindBin::Bin, '.config';
-$config{conf} = LoadFile($config{graph_config_file});
+$config{config} = LoadFile($config{graph_config_file});
 my $cmonitor = File::Modified->new(files => [$config{graph_config_file}]);
 delete $config{graph_config_file};
 
@@ -75,7 +75,7 @@ sub generate_image
 {
    if (my (@cf) = $cmonitor->changed) {
       try {
-         $config{conf} = LoadFile($cf[0]);
+         $config{config} = LoadFile($cf[0]);
          warn "Loading updated configuration\n";
       } catch {
          warn "Can't load updated configuration\n"

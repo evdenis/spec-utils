@@ -40,10 +40,12 @@ graph - построить граф вызовов функций модуля �
  graph [options]
  Options:
   -m|--module dir          - директория с исходными кодами модуля
-                             (default: CURRENT_PROJECT || ./)
+                             (default: CURRENT_PROJECT)
 
   -k|--kernel dir          - директория с исходными кодами ядра
-                             (default: CURRENT_KERNEL || ../)
+                             (default: CURRENT_KERNEL)
+
+  -c|--config file         - конфигурационный файл file
 
   -p|--preprocessed name   - файл с препроцессированным кодом модуля
 
@@ -91,6 +93,10 @@ graph - построить граф вызовов функций модуля �
 =item B<-k|--kernel dir>
 
 Указание на директорию, где расположены исходные коды ядра Linux. По умолчанию директория берётся из переменной окружения I<CURRENT_KERNEL> если она задана, иначе используется родительская директория текущей.
+
+=item B<-c|--config file>
+
+Указать путь до конфигурационного файла. По умолчанию используется файл .graph.conf в директории программы или ищется в папке ~/.config.
 
 =item B<-p|--preprocessed name>
 
@@ -181,12 +187,14 @@ $args{keep_dot}    = 1;
 $args{reverse}     = 0;
 $args{level}       = undef;
 $args{cache}       = 0;
+$args{config}      = find_config();
 
 my @cache_dir     = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
 my $help = 0;
 
 GetOptions(
    'functions|f=s{1,}'       =>  \@{ $args{functions} },
+   'config|c=s'              =>  \$args{config},
    'format=s'                =>  \$args{format},
    'output|o=s'              =>  \$args{out},
    'preprocessed|p=s'        =>  \$args{preprocessed},
@@ -251,13 +259,12 @@ $args{cache} = 0 if $args{preprocessed};
 ### CACHE FILE: $args{cache_file}
 $args{cache} = 0 unless -r $args{cache_file};
 
-my $conf;
-if (defined ($conf = find_config())) {
-   ### CONFIG FILE: $conf
-   $args{conf} = LoadFile($conf)
+if ($args{config} && -r $args{config}) {
+   ### CONFIG FILE: $args{config}
+   $args{config} = LoadFile($args{config})
 }
 die("Can't read config file.\n")
-   unless $args{conf};
+   unless $args{config};
 
 
 # level checks

@@ -44,7 +44,7 @@ sub run
       module_dir   => { required => 1, defined => 1 },
       cache        => { required => 0, defined => 1 },
       cache_file   => { required => 1, defined => 1 },
-      conf         => { required => 1, defined => 1 },
+      config       => { required => 1, defined => 1 },
       done         => { required => 0 },
       preprocessed => { required => 0 },
       functions    => { required => 0 },
@@ -66,12 +66,12 @@ sub run
 
    if (defined $args->{level}) {
       my $level = $args->{level};
-      my $max = @{$args->{conf}{priority}{lists}};
+      my $max = @{$args->{config}{priority}{lists}};
       if ($level <= 0 || $level > $max) {
          warn "Level option is out of bounds. Ignoring.\n";
          $args->{level} = undef;
       }
-      $args->{functions} = $args->{conf}{priority}{lists}[$args->{level} - 1];
+      $args->{functions} = $args->{config}{priority}{lists}[$args->{level} - 1];
    }
 
    #Initializing the library
@@ -120,12 +120,12 @@ CACHE: if ($args->{cache}) {
       #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
       sub label_done { state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0] }
 
-      if (my @set = intersection $args->{conf}{done}, $args->{conf}{'specs-only'}) {
+      if (my @set = intersection $args->{config}{done}, $args->{config}{'specs-only'}) {
          die "These functions are in done and specs-only lists: \n" .
              join("\n", @set) . "\n";
       }
 
-      foreach (uniq @{ $args->{conf}{done} }) {
+      foreach (uniq @{ $args->{config}{done} }) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, 'label', label_done($_));
             $graph->set_vertex_attribute($_, style   => 'dashed');
@@ -137,7 +137,7 @@ CACHE: if ($args->{cache}) {
          }
       }
 
-      foreach (uniq @{ $args->{conf}{'specs-only'} }) {
+      foreach (uniq @{ $args->{config}{'specs-only'} }) {
          if ($graph->has_vertex($_)) {
             $graph->set_vertex_attribute($_, 'label', label_done($_));
             $graph->set_vertex_attribute($_, style   => 'dotted');
@@ -158,8 +158,8 @@ CACHE: if ($args->{cache}) {
    my @stat_priority;
    if ($args->{priority}) {
       ### MARKING PRIORITIES
-      while ( my ($i, $list) = each @{ $args->{conf}{priority}{lists} } ) {
-         my $color = $args->{conf}{priority}{colors}{$list};
+      while ( my ($i, $list) = each @{ $args->{config}{priority}{lists} } ) {
+         my $color = $args->{config}{priority}{colors}{$list};
          my %stat = ( done => 0, remains => 0);
 
          foreach (uniq @$list) {
@@ -211,9 +211,9 @@ CACHE: if ($args->{cache}) {
    if ($args->{issues}) {
       ### MARKING ISSUES
       my $mark = "\N{SALTIRE}";
-      foreach (keys %{ $args->{conf}{issues} }) {
+      foreach (keys %{ $args->{config}{issues} }) {
          foreach my $v ($graph->vertices) {
-            if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$args->{conf}{issues}{$_}{re}/) {
+            if ($graph->get_vertex_attribute($v, 'object')->code =~ m/$args->{config}{issues}{$_}{re}/) {
                $used_issues{$_} = undef;
 
                unless ($graph->has_vertex_attribute($v, 'done')) {
@@ -233,7 +233,7 @@ CACHE: if ($args->{cache}) {
          }
       }
 
-      my @diff = difference([ keys %{ $args->{conf}{issues} } ], [ keys %used_issues ]);
+      my @diff = difference([ keys %{ $args->{config}{issues} } ], [ keys %used_issues ]);
       if (@diff) {
          warn "Issues @diff is/are useless, since there is no vertices marked.\n"
       }
@@ -315,7 +315,7 @@ CACHE: if ($args->{cache}) {
             push @legenda, qq(    $edges [style = "invis"];\n);
          }
          foreach (keys %used_issues) {
-            push @legenda, qq(    "$_" [label = "$_: $args->{conf}{issues}{$_}{description}", fillcolor = "white"];\n);
+            push @legenda, qq(    "$_" [label = "$_: $args->{config}{issues}{$_}{description}", fillcolor = "white"];\n);
          }
          push @legenda, qq(  }\n);
       }
@@ -327,7 +327,7 @@ CACHE: if ($args->{cache}) {
          push @legenda, qq(    label = "Priority levels";\n);
          push @legenda, qq(    node [shape = "box", style = "filled"];\n);
          push @legenda, qq(    "1" -> "2" -> "3" -> "4" -> "5" [ style = "invis" ];\n);
-         my @colors = map { $args->{conf}{priority}{colors}{$_} } @{ $args->{conf}{priority}{lists} };
+         my @colors = map { $args->{config}{priority}{colors}{$_} } @{ $args->{config}{priority}{lists} };
          while (my ($idx, $color) = each @colors) {
             ++$idx;
             push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
