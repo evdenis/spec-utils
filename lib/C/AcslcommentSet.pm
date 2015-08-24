@@ -12,6 +12,12 @@ use re '/aa';
 extends 'C::Set';
 with    'C::Parse';
 
+
+has '+set' => (
+   isa => 'ArrayRef[C::Acslcomment]'
+);
+
+
 sub parse
 {
    my $self = shift;
