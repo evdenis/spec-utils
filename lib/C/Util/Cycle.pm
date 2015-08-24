@@ -66,7 +66,6 @@ sub resolve_structure_structure ($$$)
 sub resolve_function_function
 {
    my ($graph, @obj) = @_;
-   my @ctype = map $_->type, @obj;
    my @name  = map $_->name, @obj;
 
    $obj[1]->code =~ m/(\w.*?)\{/s;
