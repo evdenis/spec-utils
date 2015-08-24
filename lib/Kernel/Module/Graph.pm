@@ -370,12 +370,14 @@ sub build_sources_graph
             );
 
    # ACSL handling
-   my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
-   foreach (@{ $sources->{module}{function}->set }) {
-      foreach my $id (@{ $_->spec_ids }) {
-         if (exists $spec_index{$id}) {
-            $spec_index{$id}->function_spec($_->id);
-            $graph->add_edge($spec_index{$id}->id, $_->id);
+   if ($sources->{module}{acslcomment}) {
+      my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
+      foreach (@{ $sources->{module}{function}->set }) {
+         foreach my $id (@{ $_->spec_ids }) {
+            if (exists $spec_index{$id}) {
+               $spec_index{$id}->function_spec($_->id);
+               $graph->add_edge($spec_index{$id}->id, $_->id);
+            }
          }
       }
    }
