@@ -66,19 +66,33 @@ sub resolve_function_function
 {
    my ($graph, @obj) = @_;
    my @ids = ($obj[0]->id, $obj[1]->id);
+   my @rids = reverse @ids;
+   my $redge = $graph->has_edge(@rids);
    my $spec_edge  = $graph->get_edge_attribute(@ids, 'spec_edge');
-   my $rspec_edge = $graph->get_edge_attribute(reverse @ids, 'spec_edge');
+   my $rspec_edge = $graph->get_edge_attribute(@rids, 'spec_edge');
 
-   if ($spec_edge) {
-      $graph->delete_edge(@ids);
-      return 1;
-   } elsif ($rspec_edge) {
-      $graph->delete_edge(reverse @ids);
-      return 1;
+   if ($redge) { # Если есть обратная дуга
+      if ($spec_edge) {
+         # Можно без проблем разъединить, но не будет выводиться последней
+         #$graph->delete_edge(@ids);
+         #return 1;
+         return 0;
+      } else {  # Если это не спецификационная связь
+         if (!$rspec_edge) { # Если обратная не спецификационная
+            $obj[0]->add_fw_decl($obj[1]->declaration);
+            $graph->delete_edge(@ids);
+         } else {
+            $obj[1]->add_fw_decl($obj[0]->declaration);
+            $graph->delete_edge(@ids);
+         }
+         return 1;
+      }
    } else {
-      $obj[0]->add_fw_decl($obj[1]->declaration);
-      $graph->delete_edge(@ids);
-      return 1;
+      if (!$spec_edge) { # Можно разорвать если цикл
+         $obj[0]->add_fw_decl($obj[1]->declaration);
+         $graph->delete_edge(@ids);
+         return 1;
+      }
    }
 
    0
