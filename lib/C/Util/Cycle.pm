@@ -184,6 +184,10 @@ LOOP: foreach (@obj_pairs) {
 
       unless ($ok) {
          warn "Can't properly resolve cycle.\n";
+         #my @objs = map { $graph->get_vertex_attribute($_, 'object') } @cycle;
+         #use Data::Printer;
+         #p @objs;
+         #exit;
          $graph->delete_edge(@cycle[0,-1])
       }
    }
