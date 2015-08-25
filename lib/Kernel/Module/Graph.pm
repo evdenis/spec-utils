@@ -407,8 +407,10 @@ sub build_sources_graph
          if ($v1->function_spec && $v2->function_spec) {
             $graph->delete_edge($v1->id, $v2->id);
             my @fids = ($v1->function_spec, $v2->function_spec);
-            $graph->add_edge(@fids);
-            $graph->set_edge_attribute(@fids, spec_edge => 1);
+            if (!$graph->has_edge(@fids)) {
+               $graph->add_edge(@fids);
+               $graph->set_edge_attribute(@fids, spec_edge => 1);
+            }
          }
       }
    }
