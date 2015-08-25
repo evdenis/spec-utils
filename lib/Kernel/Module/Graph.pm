@@ -405,7 +405,7 @@ sub build_sources_graph
 
       if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
          if ($v1->function_spec && $v2->function_spec) {
-            print $v1->name . " " . $v2->name;
+            #print $v1->name . " " . $v2->name;
             $graph->delete_edge($_);
             $graph->add_edge($v1->function_spec, $v2->function_spec);
          }

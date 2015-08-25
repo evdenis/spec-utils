@@ -100,6 +100,23 @@ sub resolve_structure_typedef ($$$)
    }
 }
 
+sub resolve_acslcomment_acslcomment ($$$)
+{
+   my ($graph, @obj) = @_;
+   my @id = ($obj[0]->id, $obj[1]->id);
+
+   if ($graph->has_edge(reverse @id)) {
+      if ($obj[0]->replacement_id < $obj[1]->replacement_id) {
+         $graph->delete_edge(@id);
+      } else {
+         $graph->delete_edge(reverse @id);
+      }
+      return 1;
+   }
+   
+   0
+}
+
 sub resolve_typedef_structure
 {
    0
