@@ -425,6 +425,13 @@ sub generate_files
       level => 'reduced_graph',
       graph => $rgraph;
 
+   #use Graph::Writer::Dot;
+   #my @v = map {my $o = $rgraph->get_vertex_attribute($_, 'object'); $o->name} $rgraph->vertices;
+   #my @e = map {my $o1 = $rgraph->get_vertex_attribute($_->[0], 'object'); my $o2 = $rgraph->get_vertex_attribute($_->[1], 'object'); [$o1->name, $o2->name]} $rgraph->edges;
+   #my $ng = Graph->new(vertices => \@v, edges => \@e);
+   #Graph::Writer::Dot->new->write_graph($ng, \*STDOUT);
+   #exit;
+
    output_sources_graph($rgraph, \@ids, $fd,
                                  $config{single},
                                  $config{'remove-fields'},
