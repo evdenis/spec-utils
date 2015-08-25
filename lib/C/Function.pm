@@ -13,6 +13,10 @@ use re '/aa';
 
 extends 'C::Entity';
 
+has 'declaration' => (
+   is => 'ro',
+   isa => 'Str'
+);
 
 has 'forward_declaration' => (
    is => 'rw',

@@ -8,7 +8,6 @@ use re '/aa';
 use Exporter qw(import);
 use Scalar::Util qw(blessed);
 use C::Util::Transformation qw(:RE);
-use Local::String::Util qw(normalize);
 
 our @EXPORT = qw/resolve/;
 
@@ -66,11 +65,7 @@ sub resolve_structure_structure ($$$)
 sub resolve_function_function
 {
    my ($graph, @obj) = @_;
-   my @name  = map $_->name, @obj;
-
-   $obj[1]->code =~ m/(\w.*?)\{/s;
-   $obj[0]->add_fw_decl(normalize($1) . ';');
-
+   $obj[0]->add_fw_decl($obj[1]->declaration);
    $graph->delete_edge($obj[0]->id, $obj[1]->id);
 
    1

@@ -5,8 +5,9 @@ use Carp;
 
 use RE::Common qw($varname);
 use C::Function;
-use C::Util::Transformation qw(:RE);
+use C::Util::Transformation qw(:RE filter_dup);
 use Local::List::Util qw(any);
+use Local::String::Util qw(normalize);
 use C::Keywords;
 use namespace::autoclean;
 
@@ -39,8 +40,9 @@ sub parse
    
    #get list of all module functions
    while ( ${$_[0]} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/gp ) {
-      my $name = $+{name};
+      my ($ret, $name, $args, $fbody) = @+{qw/ret name args fbody/};
       my $code = ${^MATCH};
+      my $decl = normalize(filter_dup("${ret} ${name}${args};"));
 
       if (any($name, \@keywords)) {
          carp("Parsing error; function name: '$name'. Skipping.");
@@ -51,7 +53,7 @@ sub parse
          carp("Repeated defenition of function $name")
       }
 
-      @{ $functions{$name} }{qw/code ret args body/} = ($code, @+{qw/ret args fbody/});
+      @{ $functions{$name} }{qw/code declaration ret args body/} = ($code, $decl, $ret, $args, $fbody);
    }
    
    return $self->new(set => [ map { C::Function->new(name => $_, %{ $functions{$_} }, area => $area) } keys %functions ]);
