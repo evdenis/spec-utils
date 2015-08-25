@@ -116,9 +116,9 @@ sub resolve_acslcomment_acslcomment ($$$)
    if ($graph->has_edge(reverse @id)) {
       if ($obj[0]->replacement_id < $obj[1]->replacement_id) {
          $graph->delete_edge(@id);
-      } else {
-         $graph->delete_edge(reverse @id);
-      }
+      }# else {
+      #   $graph->delete_edge(reverse @id);
+      #}
       return 1;
    }
    
