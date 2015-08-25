@@ -385,7 +385,7 @@ sub build_sources_graph
                _dependencies_graph_iterator_module($sources)
             );
 
-   # ACSL handling
+   # ACSL handling specs to functions edge
    if ($sources->{module}{acslcomment}) {
       my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
       foreach (@{ $sources->{module}{function}->set }) {
@@ -399,18 +399,19 @@ sub build_sources_graph
    }
 
    # functions dependence by specs
-   #foreach ($graph->edges) {
-   #   my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
-   #   my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
-   #
-   #   if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
-   #      if ($v1->function_spec && $v2->function_spec) {
-   #         #print $v1->name . " " . $v2->name;
-   #         $graph->delete_edge($_);
-   #         $graph->add_edge($v1->function_spec, $v2->function_spec);
-   #      }
-   #   }
-   #}
+   foreach ($graph->edges) {
+      my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
+      my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
+
+      if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
+         if ($v1->function_spec && $v2->function_spec) {
+            $graph->delete_edge($v1->id, $v2->id);
+            my @fids = ($v1->function_spec, $v2->function_spec);
+            $graph->add_edge(@fids);
+            $graph->set_edge_attribute(@fids, spec_edge => 1);
+         }
+      }
+   }
 
 
    $graph
@@ -428,6 +429,9 @@ sub _generic_get_subgraph
 
    $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
       foreach @pr;
+
+   $subgraph->set_edge_attributes(@$_, $graph->get_edge_attributes(@$_))
+      foreach $subgraph->edges;
 
    $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'))
       if $graph->has_graph_attribute('comments');

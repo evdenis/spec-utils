@@ -65,10 +65,23 @@ sub resolve_structure_structure ($$$)
 sub resolve_function_function
 {
    my ($graph, @obj) = @_;
-   $obj[0]->add_fw_decl($obj[1]->declaration);
-   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+   my @ids = ($obj[0]->id, $obj[1]->id);
+   my $spec_edge  = $graph->get_edge_attribute(@ids, 'spec_edge');
+   my $rspec_edge = $graph->get_edge_attribute(reverse @ids, 'spec_edge');
 
-   1
+   if ($spec_edge) {
+      $graph->delete_edge(@ids);
+      return 1;
+   } elsif ($rspec_edge) {
+      $graph->delete_edge(reverse @ids);
+      return 1;
+   } else {
+      $obj[0]->add_fw_decl($obj[1]->declaration);
+      $graph->delete_edge(@ids);
+      return 1;
+   }
+
+   0
 }
 
 sub resolve_structure_typedef ($$$)
