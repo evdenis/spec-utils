@@ -152,7 +152,23 @@ RECHECK:
                   } elsif ($tn eq 'C::Acslcomment') {
                      $index{$_}{$tn} = [ $index{$_}{$tn} ];
                      push @{$index{$_}{$tn}}, $n
+                  } elsif ($tn eq 'C::Global') {
+                     #Just skip;
+                     unless (_norm($index{$_}{$tn}->type) eq _norm($n->type)) {
+                        die("Internal error: $tn duplicate. ID: $_.\n".
+                            "Globals have different types: " . $n->type . ", " . $index{$_}{$tn}->type . "\n");
+                     } else {
+                        my ($old, $new) = ($index{$_}{$tn}, $n);
+                        if ($old->initialized && $new->initialized) {
+                           die "Globals duplicate with initialization: $_\n";
+                        }
+                        if ($new->initialized && !$old->initialized) {
+                           $index{$_}{$tn} = $new;
+                        }
+                     }
                   } else {
+                     #print $index{$_}{$tn}->code . "\n";
+                     #print $n->code . "\n";
                      die("Internal error: $tn duplicate. ID: $_")
                   }
                } else {
@@ -579,7 +595,7 @@ sub output_sources_graph
                $content = $out{kernel_h}
             }
          } else {
-            if ($t eq 'C::Function') {
+            if ($t eq 'C::Function' || $t eq 'C::Global') {
                $content = $out{module_c}
             } elsif ($t eq 'C::Macro') {
                $content = $out{module_macro}
@@ -660,6 +676,7 @@ digraph g
       kernel_structure -> kernel_global;
 
       kernel_declaration -> kernel_macro;
+      kernel_declaration -> kernel_global;
 
       kernel_typedef -> kernel_macro;
       kernel_typedef -> kernel_structure;
@@ -676,6 +693,7 @@ digraph g
       kernel_enum -> kernel_global;
 
       kernel_global -> kernel_macro;
+      kernel_global -> kernel_global;
    }
 
    subgraph cluster_module {
@@ -720,9 +738,11 @@ digraph g
       kernel_structure -> module_acslcomment;
 
       module_function -> module_macro;
+      module_function -> module_global;
       module_function -> module_function;
       //
       kernel_declaration -> module_macro;
+      kernel_declaration -> module_global;
       kernel_declaration -> module_function;
 
       module_typedef -> module_macro;
@@ -760,10 +780,12 @@ digraph g
       module_global -> module_macro;
       module_global -> module_function;
       module_global -> module_acslcomment;
+      module_global -> module_global;
       //
       kernel_global -> module_macro;
       kernel_global -> module_function;
       kernel_global -> module_acslcomment;
+      kernel_global -> module_global;
 
       module_acslcomment -> module_acslcomment;
    }

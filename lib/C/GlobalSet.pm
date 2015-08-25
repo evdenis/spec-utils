@@ -22,28 +22,40 @@ sub parse
 {
    my $self = shift;
    my $area = $_[1];
-   my %globals;
-   my $name = qr/(?<name>${varname})/;
+   my @globals;
+   my $name   = qr/(?<name>${varname})/;
+   my $sbody  = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
+   my $init   = qr/(?:${s}*+(?:\[[^\]]*+\]))?(?:${s}*+=${s}*+(?:$sbody|[^;]++))?/;
+   my $ptr    = qr/(\*|${s}++|const)*+/;
+   my $type   = qr/(?<type>\b(?!PARSEC_PACKED)${varname}\b${ptr})/;
 
-   while (${$_[0]} =~ m/
-                        (?:
-                           (?:extern${s}++([^;}{]+?)${name}\b${s}*+(?:\[[^\]]*+\])?${s}*+)
-                           |
-                           (?:
-                              static${s}++
-                              (?:
-                                 struct${s}++${varname}${s}++${name}${s}*+=${s}*+(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})
+   while (${$_[0]} =~ m/(?:(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\})))(*SKIP)(*FAIL)
+                        |
+                        (?>
+                           (?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+
+                           (?>
+                              (?>(?<type>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}*+)?(?:char|short|int|long|long${s}++long)${ptr})(*SKIP)${name}${init})
+                              |
+                              (?>(?<type>(?>float|double|size_t|u?int(8|16|32|64)_t|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)${ptr})(*SKIP)${name}${init})
+                              |
+                              (?>enum(*SKIP)${s}++(?<type>${varname}${ptr})${name}${init})
+                              |
+                              (?>
+                                 (?>struct|union)(*SKIP)${s}++${type}${name}${init}
                                  |
-                                 DEFINE_SPINLOCK${s}*+\(${s}*+${name}${s}*+\)
+                                 (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK)${s}*+\(${s}*+${name}${s}*+\)
                               )
+                              |
+                              (?:${type}${name}${init})
                            )
-                        )
+                        )(*SKIP)
                         ${s}*+;
                      /gxp) {
-      $globals{$+{name}} = ${^MATCH}
+      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{type}}
+         if exists $+{name} && ! exists $+{td}
    }
 
-   return $self->new(set => [ map {C::Global->new(name => $_, code => $globals{$_}, area => $area)} keys %globals ]);
+   return $self->new(set => [ map {C::Global->new(name => $_->{name}, code => $_->{code}, type => $_->{type}, area => $area)} @globals ]);
 }
 
 __PACKAGE__->meta->make_immutable;
