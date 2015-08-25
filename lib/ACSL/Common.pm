@@ -97,9 +97,10 @@ sub is_acsl_keyword
 
 sub prepare_tags
 {
-   my $code = $_[0];
    my %filter = map { $_ => undef } @{$_[1]};
    my $token = qr/($acsl_varname)\b/; #Don't append \b to the beginning
+
+   my $code = substr($_[0], 3);
 
    #remove strings
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;

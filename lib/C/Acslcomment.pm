@@ -37,7 +37,7 @@ sub _build_code_ids
    #logic
    #predicates
    #types
-   my $code = $_[0]->code;
+   my $code = substr($_[0]->code, 3);
    #remove oneline comments; nested multile are not possible
    $code =~ s!//.*!!g;
 
