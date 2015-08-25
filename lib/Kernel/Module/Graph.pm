@@ -399,18 +399,18 @@ sub build_sources_graph
    }
 
    # functions dependence by specs
-   foreach ($graph->edges) {
-      my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
-      my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
-
-      if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
-         if ($v1->function_spec && $v2->function_spec) {
-            #print $v1->name . " " . $v2->name;
-            $graph->delete_edge($_);
-            $graph->add_edge($v1->function_spec, $v2->function_spec);
-         }
-      }
-   }
+   #foreach ($graph->edges) {
+   #   my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
+   #   my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
+   #
+   #   if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
+   #      if ($v1->function_spec && $v2->function_spec) {
+   #         #print $v1->name . " " . $v2->name;
+   #         $graph->delete_edge($_);
+   #         $graph->add_edge($v1->function_spec, $v2->function_spec);
+   #      }
+   #   }
+   #}
 
 
    $graph
