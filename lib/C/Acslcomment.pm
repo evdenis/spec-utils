@@ -5,6 +5,8 @@ use Moose::Util::TypeConstraints;
 use Local::List::Util qw(difference);
 use ACSL::Common qw(prepare_tags);
 use namespace::autoclean;
+use C::GlobalSet;
+use C::EnumSet;
 
 use feature qw(state);
 use re '/aa';
@@ -46,6 +48,14 @@ sub _build_code_ids
                            (?:type\s+(\w++))|
                            (?:logic[\w\s\*]+\b(\w++)\s*+(?:\(|=))
                         )/gx;
+
+   if ((my $i = index($code, 'ghost')) != -1) {
+      $i += 5;
+      my $si = index($code, ';', $i);
+      $code = substr($code, $i, ($si - $i) + 1);
+      push @ids, C::EnumSet->parse(\$code, 'unknown')->map(sub {@{$_->get_code_ids}});
+      push @ids, C::GlobalSet->parse(\$code, 'unknown')->map(sub {@{$_->get_code_ids}});
+   }
 
    \@ids;
 }
