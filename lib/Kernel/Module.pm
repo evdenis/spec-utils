@@ -234,7 +234,7 @@ sub _parse_module_part
 
    adapt($$module_code, macro => 1);
 
-   %module = map { $_ => $module_code } qw(typedef enum structure global function)
+   %module = map { $_ => $module_code } qw(typedef enum structure global declaration function)
       if $$module_code;
 
    $module{macro} = \@module_macro

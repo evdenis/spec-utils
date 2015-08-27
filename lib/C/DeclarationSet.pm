@@ -20,16 +20,19 @@ has '+set' => (
 
 sub parse
 {
-   my $self = shift;
+   my ($self, $code, $area) = @_;
+   my %declarations;
 
-   my $declarations = Hash::Ordered->new();
-
-   my $ret  = qr/(?<ret>[\w\s\*$C::Util::Transformation::special_symbols]+)/;
+   #my $ret  = qr/(?<ret>[\w\s\*$C::Util::Transformation::special_symbols]+)/;
+   my $ret  = qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
    my $name = qr/(?<name>$varname)/;
    my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-   my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+   my $fbody = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+   my $kbody = qr/(?:;|$fbody)/;
+   my $mbody = qr/(?:;|$fbody(*SKIP)(*FAIL))/;
+   my $body  = ($area eq 'module' ? $mbody : $kbody);
 
-   while ( ${$_[0]} =~ m/($ret${s}*+\b$name${s}*+$args)${s}*+(?:;|$body)/g ) {
+   while ($$code =~ m/($ret${s}*+\b$name${s}*+$args)${s}*+$body/g) {
       my $name = $+{name};
       next if index($+{ret}, 'typedef') != -1;
       next if (any($name, \@keywords));
@@ -45,12 +48,12 @@ sub parse
          $code = normalize($code);
       }
 
-      unless ($declarations->exists($name)) {
-         $declarations->push($name => C::Declaration->new(name => $name, code => $code, area => $_[1]))
+      unless (exists $declarations{$name}) {
+         $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $area)
       }
    }
 
-   return $self->new(set => [$declarations->values]);
+   return $self->new(set => [values %declarations]);
 }
 
 

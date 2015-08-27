@@ -141,6 +141,17 @@ RECHECK:
                   my $n  = $set->get_from_index($i);
                   my $tn = blessed($n);
 
+                  #declaration <-> function handling
+                  if ($tn eq 'C::Declaration') {
+                     if (exists $index{$_}{'C::Function'}) {
+                        next;
+                     }
+                  } elsif ($tn eq 'C::Function') {
+                     if (exists $index{$_}{'C::Declaration'}) {
+                        delete $index{$_}{'C::Declaration'};
+                     }
+                  }
+
                   unless (exists $index{$_}{$tn}) {
                      $index{$_}{$tn} = $n
                   } elsif ($index{$_}{$tn} == $n) {
@@ -165,6 +176,10 @@ RECHECK:
                         if ($new->initialized && !$old->initialized) {
                            $index{$_}{$tn} = $new;
                         }
+                     }
+                  } elsif ($tn eq 'C::Declaration') {
+                     if (($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module')) {
+                        $index{$_}{$tn} = $n;
                      }
                   } else {
                      #print $index{$_}{$tn}->code . "\n";
@@ -601,7 +616,7 @@ sub output_sources_graph
                $content = $out{kernel_h}
             }
          } else {
-            if ($t eq 'C::Function' || $t eq 'C::Global') {
+            if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration') {
                $content = $out{module_c}
             } elsif ($t eq 'C::Macro') {
                $content = $out{module_macro}
@@ -706,6 +721,7 @@ digraph g
       module_macro;
       module_structure;
       module_function;
+      module_declaration;
       module_typedef;
       module_enum;
       module_global;
@@ -714,6 +730,7 @@ digraph g
       module_macro -> module_macro;
       module_macro -> module_structure;
       module_macro -> module_function;
+      module_macro -> module_declaration;
       module_macro -> module_typedef;
       module_macro -> module_enum;
       module_macro -> module_global;
@@ -722,6 +739,7 @@ digraph g
       kernel_macro -> module_macro;
       kernel_macro -> module_structure;
       kernel_macro -> module_function;
+      kernel_macro -> module_declaration;
       kernel_macro -> module_typedef;
       kernel_macro -> module_enum;
       kernel_macro -> module_global;
@@ -730,6 +748,7 @@ digraph g
       module_structure -> module_macro;
       module_structure -> module_structure;
       module_structure -> module_function;
+      module_structure -> module_declaration;
       module_structure -> module_typedef;
       module_structure -> module_enum; //sizeof
       module_structure -> module_global;
@@ -738,6 +757,7 @@ digraph g
       kernel_structure -> module_macro;
       kernel_structure -> module_structure;
       kernel_structure -> module_function;
+      kernel_structure -> module_declaration;
       kernel_structure -> module_typedef;
       kernel_structure -> module_enum; //sizeof
       kernel_structure -> module_global;
@@ -751,9 +771,14 @@ digraph g
       kernel_declaration -> module_global;
       kernel_declaration -> module_function;
 
+      module_decalration -> module_macro;
+      module_declaration -> module_global;
+      module_declaration -> module_function;
+
       module_typedef -> module_macro;
       module_typedef -> module_structure;
       module_typedef -> module_function;
+      module_typedef -> module_declaration;
       module_typedef -> module_typedef;
       module_typedef -> module_enum;
       module_typedef -> module_global;
@@ -762,6 +787,7 @@ digraph g
       kernel_typedef -> module_macro;
       kernel_typedef -> module_structure;
       kernel_typedef -> module_function;
+      kernel_typedef -> module_declaration;
       kernel_typedef -> module_typedef;
       kernel_typedef -> module_enum;
       kernel_typedef -> module_global;
@@ -770,6 +796,7 @@ digraph g
       module_enum -> module_macro;
       module_enum -> module_structure;
       module_enum -> module_function;
+      module_enum -> module_declaration;
       module_enum -> module_typedef;
       module_enum -> module_enum;
       module_enum -> module_global;
@@ -778,6 +805,7 @@ digraph g
       kernel_enum -> module_macro;
       kernel_enum -> module_structure;
       kernel_enum -> module_function;
+      kernel_enum -> module_declaration;
       kernel_enum -> module_typedef;
       kernel_enum -> module_enum;
       kernel_enum -> module_global;

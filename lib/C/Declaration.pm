@@ -3,7 +3,8 @@ use Moose;
 
 use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
-use C::Util::Transformation qw(:RE filter_comments_dup);
+use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
+use ACSL::Common qw(is_acsl_spec);
 use Local::List::Util qw(difference);
 use namespace::autoclean;
 
@@ -54,7 +55,21 @@ sub add_spec
 sub to_string
 {
    my $code = $_[0]->code;
+   my $comments = $_[1];
    $code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
+
+   my @cmnt = $code =~ m/$comment_t{pattern}/g;
+   foreach (@cmnt) {
+      if (is_acsl_spec($comments->[$_])) {
+         my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
+         $code = substr($code, $pos);
+         goto FW_DECL
+      }
+   }
+   # remove all comments since there is no specification binded to declaration
+   $code =~ s/^${s}++//;
+
+FW_DECL:
 
    $code
 }
