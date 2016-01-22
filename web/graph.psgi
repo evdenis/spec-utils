@@ -87,6 +87,7 @@ sub generate_image
       $config{cache} = $cache_default;
       run(\%config)
    } catch {
+      warn "Can't generate image: $_\n";
       $fail = 1;
    };
 
