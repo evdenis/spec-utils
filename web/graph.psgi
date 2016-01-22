@@ -45,7 +45,6 @@ delete $config{graph_config_file};
 
 $config{functions} = [];
 $config{async}     = 0;
-$config{view}      = 0;
 $config{keep_dot}  = 0;
 
 $config{out}        .= $$;
