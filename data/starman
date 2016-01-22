@@ -2,6 +2,7 @@
     missingok
     notifempty
     weekly
+    maxsize 5M
     rotate 5
 
     copytruncate
