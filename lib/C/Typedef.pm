@@ -1,6 +1,7 @@
 package C::Typedef;
 use Moose;
 
+use Moose::Util::TypeConstraints;
 use RE::Common qw($varname);
 use C::Util::Parsing qw(_get_structure_wo_field_names);
 use C::Util::Transformation qw(:RE);
@@ -21,6 +22,15 @@ has 'inside' => (
    init_arg => undef
 );
 
+#only to mimic struct
+has 'type' => (
+   is => 'ro',
+   isa => enum([qw(struct union)]),
+   lazy => 1,
+   builder => '_get_type',
+   init_arg => undef
+);
+
 
 sub _build_inside
 {
@@ -28,6 +38,14 @@ sub _build_inside
       return $2 ? [$1, $2] : [$1]
    }
 
+   undef
+}
+
+sub _get_type
+{
+   if ($_[0]->inside) {
+      return @{$_[0]->inside}[0];
+   }
    undef
 }
 
