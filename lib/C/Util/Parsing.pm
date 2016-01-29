@@ -93,7 +93,7 @@ sub _argname_exists
       return @result
    }
 
-   my $name_ex = qr/($varname)(?:\[[^\]]+\]|:\d+)?/;
+   my $name_ex = qr/($varname)(?:${h}*+(?:\[[^\]]+\]|:${h}*+\d+))?/;
    my $several = index($_[0], ',');
    if ($several != -1) {
       my $tail = substr($_[0], $several + 1);
