@@ -99,8 +99,11 @@ sub _argname_exists
       my $tail = substr($_[0], $several + 1);
       push @result, $1 while ($tail =~ m/($varname)/g);
 
-      $_[0] =~ m/${name_ex}${h}*+,/;
-      unshift @result, $1;
+      if ($_[0] =~ m/${name_ex}${h}*+,/) {
+         unshift @result, $1
+      } else {
+         warn "Could't parse first line of field $_[0]\n"
+      }
 
       return @result;
    } elsif ($_[0] =~ m/${name_ex}${h}*+\Z/) {
