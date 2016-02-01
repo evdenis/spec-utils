@@ -162,8 +162,9 @@ my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my %config;
 my $config_file;
+my $config_direct = 0;
 GetOptions(
-   'config=s' => \$config_file,
+   'config=s' => sub { $config_file = $_[1], $config_direct = 1 },
 ) or pod2usage(1);
 
 $config{all}                 = 0;
@@ -178,7 +179,19 @@ $config{plugin}              = [];
 $config{full}                = 0;
 $config{done}                = undef;
 
-if ($config_file && -r $config_file || (defined ($config_file = find_config()))) {
+
+my $config_exists = 0;
+if (! $config_file || ! -r $config_file) {
+   if ($config_direct) {
+      die "Can't open config file $config_file.\n"
+   } elsif (defined ($config_file = find_config())) {
+      $config_exists = 1
+   }
+} else {
+   $config_exists = 1
+}
+
+if ($config_exists) {
    ### CONFIG FILE: $config_file
    open(my $conf, '<', $config_file);
    while (<$conf>) {
