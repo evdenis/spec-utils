@@ -4,6 +4,7 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use Local::List::Util qw(difference);
 use ACSL::Common qw(prepare_tags);
+use RE::Common qw/$varname/;
 use namespace::autoclean;
 use C::GlobalSet;
 use C::EnumSet;
@@ -44,9 +45,9 @@ sub _build_code_ids
    $code =~ s!//.*!!g;
 
    my @ids = $code =~ m/(?|
-                           (?:predicate\s+(\w++))|
-                           (?:type\s+(\w++))|
-                           (?:logic[\w\s\*]+\b(\w++)\s*+(?:\(|=))
+                           (?:predicate\s++($varname))|
+                           (?:type\s++($varname))|
+                           (?:logic[\w\s\*]+\b($varname)\s*+[(={])
                         )/gx;
 
    if ((my $i = index($code, 'ghost')) != -1) {
