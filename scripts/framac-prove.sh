@@ -30,6 +30,7 @@ ERR_INVALID=$?
 echo "$OUT" | grep -qPie '\bvalid\b'
 ERR_VALID=$?
 
+echo -n 'VERDICT: '
 if [[ $ERR -eq 0 && $ERR_INVALID -eq 0 ]]
 then
    #echo $OUT
