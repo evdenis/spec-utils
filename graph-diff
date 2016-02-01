@@ -1,0 +1,95 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use feature qw(say state);
+
+use utf8::all;
+use Graph;
+use Graph::Directed;
+use Graph::Writer::Dot;
+use Graph::Reader::Dot;
+use File::Which;
+use lib::abs 'lib';
+use Data::Printer;
+
+use Local::List::Util qw/difference/;
+
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
+
+
+my $reader = Graph::Reader::Dot->new();
+my $old_g = $reader->read_graph('old_g.dot');
+my $new_g = $reader->read_graph('new_g.dot');
+
+my $ogv = [$old_g->vertices];
+my $ngv = [$new_g->vertices];
+
+
+my @new_vertices = difference $ngv, $ogv;
+my @del_vertices = difference $ogv, $ngv;
+#p @new_vertices;
+#p @del_vertices;
+
+my $oge = [$old_g->edges];
+my $nge = [$new_g->edges];
+
+
+sub edge_difference ($$)
+{
+   my $norm = sub { $_->[0] . $_->[1] };
+   my %s = map { $norm->($_) => undef } @{$_[1]};
+   my @res;
+
+   foreach (@{$_[0]}) {
+      push @res, $_
+         unless exists $s{$norm->($_)}
+   }
+
+   @res
+}
+
+my @new_edges = edge_difference $nge, $oge;
+my @del_edges = edge_difference $oge, $nge;
+#p @new_edges;
+#p @del_edges;
+
+my $dg = Graph::Directed->new();
+$dg->add_vertices(@del_vertices, @new_vertices);
+foreach(@del_vertices) {
+   $dg->set_vertex_attributes($_, {style => 'bold,dashed', shape => 'box', color => 'red'});
+}
+foreach(@new_vertices) {
+   $dg->set_vertex_attributes($_, {style => 'bold', shape => 'box', color => 'green'});
+}
+
+
+$dg->add_edges(@del_edges, @new_edges);
+foreach(@del_edges) {
+   $dg->set_edge_attributes(@$_, {style => 'dashed', arrowhead => 'inv', color => 'red'});
+}
+foreach(@new_edges) {
+   $dg->set_edge_attributes(@$_, {style => 'bold', arrowhead => 'diamond', color => 'green'});
+}
+
+my $fname_dot = "graph_diff.dot";
+my $output    = "graph_diff.svg";
+my $open_with = "xdg-open";
+Graph::Writer::Dot->new()->write_graph($dg, $fname_dot);
+
+system('dot', "-Tsvg", '-o', $output, $fname_dot);
+
+if (which($open_with)) {
+   fork and exit;
+   say "Opening an image ...";
+   close(STDOUT);
+   close(STDERR);
+   system($open_with, $output);
+}
+
