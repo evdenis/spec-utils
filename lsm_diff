@@ -20,8 +20,14 @@ use C::Util::Transformation;
 use Local::String::Util qw(normalize);
 use Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
+BEGIN {
+   eval {
+      require Smart::Comments;
+      Smart::Comments->import();
+   }
+}
 
-use constant SECURITY_H => catfile(qw(include linux security.h));
+
 my $sec_hooks_file = 'sec-hooks.c';
 
 my $kdir;
@@ -31,16 +37,18 @@ my $output = '';
 my $csvout = 0;
 
 GetOptions(
-   'kernel|k=s'    => sub { if (check_kernel_files_readable($_[1], SECURITY_H)) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'kernel|k=s'    => sub { if (check_kernel_files_readable($_[1], 'Makefile')) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
    'module|m=s'    => \$mdir,
    'file|f=s'      => \$sec_hooks_file,
    'output|o=s'    => \$output,
    'csv-output|c!' => \$csvout,
 ) or die "Incorrect usage!\n";
 
-die(qq(Incorrect path to module: "$mdir"\n)) if $mdir && !( -d $mdir && -r catfile($mdir, $sec_hooks_file) );
+my $mh_path = catfile($mdir, $sec_hooks_file);
+die(qq(Incorrect path to module: "$mdir"\n))
+   if $mdir && !( -d $mdir && -r $mh_path );
 
-$kdir //= autodetect_kernel_directory(files => [SECURITY_H]);
+$kdir //= autodetect_kernel_directory(files => [qw/Makefile/]);
 
 die "Can't find path to linux kernel sources directory.\n"
    unless $kdir;
@@ -61,9 +69,30 @@ my $kernel_version = do {
    join('.', map { <$MK> =~ m/=\s*(\d+)/ } (1 .. 3))
 };
 
+my $kernel_header;
+my $parse_structure_defition_ops_fields;
+my $v_to_n = sub {$_[0] =~ s/\.//gr};
+if ($v_to_n->($kernel_version) >= $v_to_n->('4.1.0')) {
+   $kernel_header = catfile(qw(include linux lsm_hooks.h));
+   $parse_structure_defition_ops_fields = \&parse_structure_defition_ops_fields_410;
+} else {
+   $kernel_header = catfile(qw(include linux security.h));
+   $parse_structure_defition_ops_fields = \&parse_structure_defition_ops_fields_before_410;
+}
 
-my $sec_file   = read_file(catfile($kdir, SECURITY_H));
-my $hooks_file = read_file(catfile($mdir, $sec_hooks_file));
+my $kh_path = catfile($kdir, $kernel_header);
+die "Can't read kernel header $kh_path\n"
+   unless -r $kh_path;
+
+### KERNEL: $kdir
+### KERNEL VERSION: $kernel_version
+### MODULE: $mdir
+### MODULE LSM HOOKS FILE: $sec_hooks_file
+### KERNEL LSM HOOKS FILE: $kernel_header
+
+
+my $sec_file   = read_file($kh_path);
+my $hooks_file = read_file($mh_path);
 
 adapt($sec_file,   comments => 1);
 adapt($hooks_file, comments => 1);
@@ -78,9 +107,14 @@ sub argtype {
    return $1 eq '' ? 'void' : $1;
 }
 
-sub parse_structure_defition_ops_fields {
+sub parse_structure_defition_ops_fields_410 {
    my $conf = $_[1];
-   map { normalize($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
+   map { $_ = normalize($_); if (m/LSM_HOOK_INIT\((\w++),\h*(\w++)\)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /^/, $_[0];
+}
+
+sub parse_structure_defition_ops_fields_before_410 {
+   my $conf = $_[1];
+   map { $_ = normalize($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
 }
 
 sub parse_structure_declaration_ops_fields {
@@ -97,7 +131,7 @@ sub parse_security_operations_structure {
    my $handler = $_[1];
    my %structure;
 
-   if ($_[0] =~ m/struct\s+security_operations(?:\s+\w+\s*=)?\s*(?<br>\{(?:(?>[^\{\}]+)|(?&br))+\})/m) {
+   if ($_[0] =~ m/^\h*(?:struct|union)\s++security_(?:operations|list_options|hook_list)(?:\s++[\w\[\]]+\s*=)?\s*(?<br>\{(?:(?>[^\{\}]+)|(?&br))+\})/m) {
       my @lines = split /\n/, $1;
       my $buf = '';
       my @ifdefs;
@@ -146,8 +180,7 @@ sub parse_security_operations_structure {
 }
 
 my %str_kernel = parse_security_operations_structure $sec_file, \&parse_structure_declaration_ops_fields;
-my %str_module = parse_security_operations_structure $hooks_file, \&parse_structure_defition_ops_fields;
-
+my %str_module = parse_security_operations_structure $hooks_file, $parse_structure_defition_ops_fields;
 
 foreach (keys %str_kernel) {
    if (defined $str_module{$_}) {
