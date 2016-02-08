@@ -11,8 +11,10 @@ use Graph::Directed;
 use Graph::Writer::Dot;
 use Graph::Reader::Dot;
 use File::Which;
+use File::Temp qw(tmpnam);
 use lib::abs 'lib';
-use Data::Printer;
+use Getopt::Long qw(:config gnu_getopt);
+use Pod::Usage;
 
 use Local::List::Util qw/difference/;
 
@@ -23,19 +25,135 @@ BEGIN {
    }
 }
 
+=encoding utf8
+
+=pod
+
+=head1 graph-diff
+
+graph-diff - Отображает разницу между двумя dot файлами.
+
+=head1 SYNOPSIS
+
+ graph-diff [options]
+
+ Программа на основе двух входных файлов dot, первый - соответствует
+ графу вызовов старой версии исходных кодов, второй - новой, создаёт
+ dot файл с графом-разницей.
+
+ Для полноценной работы требуется программа dot из пакета graphviz.
+
+ Options:
+  -n|new-graph            - путь к новому графу в фале dot (default: new_g.dot)
+  -o|old-graph            - путь к старому графу в файле dot (default: old_g.dot)
+  -p|--out|--output name  - имя результирующего файла
+  -v|--[no-]view          - запускать программу просмотрщик (default: on)
+  -k|--[no-]keep-dot      - сохранять dot файл (default: off)
+  -f|--format name        - формат выходного файла
+  -w|--open-with name     - имя программы просмотрщика (default: xdg-open)
+  -h|--help               - выводит полное описание программы
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-n|--new-graph>
+
+Указывает путь до графа вызовов функций, построенного на основе новой версии исходных кодов. По умолчанию используется файл new_g.dot
+
+=item B<-o|--old-graph>
+
+Указывает путь до графа вызовов функций, построенного на основе старой версии исходных кодов. По умолчанию используется файл old_g.dot
+
+=item B<-p|--out|--output name>
+
+Задаёт имя выходного файла. Имя должно быть без расширения, оно добавляется автоматически в зависимости от опции --format. Если опция задаётся, то создаётся временный файл, который впоследствии удаляется.
+
+=item B<-v|--[no-]view>
+
+Опция определяет, будет ли запущена программа просмотрщик после того, как строится карта. По умолчанию опция включена, если X сервер активен. Запускается программа, которая зарегистрирована стандартной для открытия файлов с расширением, которое определяется опцией --format. Изменить программу просмотрщик можно с помощью опции --open-with. 
+
+=item B<-k|--[no-]keep-dot>
+
+Опция определяет, будет ли сохранён dot файл. По умолчанию опция включена, если X сервер не активен.
+
+=item B<-f|--format name>
+
+Опция задаёт формат, в котором будет представлена карта. Так как построение карты осуществляется программой dot, список поддерживаемых форматов определяется ей же. По умолчанию формат карты - svg.
+
+=item B<-w|--open-with name>
+
+Опция задаёт программу, которая будет использована для просмотра карты, при включённой опции --view. По-умолчанию используется xdg-open.
+
+=item B<-h|--help>
+
+Выводит полное описание программы.
+
+=back
+
+=head1 DESCRIPTION
+
+Программа на основе двух входных файлов dot, первый - соответствует графу вызовов старой версии исходных кодов, второй - новой, создаёт dot файл с графом-разницей. После запускается программа dot, которая переводит его в графическое представление. На выходе получается .svg файл. Автоматически запускается программа просмотрщик. На изображеннии зелёным цветом отмечаются те вершины и дуги, которые были добавлены в новой версии по сравнению со старой, красным - те вершины и дуги, которые были убраны в новой версии. Чёрным цветом отмечаются те вершины, которые присутствуют в обеих версиях.
+
+=cut
+
+my $dot_exists = 0;
+unless (which('dot')) {
+   warn "Please, install graphviz package. This program requires dot to operate properly.\n"
+} else {
+   $dot_exists = 1;
+}
+
+
+my $help = 0;
+my $format = 'svg';
+my $open_with = 'xdg-open';
+my $view;
+my $keep_dot;
+my $fname;
+my $old_gname = 'old_g.dot';
+my $new_gname = 'new_g.dot';
+
+if (defined $ENV{DISPLAY}) {
+   $keep_dot = 0;
+   $view = 1;
+} else {
+   $keep_dot = 1;
+   $view = 0;
+}
+
+GetOptions(
+   'new-graph|n=s'    =>  \$new_gname,
+   'old-graph|o=s'    =>  \$old_gname,
+   'output|out|p=s'   =>  \$fname,
+   'view|v!'          =>  \$view,
+   'keep-dot|k!'      =>  \$keep_dot,
+   'format|f=s'       =>  \$format,
+   'open-with|w=s'    =>  \$open_with,
+   'help|h'           =>  \$help
+) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0}) if $help;
+
+unless ($dot_exists) {
+   $view = 0;
+   $keep_dot = 1;
+}
+
+die "Can't read file $new_gname. please, use option --new-graph <file>\n"
+   unless -r $new_gname;
+die "Can't read file $old_gname. please, use option --old-graph <file>\n"
+   unless -r $old_gname;
 
 my $reader = Graph::Reader::Dot->new();
-my $old_g = $reader->read_graph('old_g.dot');
-my $new_g = $reader->read_graph('new_g.dot');
+my $old_g = $reader->read_graph($old_gname);
+my $new_g = $reader->read_graph($new_gname);
 
 my $ogv = [$old_g->vertices];
 my $ngv = [$new_g->vertices];
 
-
 my @new_vertices = difference $ngv, $ogv;
 my @del_vertices = difference $ogv, $ngv;
-#p @new_vertices;
-#p @del_vertices;
 
 my $oge = [$old_g->edges];
 my $nge = [$new_g->edges];
@@ -57,8 +175,6 @@ sub edge_difference ($$)
 
 my @new_edges = edge_difference $nge, $oge;
 my @del_edges = edge_difference $oge, $nge;
-#p @new_edges;
-#p @del_edges;
 
 my $dg = Graph::Directed->new();
 $dg->add_vertices(@del_vertices, @new_vertices);
@@ -78,18 +194,34 @@ foreach(@new_edges) {
    $dg->set_edge_attributes(@$_, {style => 'bold', arrowhead => 'diamond', color => 'green'});
 }
 
-my $fname_dot = "graph_diff.dot";
-my $output    = "graph_diff.svg";
-my $open_with = "xdg-open";
+unless ($fname) {
+   $fname = tmpnam();
+}
+
+my $fname_dot = "$fname.dot";
+my $output = "$fname.$format";
 Graph::Writer::Dot->new()->write_graph($dg, $fname_dot);
 
-system('dot', "-Tsvg", '-o', $output, $fname_dot);
+if ($dot_exists) {
+   system('dot', "-T$format", '-o', $output, $fname_dot) == 0 or exit 2;
+   say "Image: $output";
+}
 
-if (which($open_with)) {
-   fork and exit;
-   say "Opening an image ...";
-   close(STDOUT);
-   close(STDERR);
-   system($open_with, $output);
+unless ($keep_dot) {
+   unlink $fname_dot
+} else {
+   say "Dot file: $fname_dot"
+}
+
+if ($view) {
+   if (which($open_with)) {
+      fork and exit;
+      say "Opening an image ...";
+      close(STDOUT);
+      close(STDERR);
+      system($open_with, $output);
+   } else {
+      die("Can't find $open_with program to view the $output\n");
+   }
 }
 
