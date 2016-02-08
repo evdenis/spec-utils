@@ -210,10 +210,7 @@ foreach ($g->predecessorless_vertices()) {
       unless $g->has_vertex_attribute($_, 'alien')
 }
 
-my $keep_output = 1;
-
 unless ($fname) {
-   $keep_output = 0;
    $fname = tmpnam();
 }
 
@@ -221,10 +218,10 @@ my $fname_dot = "$fname.dot";
 my $output = "$fname.$format";
 Graph::Writer::Dot->new()->write_graph($g, $fname_dot);
 
-if ($view || $keep_output) {
+if ($view) {
    system('dot', "-T$format", '-o', $output, $fname_dot) == 0 or exit 2;
+   say "Image: $output";
 }
-say "Image: $output" if $keep_output;
 
 unless ($keep_dot) {
    unlink $fname_dot
@@ -232,20 +229,15 @@ unless ($keep_dot) {
    say "Dot file: $fname_dot"
 }
 
-
-unless ($view) {
-   unlink $output unless $keep_output;
-   exit
-}
-
-if (which($open_with)) {
-   fork and exit;
-   say "Opening an image ...";
-   close(STDOUT);
-   close(STDERR);
-   system($open_with, $output);
-   unlink $output unless $keep_output;
-} else {
-   die("Can't find $open_with program to view the $output\n");
+if ($view) {
+   if (which($open_with)) {
+      fork and exit;
+      say "Opening an image ...";
+      close(STDOUT);
+      close(STDERR);
+      system($open_with, $output);
+   } else {
+      die("Can't find $open_with program to view the $output\n");
+   }
 }
 
