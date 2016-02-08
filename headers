@@ -101,6 +101,13 @@ headers - Отображает на карте граф подключений �
 
 =cut
 
+my $dot_exists = 0;
+unless (which('dot')) {
+   warn "Please, install graphviz package. This program requires dot to operate properly.\n"
+} else {
+   $dot_exists = 1;
+}
+
 
 my $help = 0;
 my $detailed = 0;
@@ -130,6 +137,11 @@ GetOptions(
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
+
+unless ($dot_exists) {
+   $view = 0;
+   $keep_dot = 1;
+}
 
 @dir = @ARGV if @ARGV;
 foreach (@dir) {
