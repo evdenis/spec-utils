@@ -5,16 +5,29 @@ use strict;
 
 use feature qw/say/;
 
-use File::Temp qw/tempfile tempdir/;
+use File::Temp qw/tempdir/;
+use XML::Simple;
 
 my $preprocessed = qx!./get_preprocessed -p!;
-my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 0);
+my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
 open my $fh, '>', "$tempdir/sources.c";
 print $fh $preprocessed;
 close $fh;
 
 my $xml = qx!lizard -X $tempdir!;
-print STDOUT $xml;
+
+my $xs  = XML::Simple->new();
+my $ref = $xs->XMLin($xml);
+
+my $items = $ref->{measure}[0]{item};
+use Data::Printer;
+
+foreach(keys %$items) {
+   my $value = $items->{$_}{value};
+   my $name = ($_ =~ m/(^[^\)]++\))/)[0];
+   say "$name lines: " . $value->[0] . " NCSS: " . $value->[1] . " CCN: " . $value->[2]
+}
+
 
 
 
