@@ -45,6 +45,7 @@ sub run
       cache        => { required => 0, defined => 1 },
       cache_file   => { required => 1, defined => 1 },
       config       => { required => 1, defined => 1 },
+      renew_cache  => { required => 0 },
       done         => { required => 0 },
       preprocessed => { required => 0 },
       functions    => { required => 0 },
@@ -77,6 +78,10 @@ sub run
    #Initializing the library
    Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
 
+   if ($args->{renew_cache}) {
+      $args->{cache} = 0
+   }
+
    if ($args->{cache}) {
       unless (-r $args->{cache_file}) {
          $args->{cache} = 0
@@ -104,7 +109,10 @@ sub run
 CACHE: if ($args->{cache}) {
       $graph = retrieve($args->{cache_file})
    } else {
-      store($graph, $args->{cache_file})
+      store($graph, $args->{cache_file});
+
+      exit 0
+         if $args->{renew_cache}
    }
 
    #1

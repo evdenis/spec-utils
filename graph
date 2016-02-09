@@ -55,6 +55,7 @@ graph - построить граф вызовов функций модуля �
                              исходных кодов
                              (default: off)
 
+  --renew-cache            - обновить кэш и выйти
   --format fmt             - формат карты
                              (default: svg)
 
@@ -108,7 +109,11 @@ graph - построить граф вызовов функций модуля �
 
 =item B<--[no-]cache>
 
-Программа при первом запуске кэширует результаты обработки исходного кода модуля ядра (файл F<.cache/graph_map.cache>). При последующих запусках используются сохранённые результаты. Чтобы программа не использовала их необходимо задать опцию --no-cache. В таком случае кэш будет обновлён.
+Программа при первом запуске кэширует результаты обработки исходного кода модуля ядра (файл F<.cache/graph_map.cache>). При последующих запусках используются сохранённые результаты. Чтобы программа не использовала их необходимо, задать опцию --no-cache. В таком случае кэш будет обновлён.
+
+=item B<--renew-cache>
+
+Обновить кэш и выйти.
 
 =item B<--format fmt>
 
@@ -180,24 +185,25 @@ graph - построить граф вызовов функций модуля �
 
 
 my %args;
-$args{functions}   = [];
-$args{format}      = 'svg';
-$args{out}         = 'graph';
-$args{cache_file}  = 'graph_map.cache';
-$args{done}        = 1;
-$args{priority}    = 1;
-$args{issues}      = 0;
-$args{stat}        = 1;
-$args{mark_anyway} = 0;
-$args{view}        = undef;
-$args{async}       = 1;
-$args{keep_dot}    = 1;
-$args{reverse}     = 0;
-$args{level}       = undef;
-$args{cache}       = 0;
-$args{config}      = find_config();
+$args{functions}    = [];
+$args{format}       = 'svg';
+$args{out}          = 'graph';
+$args{cache_file}   = 'graph_map.cache';
+$args{done}         = 1;
+$args{priority}     = 1;
+$args{issues}       = 0;
+$args{stat}         = 1;
+$args{mark_anyway}  = 0;
+$args{view}         = undef;
+$args{async}        = 1;
+$args{keep_dot}     = 1;
+$args{reverse}      = 0;
+$args{level}        = undef;
+$args{cache}        = 0;
+$args{renew_cache} = 0;
+$args{config}       = find_config();
 
-my @cache_dir     = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
+my @cache_dir       = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
 my $help = 0;
 
 GetOptions(
@@ -209,6 +215,7 @@ GetOptions(
    'module|m=s'              =>  \$args{module_dir},
    'kernel|k=s'              =>  \$args{kernel_dir},
    'cache!'                  =>  \$args{cache},
+   'renew-cache'             =>  \$args{renew_cache},
    'done!'                   =>  \$args{done},
    'priority!'               =>  \$args{priority},
    'issues|i!'               =>  \$args{issues},
@@ -220,6 +227,8 @@ GetOptions(
    'help|h'                  =>  \$help
 ) or pod2usage(1);
 
+$args{cache} = 0
+   if $args{renew_cache};
 $args{functions} = [ split(/,/,join(',', @{ $args{functions} })) ];
 
 $args{view} = 'xdg-open'                        # default value
