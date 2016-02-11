@@ -5,8 +5,12 @@ use strict;
 
 use feature qw/say/;
 
+use utf8::all;
 use File::Temp qw/tempdir/;
 use XML::Simple;
+use IO::Interactive;
+use Text::ANSITable;
+
 
 my $preprocessed = qx!./get_preprocessed -p!;
 my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
@@ -20,14 +24,44 @@ my $xs  = XML::Simple->new();
 my $ref = $xs->XMLin($xml);
 
 my $items = $ref->{measure}[0]{item};
-use Data::Printer;
 
-foreach(keys %$items) {
-   my $value = $items->{$_}{value};
-   my $name = ($_ =~ m/(^[^\)]++\))/)[0];
-   say "$name lines: " . $value->[0] . " NCSS: " . $value->[1] . " CCN: " . $value->[2]
+my $column_names = ['Idx', 'Function', 'SLOC', 'CCN'];
+my $obj;
+my $addfunc;
+my $retfunc;
+
+my $t = Text::ANSITable->new;
+$t->border_style('Default::bold');
+if (IO::Interactive::is_interactive()) {
+   $t->color_theme('Default::default_gradation');
+} else {
+   $t->color_theme('Default::no_color');
 }
 
+$t->columns($column_names);
+$t->set_column_style('Idx',      pad    => 0);
+$t->set_column_style('Function', align  => 'left');
+$t->set_column_style('SLOC',     align  => 'middle');
+$t->set_column_style('CCN',      align  => 'middle');
 
+$obj = \$t;
+$addfunc = \&Text::ANSITable::add_row;
+$retfunc = \&Text::ANSITable::draw;
 
+my %to_output;
+foreach(sort keys %$items) {
+   my $name = ($_ =~ m/(^[^\)]++\))/)[0];
+   my @value = @{$items->{$_}{value}}[1,2];
+   $to_output{$name} = {SLOC => $value[0], CCN => $value[1]};
+}
+
+my $counter = 1;
+foreach (sort keys %to_output) {
+#foreach (sort {$to_output{$a}{SLOC} <=> $to_output{$b}{SLOC}} keys %to_output) {
+#foreach (sort {$to_output{$a}{CCN} <=> $to_output{$b}{CCN}} keys %to_output) {
+   $addfunc->($$obj, [$counter++, $_, @{$to_output{$_}}{qw/SLOC CCN/}]);
+}
+
+my $str = $retfunc->($$obj);
+print $str;
 
