@@ -10,6 +10,7 @@ use File::Temp qw/tempdir/;
 use XML::Simple;
 use IO::Interactive;
 use Text::ANSITable;
+use Class::CSV;
 
 
 my $preprocessed = qx!./get_preprocessed -p!;
@@ -30,23 +31,39 @@ my $obj;
 my $addfunc;
 my $retfunc;
 
-my $t = Text::ANSITable->new;
-$t->border_style('Default::bold');
-if (IO::Interactive::is_interactive()) {
-   $t->color_theme('Default::default_gradation');
+my $csvout = 1;
+
+unless ($csvout) {
+   my $t = Text::ANSITable->new;
+   $t->border_style('Default::bold');
+   if (IO::Interactive::is_interactive()) {
+      $t->color_theme('Default::default_gradation');
+   } else {
+      $t->color_theme('Default::no_color');
+   }
+
+   $t->columns($column_names);
+   $t->set_column_style('Idx',      pad    => 0);
+   $t->set_column_style('Function', align  => 'left');
+   $t->set_column_style('SLOC',     align  => 'middle');
+   $t->set_column_style('CCN',      align  => 'middle');
+
+   $obj = \$t;
+   $addfunc = \&Text::ANSITable::add_row;
+   $retfunc = \&Text::ANSITable::draw;
 } else {
-   $t->color_theme('Default::no_color');
+   my $csv = Class::CSV->new(
+      fields         => $column_names,
+      line_separator => "\r\n",
+      csv_xs_options => {
+         sep_char          => ';',
+      },
+   );
+
+   $obj = \$csv;
+   $addfunc = \&Class::CSV::add_line;
+   $retfunc = \&Class::CSV::string;
 }
-
-$t->columns($column_names);
-$t->set_column_style('Idx',      pad    => 0);
-$t->set_column_style('Function', align  => 'left');
-$t->set_column_style('SLOC',     align  => 'middle');
-$t->set_column_style('CCN',      align  => 'middle');
-
-$obj = \$t;
-$addfunc = \&Text::ANSITable::add_row;
-$retfunc = \&Text::ANSITable::draw;
 
 my %to_output;
 foreach(sort keys %$items) {
