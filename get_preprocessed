@@ -8,7 +8,7 @@ use lib::abs 'lib';
 
 package TS {
 
-   use MooseX::App::Simple qw(Color Env);
+   use MooseX::App::Simple qw(Color);
 
    use Kernel::Module qw(prepare_module_sources preprocess_module_sources);
    use C::Util::Transformation;
