@@ -69,8 +69,13 @@ package TS {
 
    sub run {
       my ($self) = @_;
-      my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
 
+      die "Please, provide valid path to kernel.\n"
+         unless -d $self->kernel;
+      die "Please, provide valid path to module.\n"
+         unless -d $self->module;
+
+      my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
       my $source = ($func->($self->kernel, $self->module, ["#define SPECIFICATION 1\n"]))[1];
 
       {
