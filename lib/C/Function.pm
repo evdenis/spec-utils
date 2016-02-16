@@ -1,7 +1,7 @@
 package C::Function;
 use Moose;
 
-use C::Util::Parsing qw(_argname_exists);
+use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
 use Local::List::Util qw(difference);
@@ -38,11 +38,23 @@ has 'spec_ids' => (
    builder => '_build_specs'
 );
 
+has 'calls' => (
+   isa => 'ArrayRef[Str]',
+   is => 'ro',
+   lazy => 1,
+   init_arg => undef,
+   builder => '_build_calls'
+);
+
 has [qw/ret args body/] => (
    is => 'ro',
    isa => 'Str',
    required => 1
 );
+
+sub _build_calls {
+   parse_calls($_[0]->code)
+}
 
 sub _build_specs
 {
