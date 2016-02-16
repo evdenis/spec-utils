@@ -12,8 +12,13 @@ use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
 
+use lib::abs 'lib';
 
-my $preprocessed = qx!./get_preprocessed -p!;
+use Local::List::Util qw(uniq difference intersection any);
+use C::FunctionSet;
+use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
+
+my $preprocessed = qx!./get_preprocessed --preprocess --attributes --macro --strings --comments!;
 my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
 open my $fh, '>', "$tempdir/sources.c";
 print $fh $preprocessed;
@@ -26,12 +31,118 @@ my $ref = $xs->XMLin($xml);
 
 my $items = $ref->{measure}[0]{item};
 
-my $column_names = ['Idx', 'Function', 'SLOC', 'CCN'];
+my %to_output;
+foreach(keys %$items) {
+   my $name = ($_ =~ m/(^[^\(]++)/)[0];
+   my @value = @{$items->{$_}{value}}[1,2];
+   $to_output{$name} = {SLOC => $value[0], CCN => $value[1]};
+}
+
+#Initializing the library
+Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
+
+my %sources;
+$sources{module}{function} = C::FunctionSet->parse(\$preprocessed, 'module');
+my $graph = build_sources_graph(\%sources);
+
+#these are special kernel functions generated after preprocessing
+#$graph->delete_vertices( qw(__check_enabled __inittest) );
+
+use YAML::XS qw(LoadFile);
+my $args;
+$args->{config} = '.graph.conf';
+if ($args->{config} && -r $args->{config}) {
+   $args->{config} = LoadFile($args->{config})
+}
+die("Can't read config file.\n")
+   unless $args->{config};
+
+while ( my ($i, $list) = each @{ $args->{config}{priority}{lists} } ) {
+   foreach (uniq @$list) {
+      if ($graph->has_vertex($_)) {
+         unless ($graph->has_vertex_attribute($_, 'priority')) {
+            $graph->set_vertex_attribute($_, priority => $i + 1);
+         }
+         foreach ($graph->all_successors($_)) {
+            unless ($graph->has_vertex_attribute($_, 'priority')) {
+               $graph->set_vertex_attribute($_, priority => $i + 1);
+            }
+         }
+      } else {
+         warn "Priority list: there is no such function '$_' in sources.\n"
+      }
+   }
+}
+
+my %mfunc = map {$_ => undef} $graph->vertices;
+my @m_func = $graph->vertices;
+my $subgraph = Graph::Directed->new(
+                  edges    => [ map {
+                                       map { [$_->[1], $_->[0]] }
+                                       $graph->edges_to($_)
+                                }  @m_func ],
+                  vertices => \@m_func
+               );
+while ($subgraph->has_a_cycle) {
+   my @cycle = $subgraph->find_a_cycle();
+   if (@cycle == 1) {
+      $subgraph->delete_edge(@cycle[0,0])
+   } else {
+      $subgraph->delete_edge(@cycle[0,1])
+   }
+}
+my %vertices = map {$_ => undef} $subgraph->vertices;
+my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
+my $level = 1;
+while (%vertices) {
+   my @zv;
+
+   foreach(keys %vertices) {
+      push @zv, $_ if 0 == $vd{$_};
+   }
+
+   unless (@zv) {
+      warn "There is no possibility to continue. Cycle.\n";
+      exit;
+      last;
+   }
+
+      $graph->set_vertex_attribute($_, level => $level)
+   foreach @zv;
+
+   --$vd{$_->[1]} foreach $subgraph->edges_from(@zv);
+   delete @vertices{@zv};
+   $level++;
+}
+
+
+my %done = map {$_ => undef} @{$args->{config}{done}};
+foreach(keys %to_output) {
+   my $obj = $graph->get_vertex_attribute($_, 'object');
+   if (! defined $obj) {
+      print STDERR "Can't find $_ in graph\n";
+   }
+   my @calls = grep {! m/^__builtin/} @{$obj->calls};
+   $to_output{$_}{Priority} = $graph->get_vertex_attribute($_, 'priority');
+   $to_output{$_}{Done} = exists $done{$_} ? 'S' : '';
+
+   my @module_calls = grep {exists $mfunc{$_}} @calls;
+   my @kernel_calls = grep {!exists $mfunc{$_}} @calls;
+
+   $to_output{$_}{MCalls} = scalar @module_calls;
+   $to_output{$_}{KCalls} = scalar @kernel_calls;
+
+   my @args = grep {! m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
+   $to_output{$_}{Args} = scalar @args;
+   $to_output{$_}{Level} = $graph->get_vertex_attribute($_, 'level');
+}
+
+my $column_names = ['Idx', 'Function', 'Args', 'SLOC', 'CCN', 'Priority', 'Kernel Calls', 'Module Calls', 'Status', 'Level'];
 my $obj;
 my $addfunc;
 my $retfunc;
 
-my $csvout = 1;
+my $csvout = 0;
 
 unless ($csvout) {
    my $t = Text::ANSITable->new;
@@ -45,8 +156,14 @@ unless ($csvout) {
    $t->columns($column_names);
    $t->set_column_style('Idx',      pad    => 0);
    $t->set_column_style('Function', align  => 'left');
+   $t->set_column_style('Args',     align  => 'middle');
    $t->set_column_style('SLOC',     align  => 'middle');
    $t->set_column_style('CCN',      align  => 'middle');
+   $t->set_column_style('Priority', align  => 'middle');
+   $t->set_column_style('Kernel Calls',    align  => 'middle');
+   $t->set_column_style('Module Calls',    align  => 'middle');
+   $t->set_column_style('Status',     align  => 'middle');
+   $t->set_column_style('Level',     align  => 'middle');
 
    $obj = \$t;
    $addfunc = \&Text::ANSITable::add_row;
@@ -65,20 +182,40 @@ unless ($csvout) {
    $retfunc = \&Class::CSV::string;
 }
 
-my %to_output;
-foreach(sort keys %$items) {
-   my $name = ($_ =~ m/(^[^\)]++\))/)[0];
-   my @value = @{$items->{$_}{value}}[1,2];
-   $to_output{$name} = {SLOC => $value[0], CCN => $value[1]};
+
+sub _weight
+{
+   my ($args, $sloc, $ccn, $kernel_calls, $module_calls) = @_;
+
+   0.2 * $args + ($sloc * 0.3 + $ccn) + ($kernel_calls * 0.5 + $module_calls) * 0.4
+}
+
+sub _order
+{
+   my $la = $to_output{$a}{Level};
+   my $lb = $to_output{$b}{Level};
+   my $pa = $to_output{$a}{Priority} || 10000;
+   my $pb = $to_output{$b}{Priority} || 10000;
+
+   my $wa = _weight(@{$to_output{$a}}{qw/Args SLOC CCN KCalls MCalls/});
+   my $wb = _weight(@{$to_output{$b}}{qw/Args SLOC CCN KCalls MCalls/});
+
+   $pa <=> $pb
+       ||
+   $la <=> $lb
+       ||
+   $wa <=> $wb
 }
 
 my $counter = 1;
-foreach (sort keys %to_output) {
+#foreach (keys %to_output) {
 #foreach (sort {$to_output{$a}{SLOC} <=> $to_output{$b}{SLOC}} keys %to_output) {
-#foreach (sort {$to_output{$a}{CCN} <=> $to_output{$b}{CCN}} keys %to_output) {
-   $addfunc->($$obj, [$counter++, $_, @{$to_output{$_}}{qw/SLOC CCN/}]);
+foreach (sort _order keys %to_output) {
+   $addfunc->($$obj, [$counter++, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/}]);
 }
 
 my $str = $retfunc->($$obj);
 print $str;
+
+__END__
 
