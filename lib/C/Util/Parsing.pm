@@ -201,7 +201,7 @@ sub parse_structures
 {
    my @s = [$_[0] =~ m/struct${s}++($varname)/g];
 
-   uniq(\@s);
+   @s = uniq(@s);
 
    \@s
 }
@@ -232,7 +232,7 @@ sub parse_calls
 
    #filter
    @calls = grep { ! any($_, \@keywords) } @calls;
-   uniq(\@calls);
+   @calls = uniq(@calls);
 
    \@calls
 }
