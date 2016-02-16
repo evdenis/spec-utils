@@ -207,15 +207,39 @@ sub _order
    $wa <=> $wb
 }
 
+=test
 my $counter = 1;
-#foreach (keys %to_output) {
-#foreach (sort {$to_output{$a}{SLOC} <=> $to_output{$b}{SLOC}} keys %to_output) {
 foreach (sort _order keys %to_output) {
    $addfunc->($$obj, [$counter++, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/}]);
 }
 
 my $str = $retfunc->($$obj);
 print $str;
+=cut
 
-__END__
+use ODF::lpOD;
+
+my $document = odf_new_document('text');
+my $meta = $document->get_part(META);
+$meta->set_title('Verification Plan.');
+
+my $content = $document->get_part(CONTENT);
+my $context = $content->get_body;
+my $height = scalar keys %to_output;
+my $width = scalar @$column_names;
+
+my $table = odf_table->create('Plan', height => $height, width => $width);
+
+my @cells = $table->get_cells(0,0,$height,$width);
+my $counter = 0;
+foreach (sort _order keys %to_output) {
+   my @values = ($counter + 1, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/});
+   foreach (@{$cells[$counter]}) {
+      $_->set_value(shift @values);
+   }
+   $counter++
+}
+
+$context->append_element($table);
+$document->save(target => 'report.odt');
 
