@@ -1,7 +1,9 @@
 calls
+complexity_plan
 dismember
 get_preprocessed
 graph
+graph_diff
 headers
 lsm_diff
 merge
