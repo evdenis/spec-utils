@@ -32,20 +32,20 @@ unless (which('lizard')) {
 
 my $modified = 0; #Calculate modified cyclomatic complexity number
 my $output_format = 'table'; # table csv odf
-my $config_file = '.graph.conf';
+my %config_file = (status => '.graph.conf', priority => '.graph.conf');
 my $output_file = undef;
-my $config = undef;
 my $force = 0;
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 
 GetOptions(
-    "modified!"   => \$modified,
-    "kernel|k=s"  => \$kernel,
-    "module|m=s"  => \$module,
-    "force!"      => \$force,
-    "config|c=s"  => \$config_file,
-    "format|f=s"  => \$output_format,
-    "output|o=s"  => \$output_file,
+    "modified!"    => \$modified,
+    "kernel|k=s"   => \$kernel,
+    "module|m=s"   => \$module,
+    "force!"       => \$force,
+    "status|s=s"   => \$config_file{status},
+    "priority|p=s" => \$config_file{priority},
+    "format|f=s"   => \$output_format,
+    "output|o=s"   => \$output_file,
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
@@ -53,11 +53,20 @@ die "Please, provide valid path to kernel.\n"
 die "Please, provide valid path to module.\n"
     unless -d $module;
 
-if ($config_file && -r $config_file) {
-   $config = LoadFile($config_file)
+sub load_config
+{
+   if ($_[0] && -r $_[0]) {
+      LoadFile( $_[0] )
+   } else {
+      undef
+   }
+
 }
+my %config;
+$config{status}   = load_config($config_file{status});
+$config{priority} = load_config($config_file{priority});
 die("Can't read config file.\n")
-    unless $config;
+    unless $config{status} && $config{priority};
 
 unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'odf') {
    die "Format $output_format is not supported by the programm.\n"
@@ -74,10 +83,10 @@ my $preprocessed = get_preprocessed_sources($kernel, $module);
 Kernel::Module::Graph::init(human_readable => 1);
 
 my $graph = build_graph($preprocessed);
-$graph = mark_priorities($graph, $config);
+$graph = mark_priorities($graph, $config{priority});
 $graph = resolve_function_function_cycles($graph);
 $graph = mark_levels($graph);
-my $metrics = create_table($graph, $preprocessed, $modified, $config);
+my $metrics = create_table($graph, $preprocessed, $modified, $config{status});
 
 # filter out __inittest and __check_enabled
 delete $metrics->{__inittest};
