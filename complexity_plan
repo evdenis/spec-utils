@@ -310,6 +310,7 @@ sub prepare_output_document($output_format, $output_file)
       $obj = $csv;
       $addfunc = \&Class::CSV::add_line;
       $retfunc = \&Class::CSV::string;
+      $addfunc->($obj, $column_names);
    } elsif ($output_format eq 'odf') {
 =test
       my $document = odf_new_document('text');
