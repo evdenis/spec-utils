@@ -14,14 +14,16 @@ use Text::ANSITable;
 use Class::CSV;
 use File::Which;
 #use ODF::lpOD;
-use YAML::XS qw(LoadFile);
+use YAML::XS qw/LoadFile/;
 use Getopt::Long;
 use File::Slurp qw/write_file/;
 
 use lib::abs 'lib';
-use Local::List::Util qw(uniq);
+use Local::List::Util qw/uniq/;
 use C::FunctionSet;
-use Kernel::Module::Graph qw(build_sources_graph);
+use Kernel::Module::Graph qw/build_sources_graph/;
+use Kernel::Module qw/preprocess_module_sources/;
+use C::Util::Transformation;
 
 
 unless (which('lizard')) {
@@ -34,14 +36,22 @@ my $config_file = '.graph.conf';
 my $output_file = undef;
 my $config = undef;
 my $force = 0;
+my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 
 GetOptions(
-    "modified|m!" => \$modified,
+    "modified!"   => \$modified,
+    "kernel|k=s"  => \$kernel,
+    "module|m=s"  => \$module,
     "force!"      => \$force,
     "config|c=s"  => \$config_file,
     "format|f=s"  => \$output_format,
     "output|o=s"  => \$output_file,
 ) or die("Error in command line arguments\n");
+
+die "Please, provide valid path to kernel.\n"
+    unless -d $kernel;
+die "Please, provide valid path to module.\n"
+    unless -d $module;
 
 if ($config_file && -r $config_file) {
    $config = LoadFile($config_file)
@@ -57,10 +67,30 @@ if ($output_file && -f $output_file && !$force) {
    die "File $output_file already exists in the file system. If you want to overwrite, use --force option.\n"
 }
 
-sub get_preprocessed_sources
+#BEGIN OF A PROGRAM
+my $preprocessed = get_preprocessed_sources($kernel, $module);
+
+#Initializing the library
+Kernel::Module::Graph::init(human_readable => 1);
+
+my $graph = build_graph($preprocessed);
+$graph = mark_priorities($graph, $config);
+$graph = resolve_function_function_cycles($graph);
+$graph = mark_levels($graph);
+my $metrics = create_table($graph, $preprocessed, $modified, $config);
+
+# filter out __inittest and __check_enabled
+delete $metrics->{__inittest};
+delete $metrics->{__check_enabled};
+
+output_plan(prepare_output_document($output_format, $output_file), $metrics);
+##END OF A PROGRAM
+
+sub get_preprocessed_sources($kernel, $module)
 {
-   #TODO: direct preprocess
-   my $preprocessed = qx!./get_preprocessed --preprocess --attributes --macro --strings --comments!
+   my $source = (preprocess_module_sources($kernel, $module, ["#define SPECIFICATION 1\n"]))[1];
+   adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
+   $$source
 }
 
 # args $_[0] - preprocessed file
@@ -227,11 +257,12 @@ sub prepare_output_document($output_format, $output_file)
    my $obj;
    my $addfunc;
    my $retfunc;
-   my $outfunc = sub { if ($output_file) {
+   my $outfunc = sub {
+                        if ($output_file) {
                            write_file($output_file, { binmode => ':utf8' }, $_[0])
-                       } else {
+                        } else {
                            print $_[0]
-                       }
+                        }
                      };
 
    if ($output_format eq 'table') {
@@ -313,20 +344,3 @@ sub output_plan($obj, $addfunc, $retfunc, $outfunc, $metrics)
 
    $outfunc->($retfunc->($obj));
 }
-
-my $preprocessed = get_preprocessed_sources();
-
-#Initializing the library
-Kernel::Module::Graph::init(human_readable => 1);
-
-my $graph = build_graph($preprocessed);
-$graph = mark_priorities($graph, $config);
-$graph = resolve_function_function_cycles($graph);
-$graph = mark_levels($graph);
-my $metrics = create_table($graph, $preprocessed, $modified, $config);
-
-# filter out __inittest and __check_enabled
-delete $metrics->{__inittest};
-delete $metrics->{__check_enabled};
-
-output_plan(prepare_output_document($output_format, $output_file), $metrics);
