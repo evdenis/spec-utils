@@ -12,25 +12,45 @@ use XML::Simple;
 use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
-use ODF::lpOD;
+#use ODF::lpOD;
 use YAML::XS qw(LoadFile);
-
+use Getopt::Long;
+use File::Slurp qw/write_file/;
 
 use lib::abs 'lib';
-use Local::List::Util qw(uniq difference intersection any);
+use Local::List::Util qw(uniq);
 use C::FunctionSet;
-use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
+use Kernel::Module::Graph qw(build_sources_graph);
 
 
+my $modified = 0; #Calculate modified cyclomatic complexity number
 my $output_format = 'table'; # table csv odf
 my $config_file = '.graph.conf';
+my $output_file = undef;
 my $config = undef;
+my $force = 0;
+
+GetOptions(
+    "modified|m!" => \$modified,
+    "force!"      => \$force,
+    "config|c=s"  => \$config_file,
+    "format|f=s"  => \$output_format,
+    "output|o=s"  => \$output_file,
+) or die("Error in command line arguments\n");
 
 if ($config_file && -r $config_file) {
    $config = LoadFile($config_file)
 }
 die("Can't read config file.\n")
     unless $config;
+
+unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'odf') {
+   die "Format $output_format is not supported by the programm.\n"
+}
+
+if ($output_file && -f $output_file && !$force) {
+   die "File $output_file already exists in the file system. If you want to overwrite, use --force option.\n"
+}
 
 sub get_preprocessed_sources
 {
@@ -41,14 +61,16 @@ sub get_preprocessed_sources
 # args $_[0] - preprocessed file
 sub get_metrics
 {
+   my $modified = pop;
    #creating temp file
    my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
    open my $fh, '>', "$tempdir/sources.c";
    print $fh $_[0];
    close $fh;
 
-   #calling lizard TODO: -m option
-   my $xml = qx!lizard -X $tempdir!;
+   #calling lizard
+   my $lizard_call = 'lizard -X ' . ($modified ? ' -m ' : '') . $tempdir;
+   my $xml = qx!$lizard_call!;
    my $xs  = XML::Simple->new();
    my $ref = $xs->XMLin($xml);
    my $items = $ref->{measure}[0]{item};
@@ -135,9 +157,9 @@ sub mark_levels($graph)
    $graph
 }
 
-sub create_table($graph, $preprocessed, $config)
+sub create_table($graph, $preprocessed, $modified, $config)
 {
-   my $metrics  = get_metrics($preprocessed);
+   my $metrics  = get_metrics($preprocessed, $modified);
 
    my %done    = map {$_ => 'доказана'}               @{$config->{done}};
    my %lemma   = map {$_ => 'доказана без лемм'}      @{$config->{'lemma-proof-required'}};
@@ -193,19 +215,24 @@ sub generate_sort_function
    }
 }
 
-sub prepare_output_document($output_format)
+sub prepare_output_document($output_format, $output_file)
 {
    my $column_names = ['№', 'Имя', 'Аргументы', 'SLOC', 'CCN', 'Вызвано функций ядра', 'Вызвано функций модуля',
        'Приоритет', 'Уровень в иерархии', 'Статус Верификации'];
    my $obj;
    my $addfunc;
    my $retfunc;
-   my $outfunc = sub { print $_[0] };
+   my $outfunc = sub { if ($output_file) {
+                           write_file($output_file, { binmode => ':utf8' }, $_[0])
+                       } else {
+                           print $_[0]
+                       }
+                     };
 
    if ($output_format eq 'table') {
       my $t = Text::ANSITable->new;
       $t->border_style('Default::bold');
-      if (IO::Interactive::is_interactive()) {
+      if (IO::Interactive::is_interactive() && !$output_file) {
          $t->color_theme('Default::default_gradation');
       } else {
          $t->color_theme('Default::no_color');
@@ -291,10 +318,10 @@ my $graph = build_graph($preprocessed);
 $graph = mark_priorities($graph, $config);
 $graph = resolve_function_function_cycles($graph);
 $graph = mark_levels($graph);
-my $metrics = create_table($graph, $preprocessed, $config);
+my $metrics = create_table($graph, $preprocessed, $modified, $config);
 
 # filter out __inittest and __check_enabled
 delete $metrics->{__inittest};
 delete $metrics->{__check_enabled};
 
-output_plan(prepare_output_document($output_format), $metrics);
+output_plan(prepare_output_document($output_format, $output_file), $metrics);
