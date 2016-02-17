@@ -138,7 +138,13 @@ sub mark_levels($graph)
 sub create_table($graph, $preprocessed, $config)
 {
    my $metrics  = get_metrics($preprocessed);
-   my %done     = map {$_ => undef} @{$config->{done}};
+
+   my %done    = map {$_ => 'доказана'}               @{$config->{done}};
+   my %lemma   = map {$_ => 'доказана без лемм'}      @{$config->{'lemma-proof-required'}};
+   my %partial = map {$_ => 'частичная спецификация'} @{$config->{'partial-specs'}};
+   my %specs   = map {$_ => 'недоказуемо'}            @{$config->{'specs-only'}};
+   my %status = (%done, %lemma, %partial, %specs);
+
    my %vertices = map {$_ => undef} $graph->vertices;
 
    foreach (keys %vertices) {
@@ -150,7 +156,7 @@ sub create_table($graph, $preprocessed, $config)
 
       $metrics->{$_}{priority}       = $graph->get_vertex_attribute($_, 'priority');
       $metrics->{$_}{level}          = $graph->get_vertex_attribute($_, 'level');
-      $metrics->{$_}{status}         = exists $done{$_} ? 'S' : '';
+      $metrics->{$_}{status}         = $status{$_} // '';
       $metrics->{$_}{module_calls}   = scalar @module_calls;
       $metrics->{$_}{kernel_calls}   = scalar @kernel_calls;
       $metrics->{$_}{args}           = scalar @args;
