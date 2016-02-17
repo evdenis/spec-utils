@@ -413,6 +413,7 @@ sub build_sources_graph
       }
    }
 
+   #FIXME: check for $sources->{module}{acslcomment} existance?
    # functions dependence by specs
    foreach ($graph->edges) {
       my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
