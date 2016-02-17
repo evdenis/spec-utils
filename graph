@@ -200,7 +200,7 @@ $args{keep_dot}     = 1;
 $args{reverse}      = 0;
 $args{level}        = undef;
 $args{cache}        = 0;
-$args{renew_cache} = 0;
+$args{renew_cache}  = 0;
 $args{config}       = find_config();
 
 my @cache_dir       = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
