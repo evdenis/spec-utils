@@ -1,9 +1,10 @@
 #!/usr/bin/env perl
 
-use warnings;
+use v5.20;
+use feature qw/say signatures/;
 use strict;
-
-use feature qw/say/;
+use warnings;
+no warnings qw/experimental::signatures/;
 
 use utf8::all;
 use File::Temp qw/tempdir/;
@@ -11,177 +12,152 @@ use XML::Simple;
 use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
+use ODF::lpOD;
+use YAML::XS qw(LoadFile);
+
 
 use lib::abs 'lib';
-
 use Local::List::Util qw(uniq difference intersection any);
 use C::FunctionSet;
 use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
 
-my $preprocessed = qx!./get_preprocessed --preprocess --attributes --macro --strings --comments!;
-my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
-open my $fh, '>', "$tempdir/sources.c";
-print $fh $preprocessed;
-close $fh;
 
-my $xml = qx!lizard -X $tempdir!;
+my $output_format = 'table'; # table csv odf
+my $config_file = '.graph.conf';
+my $config = undef;
 
-my $xs  = XML::Simple->new();
-my $ref = $xs->XMLin($xml);
-
-my $items = $ref->{measure}[0]{item};
-
-my %to_output;
-foreach(keys %$items) {
-   my $name = ($_ =~ m/(^[^\(]++)/)[0];
-   my @value = @{$items->{$_}{value}}[1,2];
-   $to_output{$name} = {SLOC => $value[0], CCN => $value[1]};
-}
-
-#Initializing the library
-Kernel::Module::Graph::init(human_readable => 1, reverse => 1);
-
-my %sources;
-$sources{module}{function} = C::FunctionSet->parse(\$preprocessed, 'module');
-my $graph = build_sources_graph(\%sources);
-
-#these are special kernel functions generated after preprocessing
-#$graph->delete_vertices( qw(__check_enabled __inittest) );
-
-use YAML::XS qw(LoadFile);
-my $args;
-$args->{config} = '.graph.conf';
-if ($args->{config} && -r $args->{config}) {
-   $args->{config} = LoadFile($args->{config})
+if ($config_file && -r $config_file) {
+   $config = LoadFile($config_file)
 }
 die("Can't read config file.\n")
-   unless $args->{config};
+    unless $config;
 
-while ( my ($i, $list) = each @{ $args->{config}{priority}{lists} } ) {
-   foreach (uniq @$list) {
-      if ($graph->has_vertex($_)) {
-         unless ($graph->has_vertex_attribute($_, 'priority')) {
-            $graph->set_vertex_attribute($_, priority => $i + 1);
-         }
-         foreach ($graph->all_successors($_)) {
+sub get_preprocessed_sources
+{
+   #TODO: direct preprocess
+   my $preprocessed = qx!./get_preprocessed --preprocess --attributes --macro --strings --comments!
+}
+
+# args $_[0] - preprocessed file
+sub get_metrics
+{
+   #creating temp file
+   my $tempdir = tempdir(TMPDIR => 1, CLEANUP => 1);
+   open my $fh, '>', "$tempdir/sources.c";
+   print $fh $_[0];
+   close $fh;
+
+   #calling lizard TODO: -m option
+   my $xml = qx!lizard -X $tempdir!;
+   my $xs  = XML::Simple->new();
+   my $ref = $xs->XMLin($xml);
+   my $items = $ref->{measure}[0]{item};
+   my %metrics;
+   foreach(keys %$items) {
+      my $name = ($_ =~ m/(^[^\(]++)/)[0];
+      my @value = @{$items->{$_}{value}}[1,2];
+      $metrics{$name} = {SLOC => $value[0], CCN => $value[1]};
+   }
+
+   \%metrics
+}
+
+# args $_[0] - preprocessed file
+sub build_graph
+{
+   my %sources;
+   $sources{module}{function} = C::FunctionSet->parse(\$_[0], 'module');
+
+   build_sources_graph(\%sources);
+}
+
+sub mark_priorities($graph, $config)
+{
+   while ( my ($i, $list) = each @{ $config->{priority}{lists} } ) {
+      foreach (uniq @$list) {
+         if ($graph->has_vertex($_)) {
             unless ($graph->has_vertex_attribute($_, 'priority')) {
                $graph->set_vertex_attribute($_, priority => $i + 1);
             }
+            foreach ($graph->all_predecessors($_)) {
+               unless ($graph->has_vertex_attribute($_, 'priority')) {
+                  $graph->set_vertex_attribute($_, priority => $i + 1);
+               }
+            }
+         } else {
+            warn "Priority list: there is no such function '$_' in sources.\n"
          }
-      } else {
-         warn "Priority list: there is no such function '$_' in sources.\n"
       }
    }
+
+   $graph
 }
 
-my %mfunc = map {$_ => undef} $graph->vertices;
-my @m_func = $graph->vertices;
-my $subgraph = Graph::Directed->new(
-                  edges    => [ map {
-                                       map { [$_->[1], $_->[0]] }
-                                       $graph->edges_to($_)
-                                }  @m_func ],
-                  vertices => \@m_func
-               );
-while ($subgraph->has_a_cycle) {
-   my @cycle = $subgraph->find_a_cycle();
-   if (@cycle == 1) {
-      $subgraph->delete_edge(@cycle[0,0])
-   } else {
-      $subgraph->delete_edge(@cycle[0,1])
+sub resolve_function_function_cycles($graph)
+{
+   while ($graph->has_a_cycle) {
+      my @cycle = $graph->find_a_cycle();
+      if (@cycle == 1) {
+         $graph->delete_edge(@cycle[0,0])
+      } else {
+         $graph->delete_edge(@cycle[0,1])
+      }
    }
+
+   $graph
 }
-my %vertices = map {$_ => undef} $subgraph->vertices;
-my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
-my $level = 1;
-while (%vertices) {
-   my @zv;
 
-   foreach(keys %vertices) {
-      push @zv, $_ if 0 == $vd{$_};
-   }
+sub mark_levels($graph)
+{
+   my %vertices = map {$_ => undef} $graph->vertices;
+   my %vd  = map { ($_, $graph->in_degree($_)) } keys %vertices;
+   my $level = 1;
+   while (%vertices) {
+      my @zv;
 
-   unless (@zv) {
-      warn "There is no possibility to continue. Cycle.\n";
-      exit;
-      last;
-   }
+      foreach(keys %vertices) {
+         push @zv, $_ if 0 == $vd{$_};
+      }
+
+      unless (@zv) {
+         die "There is no possibility to continue. Cycle.\n";
+         last;
+      }
 
       $graph->set_vertex_attribute($_, level => $level)
-   foreach @zv;
+          foreach @zv;
 
-   --$vd{$_->[1]} foreach $subgraph->edges_from(@zv);
-   delete @vertices{@zv};
-   $level++;
-}
-
-
-my %done = map {$_ => undef} @{$args->{config}{done}};
-foreach(keys %to_output) {
-   my $obj = $graph->get_vertex_attribute($_, 'object');
-   if (! defined $obj) {
-      print STDERR "Can't find $_ in graph\n";
-   }
-   my @calls = grep {! m/^__builtin/} @{$obj->calls};
-   $to_output{$_}{Priority} = $graph->get_vertex_attribute($_, 'priority');
-   $to_output{$_}{Done} = exists $done{$_} ? 'S' : '';
-
-   my @module_calls = grep {exists $mfunc{$_}} @calls;
-   my @kernel_calls = grep {!exists $mfunc{$_}} @calls;
-
-   $to_output{$_}{MCalls} = scalar @module_calls;
-   $to_output{$_}{KCalls} = scalar @kernel_calls;
-
-   my @args = grep {! m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
-   $to_output{$_}{Args} = scalar @args;
-   $to_output{$_}{Level} = $graph->get_vertex_attribute($_, 'level');
-}
-
-my $column_names = ['Idx', 'Function', 'Args', 'SLOC', 'CCN', 'Priority', 'Kernel Calls', 'Module Calls', 'Status', 'Level'];
-my $obj;
-my $addfunc;
-my $retfunc;
-
-my $csvout = 0;
-
-unless ($csvout) {
-   my $t = Text::ANSITable->new;
-   $t->border_style('Default::bold');
-   if (IO::Interactive::is_interactive()) {
-      $t->color_theme('Default::default_gradation');
-   } else {
-      $t->color_theme('Default::no_color');
+      --$vd{$_->[1]} foreach $graph->edges_from(@zv);
+      delete @vertices{@zv};
+      $level++;
    }
 
-   $t->columns($column_names);
-   $t->set_column_style('Idx',      pad    => 0);
-   $t->set_column_style('Function', align  => 'left');
-   $t->set_column_style('Args',     align  => 'middle');
-   $t->set_column_style('SLOC',     align  => 'middle');
-   $t->set_column_style('CCN',      align  => 'middle');
-   $t->set_column_style('Priority', align  => 'middle');
-   $t->set_column_style('Kernel Calls',    align  => 'middle');
-   $t->set_column_style('Module Calls',    align  => 'middle');
-   $t->set_column_style('Status',     align  => 'middle');
-   $t->set_column_style('Level',     align  => 'middle');
-
-   $obj = \$t;
-   $addfunc = \&Text::ANSITable::add_row;
-   $retfunc = \&Text::ANSITable::draw;
-} else {
-   my $csv = Class::CSV->new(
-      fields         => $column_names,
-      line_separator => "\r\n",
-      csv_xs_options => {
-         sep_char          => ';',
-      },
-   );
-
-   $obj = \$csv;
-   $addfunc = \&Class::CSV::add_line;
-   $retfunc = \&Class::CSV::string;
+   $graph
 }
 
+sub create_table($graph, $preprocessed, $config)
+{
+   my $metrics  = get_metrics($preprocessed);
+   my %done     = map {$_ => undef} @{$config->{done}};
+   my %vertices = map {$_ => undef} $graph->vertices;
+
+   foreach (keys %vertices) {
+      my $obj = $graph->get_vertex_attribute($_, 'object');
+      my @calls = grep {! m/^__builtin/} @{$obj->calls}; # filter builtin compiler functions
+      my @module_calls = grep {exists $vertices{$_}} @calls;
+      my @kernel_calls = grep {!exists $vertices{$_}} @calls;
+      my @args = grep {! m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
+
+      $metrics->{$_}{priority}       = $graph->get_vertex_attribute($_, 'priority');
+      $metrics->{$_}{level}          = $graph->get_vertex_attribute($_, 'level');
+      $metrics->{$_}{status}         = exists $done{$_} ? 'S' : '';
+      $metrics->{$_}{module_calls}   = scalar @module_calls;
+      $metrics->{$_}{kernel_calls}   = scalar @kernel_calls;
+      $metrics->{$_}{args}           = scalar @args;
+   }
+
+   $metrics
+}
 
 sub _weight
 {
@@ -190,56 +166,130 @@ sub _weight
    0.2 * $args + ($sloc * 0.3 + $ccn) + ($kernel_calls * 0.5 + $module_calls) * 0.4
 }
 
-sub _order
+sub generate_sort_function
 {
-   my $la = $to_output{$a}{Level};
-   my $lb = $to_output{$b}{Level};
-   my $pa = $to_output{$a}{Priority} || 10000;
-   my $pb = $to_output{$b}{Priority} || 10000;
+   my $metrics = $_[0];
 
-   my $wa = _weight(@{$to_output{$a}}{qw/Args SLOC CCN KCalls MCalls/});
-   my $wb = _weight(@{$to_output{$b}}{qw/Args SLOC CCN KCalls MCalls/});
+   sub {
+      my $la = $metrics->{$a}{level};
+      my $lb = $metrics->{$b}{level};
+      my $pa = $metrics->{$a}{priority} || 10000;
+      my $pb = $metrics->{$b}{priority} || 10000;
 
-   $pa <=> $pb
-       ||
-   $la <=> $lb
-       ||
-   $wa <=> $wb
-}
+      my $wa = _weight(@{$metrics->{$a}}{qw/args SLOC CCN kernel_calls module_calls/});
+      my $wb = _weight(@{$metrics->{$b}}{qw/args SLOC CCN kernel_calls module_calls/});
 
-=test
-my $counter = 1;
-foreach (sort _order keys %to_output) {
-   $addfunc->($$obj, [$counter++, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/}]);
-}
-
-my $str = $retfunc->($$obj);
-print $str;
-=cut
-
-use ODF::lpOD;
-
-my $document = odf_new_document('text');
-my $meta = $document->get_part(META);
-$meta->set_title('Verification Plan.');
-
-my $content = $document->get_part(CONTENT);
-my $context = $content->get_body;
-my $height = scalar keys %to_output;
-my $width = scalar @$column_names;
-
-my $table = odf_table->create('Plan', height => $height, width => $width);
-
-my @cells = $table->get_cells(0,0,$height,$width);
-my $counter = 0;
-foreach (sort _order keys %to_output) {
-   my @values = ($counter + 1, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/});
-   foreach (@{$cells[$counter]}) {
-      $_->set_value(shift @values);
+      $pa <=> $pb
+          ||
+      $la <=> $lb
+          ||
+      $wa <=> $wb
    }
-   $counter++
 }
 
-$context->append_element($table);
-$document->save(target => 'report.odt');
+sub prepare_output_document($output_format)
+{
+   my $column_names = ['№', 'Имя', 'Аргументы', 'SLOC', 'CCN', 'Вызвано функций ядра', 'Вызвано функций модуля',
+       'Приоритет', 'Уровень в иерархии', 'Статус Верификации'];
+   my $obj;
+   my $addfunc;
+   my $retfunc;
+   my $outfunc = sub { print $_[0] };
 
+   if ($output_format eq 'table') {
+      my $t = Text::ANSITable->new;
+      $t->border_style('Default::bold');
+      if (IO::Interactive::is_interactive()) {
+         $t->color_theme('Default::default_gradation');
+      } else {
+         $t->color_theme('Default::no_color');
+      }
+
+      $t->columns($column_names);
+      $t->set_column_style('№',                      pad    => 0);
+      $t->set_column_style('Имя',                    align  => 'left');
+      $t->set_column_style('Аргументы',              align  => 'middle');
+      $t->set_column_style('SLOC',                   align  => 'middle');
+      $t->set_column_style('CCN',                    align  => 'middle');
+      $t->set_column_style('Вызвано функций ядра',   align  => 'middle');
+      $t->set_column_style('Вызвано функций модуля', align  => 'middle');
+      $t->set_column_style('Приоритет',              align  => 'middle');
+      $t->set_column_style('Уровень в иерархии',     align  => 'middle');
+      $t->set_column_style('Статус Верификации',     align  => 'middle');
+
+      $obj = \$t;
+      $addfunc = \&Text::ANSITable::add_row;
+      $retfunc = \&Text::ANSITable::draw;
+   } elsif ($output_format eq 'csv') {
+      my $csv = Class::CSV->new(
+          fields         => $column_names,
+          line_separator => "\r\n",
+          csv_xs_options => {
+              sep_char          => ';',
+          },
+      );
+
+      $obj = \$csv;
+      $addfunc = \&Class::CSV::add_line;
+      $retfunc = \&Class::CSV::string;
+   } elsif ($output_format eq 'odt') {
+=test
+   my $document = odf_new_document('text');
+   my $meta = $document->get_part(META);
+   $meta->set_title('Verification Plan.');
+
+   my $content = $document->get_part(CONTENT);
+   my $context = $content->get_body;
+   my $height = scalar keys %to_output;
+   my $width = scalar @$column_names;
+
+   my $table = odf_table->create('Plan', height => $height, width => $width);
+
+   my @cells = $table->get_cells(0,0,$height,$width);
+   my $counter = 0;
+   foreach (sort _order keys %to_output) {
+      my @values = ($counter + 1, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/});
+      foreach (@{$cells[$counter]}) {
+         $_->set_value(shift @values);
+      }
+      $counter++
+   }
+
+   $context->append_element($table);
+   $document->save(target => 'report.odt');
+=cut
+   } else {
+      die "Program doesn't have support for output format $output_format.\n"
+   }
+
+   ($obj, $addfunc, $retfunc, $outfunc)
+}
+
+sub output_plan($obj, $addfunc, $retfunc, $outfunc, $metrics)
+{
+   my $counter = 1;
+   my $sort_function = generate_sort_function($metrics);
+   foreach (sort $sort_function keys %$metrics) {
+      $addfunc->($$obj, [$counter++, $_,
+              @{$metrics->{$_}}{qw/args SLOC CCN kernel_calls module_calls priority level status/}]);
+   }
+
+   $outfunc->($retfunc->($$obj));
+}
+
+my $preprocessed = get_preprocessed_sources();
+
+#Initializing the library
+Kernel::Module::Graph::init(human_readable => 1);
+
+my $graph = build_graph($preprocessed);
+$graph = mark_priorities($graph, $config);
+$graph = resolve_function_function_cycles($graph);
+$graph = mark_levels($graph);
+my $metrics = create_table($graph, $preprocessed, $config);
+
+# filter out __inittest and __check_enabled
+delete $metrics->{__inittest};
+delete $metrics->{__check_enabled};
+
+output_plan(prepare_output_document($output_format), $metrics);
