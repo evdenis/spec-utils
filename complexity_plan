@@ -217,7 +217,7 @@ sub prepare_output_document($output_format)
       $t->set_column_style('Уровень в иерархии',     align  => 'middle');
       $t->set_column_style('Статус Верификации',     align  => 'middle');
 
-      $obj = \$t;
+      $obj = $t;
       $addfunc = \&Text::ANSITable::add_row;
       $retfunc = \&Text::ANSITable::draw;
    } elsif ($output_format eq 'csv') {
@@ -229,34 +229,33 @@ sub prepare_output_document($output_format)
           },
       );
 
-      $obj = \$csv;
+      $obj = $csv;
       $addfunc = \&Class::CSV::add_line;
       $retfunc = \&Class::CSV::string;
-   } elsif ($output_format eq 'odt') {
+   } elsif ($output_format eq 'odf') {
 =test
-   my $document = odf_new_document('text');
-   my $meta = $document->get_part(META);
-   $meta->set_title('Verification Plan.');
+      my $document = odf_new_document('text');
+      my $meta = $document->get_part(META);
+      $meta->set_title('Verification Plan.');
 
-   my $content = $document->get_part(CONTENT);
-   my $context = $content->get_body;
-   my $height = scalar keys %to_output;
-   my $width = scalar @$column_names;
+      my $content = $document->get_part(CONTENT);
+      my $context = $content->get_body;
+      my $width = scalar @$column_names;
+      my $table = odf_table->create('Plan', width => $width);
+      $context->append_element($table);
+      $table->add_row();
 
-   my $table = odf_table->create('Plan', height => $height, width => $width);
-
-   my @cells = $table->get_cells(0,0,$height,$width);
-   my $counter = 0;
-   foreach (sort _order keys %to_output) {
-      my @values = ($counter + 1, $_, @{$to_output{$_}}{qw/Args SLOC CCN Priority KCalls MCalls Done Level/});
-      foreach (@{$cells[$counter]}) {
-         $_->set_value(shift @values);
+      my @cells = $table->get_cells(0, 0, 0, $width);
+      foreach (@{$cells[0]}) {
+         $_->set_value('TEST');
       }
-      $counter++
-   }
+      #$table->set_column_header();
 
-   $context->append_element($table);
-   $document->save(target => 'report.odt');
+
+      $obj = [$document, $table];
+      $addfunc = sub { my $t = $_[0]->[1]; my $r = $t->add_row(); use Data::Printer; p $r; exit;};
+      $retfunc = sub { $_[0]->[0] }; # return document from obj
+      $outfunc = sub { $_[0]->save(target => 'report.odt') }; # document->save
 =cut
    } else {
       die "Program doesn't have support for output format $output_format.\n"
@@ -270,11 +269,11 @@ sub output_plan($obj, $addfunc, $retfunc, $outfunc, $metrics)
    my $counter = 1;
    my $sort_function = generate_sort_function($metrics);
    foreach (sort $sort_function keys %$metrics) {
-      $addfunc->($$obj, [$counter++, $_,
+      $addfunc->($obj, [$counter++, $_,
               @{$metrics->{$_}}{qw/args SLOC CCN kernel_calls module_calls priority level status/}]);
    }
 
-   $outfunc->($retfunc->($$obj));
+   $outfunc->($retfunc->($obj));
 }
 
 my $preprocessed = get_preprocessed_sources();
