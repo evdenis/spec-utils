@@ -12,6 +12,7 @@ use XML::Simple;
 use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
+use File::Which;
 #use ODF::lpOD;
 use YAML::XS qw(LoadFile);
 use Getopt::Long;
@@ -22,6 +23,10 @@ use Local::List::Util qw(uniq);
 use C::FunctionSet;
 use Kernel::Module::Graph qw(build_sources_graph);
 
+
+unless (which('lizard')) {
+   die "Please, install lizard python package. This program required to measure SLOC and CCN.\n"
+}
 
 my $modified = 0; #Calculate modified cyclomatic complexity number
 my $output_format = 'table'; # table csv odf
