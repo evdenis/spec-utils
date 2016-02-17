@@ -304,6 +304,3 @@ run(\%args); # Can die.
 say '';
 say "File $args{out}.dot contains graph in dot format.";
 say "File $args{out}.$args{format} contains graph in $args{format} format.";
-
-
-
