@@ -13,7 +13,7 @@ our @EXPORT_OK = qw(find_config);
 sub find_config
 {
    my $r = undef;
-   my $pname = basename $0;
+   my $pname = $_[0] // basename $0;
    my @paths = (
       catfile($FindBin::Bin, ".${pname}.cfg"),
       catfile($FindBin::Bin, ".${pname}.conf"),
