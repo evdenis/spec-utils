@@ -310,17 +310,28 @@ sub prepare_output_document($output_format, $output_file)
    } elsif ($output_format eq 'excel') {
       my $workbook = Excel::Writer::XLSX->new($output_file);
       my $center  = $workbook->add_format(align => 'center');
+      my $left  = $workbook->add_format(align => 'left');
       my $heading = $workbook->add_format(align => 'center', bold => 1);
+      shift @$column_names;
 
       my $worksheet = $workbook->add_worksheet('Verification Plan');
-
       while (my ($i, $value) = each @$column_names) {
          $worksheet->write(0, $i, $value, $heading);
       }
-      my $row_iter = 1;
+      $worksheet->set_column(0, 0, 30, $left);    # NAME
+      $worksheet->set_column(1, 0, 10, $center);  # Arguments
+      $worksheet->set_column(2, 0, 5,  $center);  # SLOC
+      $worksheet->set_column(3, 0, 5,  $center);  # CCN
+      $worksheet->set_column(4, 0, 20, $center);  # KCalls
+      $worksheet->set_column(5, 0, 22, $center);  # MCalls
+      $worksheet->set_column(6, 0, 10, $center);  # Priority
+      $worksheet->set_column(7, 0, 17, $center);  # Level
+      $worksheet->set_column(8, 0, 17, $center);  # Status
 
       $obj = $worksheet;
+      my $row_iter = 1;
       $addfunc = sub {
+         shift @{$_[1]};
          while (my ($i, $value) = each @{$_[1]}) {
             $_[0]->write($row_iter, $i, $value);
          }
