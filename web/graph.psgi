@@ -59,19 +59,16 @@ my $cache_default = $config{cache};
 
 sub return_403
 {
-   my $self = shift;
    return [403, ['Content-Type' => 'text/plain', 'Content-Length' => 9], ['forbidden']];
 }
 
 sub return_404
 {
-   my $self = shift;
    return [404, ['Content-Type' => 'text/plain', 'Content-Length' => 9], ['not found']];
 }
 
 sub return_500
 {
-   my $self = shift;
    return [500, ['Content-Type' => 'text/plain', 'Content-Length' => 37], ["Internal error. Can't generate image."]];
 }
 
@@ -81,7 +78,7 @@ sub generate_image
       try {
              my $new_config;
              foreach (@cf) {
-                my $c = load_file($_);
+                my $c = load_config $_;
                 merge_config_keys $new_config, $c;
              }
              update_config_keys $config{config}, $new_config;
@@ -89,6 +86,7 @@ sub generate_image
       } catch {
          warn "Can't load updated configuration\n"
       };
+      $cmonitor->update();
    }
 
    my $fail = 0;
