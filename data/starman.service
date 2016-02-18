@@ -7,9 +7,9 @@ Type=forking
 Environment=LANG=C
 EnvironmentFile=/etc/sysconfig/starman
 
-ExecStart=/usr/bin/starman --user starman --group starman --listen localhost:80 --workers 1 --daemonize --pid /var/run/starman.pid --access-log /var/log/starman/access.log --error-log /var/log/starman/error.log /home/starman/spec-utils/web/graph.psgi
-PIDFile=/var/run/starman.pid
-ExecStopPost=-/usr/bin/rm -fr /var/run/starman.pid /var/cache/graph/
+ExecStart=/usr/bin/starman --user starman --group starman --listen localhost:80 --workers 1 --daemonize --pid /var/run/starman/starman.pid --access-log /var/log/starman/access.log --error-log /var/log/starman/error.log /home/starman/spec-utils/web/graph.psgi
+PIDFile=/var/run/starman/starman.pid
+ExecStopPost=-/usr/bin/rm -fr /var/run/starman/starman.pid /var/cache/graph/
 ExecStartPre=-/usr/bin/mkdir /var/log/starman /var/cache/graph/
 ExecStartPre=/usr/bin/chown starman:starman -R /var/log/starman /var/cache/graph
 ExecReload=/bin/kill -HUP $MAINPID
