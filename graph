@@ -344,7 +344,7 @@ if ($args{issues}) {
 # level checks
 if (defined $args{level}) {
    my $level = $args{level};
-   my $max = @{$args{conf}{priority}{lists}};
+   my $max = @{$args{config}{priority}{lists}};
    if ($level <= 0 || $level > $max) {
       die "Level option is out of bounds.\n"
    }
