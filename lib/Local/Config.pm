@@ -7,8 +7,9 @@ use Exporter qw(import);
 use FindBin;
 use File::Basename;
 use File::Spec::Functions qw(catfile);
+use YAML::XS qw(LoadFile);
 
-our @EXPORT_OK = qw(find_config);
+our @EXPORT_OK = qw(find_config load_config merge_config_keys);
 
 sub find_config
 {
@@ -36,6 +37,25 @@ sub find_config
    }
 
    $r
+}
+
+sub load_config {
+   if ($_[0] && -r $_[0]) {
+      LoadFile( $_[0] )
+   } else {
+      undef
+   }
+}
+
+sub merge_config_keys {
+   foreach (keys %{$_[1]}) {
+      unless (exists $_[0]->{$_}) {
+         $_[0]->{$_} = $_[1]->{$_}
+      } else {
+         die "Duplicate key $_ in configurations\n"
+      }
+   }
+   undef
 }
 
 1;

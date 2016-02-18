@@ -23,7 +23,7 @@ use C::FunctionSet;
 use Kernel::Module::Graph qw/build_sources_graph/;
 use Kernel::Module qw/preprocess_module_sources/;
 use C::Util::Transformation;
-use Local::Config qw/find_config/;
+use Local::Config qw/find_config load_config/;
 
 
 unless (which('lizard')) {
@@ -53,15 +53,6 @@ die "Please, provide valid path to kernel.\n"
 die "Please, provide valid path to module.\n"
     unless -d $module;
 
-sub load_config
-{
-   if ($_[0] && -r $_[0]) {
-      LoadFile( $_[0] )
-   } else {
-      undef
-   }
-
-}
 my %config;
 $config{status}   = load_config($config_file{status});
 $config{priority} = load_config($config_file{priority});
