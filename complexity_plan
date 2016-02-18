@@ -16,6 +16,7 @@ use File::Which;
 use YAML::XS qw/LoadFile/;
 use Getopt::Long;
 use File::Slurp qw/write_file/;
+use Excel::Writer::XLSX;
 
 use lib::abs 'lib';
 use Local::List::Util qw/uniq/;
@@ -59,8 +60,12 @@ $config{priority} = load_config($config_file{priority});
 die("Can't read config file.\n")
     unless $config{status} && $config{priority};
 
-unless ($output_format eq 'table' || $output_format eq 'csv') {
+unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'excel') {
    die "Format $output_format is not supported by the programm.\n"
+}
+
+if ($output_format eq 'excel' && !defined $output_file) {
+   die "Can't write excel file to STDIN. Please, use --output argument.\n"
 }
 
 if ($output_file && -f $output_file && !$force) {
@@ -253,7 +258,7 @@ sub generate_sort_function
 sub prepare_output_document($output_format, $output_file)
 {
    my $column_names = ['№', 'Имя', 'Аргументы', 'SLOC', 'CCN', 'Вызвано функций ядра', 'Вызвано функций модуля',
-       'Приоритет', 'Уровень в иерархии', 'Статус Верификации'];
+       'Приоритет', 'Уровень в иерархии', 'Статус верификации'];
    my $obj;
    my $addfunc;
    my $retfunc;
@@ -302,6 +307,27 @@ sub prepare_output_document($output_format, $output_file)
       $addfunc = \&Class::CSV::add_line;
       $retfunc = \&Class::CSV::string;
       $addfunc->($obj, $column_names);
+   } elsif ($output_format eq 'excel') {
+      my $workbook = Excel::Writer::XLSX->new($output_file);
+      my $center  = $workbook->add_format(align => 'center');
+      my $heading = $workbook->add_format(align => 'center', bold => 1);
+
+      my $worksheet = $workbook->add_worksheet('Verification Plan');
+
+      while (my ($i, $value) = each @$column_names) {
+         $worksheet->write(0, $i, $value, $heading);
+      }
+      my $row_iter = 1;
+
+      $obj = $worksheet;
+      $addfunc = sub {
+         while (my ($i, $value) = each @{$_[1]}) {
+            $_[0]->write($row_iter, $i, $value);
+         }
+         $row_iter++;
+      };
+      $retfunc = sub {};
+      $outfunc = sub {$workbook->close()};
    } else {
       die "Program doesn't have support for output format $output_format.\n"
    }
