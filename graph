@@ -90,6 +90,8 @@ graph - построить граф вызовов функций модуля �
                              (default: xdg-open)
   --[no-]async             - запускать внешние программы в асинхронном режиме
                              (default: on)
+  --[no-]keep-dot          - сохранять dot файл
+                             (default: off)
   -h|--help                - выводит полное описание программы
 
 =head1 OPTIONS
@@ -176,6 +178,10 @@ graph - построить граф вызовов функций модуля �
 
 Запускать внешние программы dot и просмотрщик (--view) в дочернем процессе, не ожидая его завершения. По умолчанию флаг включён.
 
+=item B<--[no-]keep-dot>
+
+Сохранять или нет dot файл после запуска dot программы.
+
 =item B<-h|--help>
 
 Выводит полное описание программы.
@@ -209,7 +215,7 @@ $args{statistics}   = 1; # Always print level statistics
 $args{mark_anyway}  = 0;
 $args{view}         = undef;
 $args{async}        = 1;
-$args{keep_dot}     = 1;
+$args{keep_dot}     = 0;
 $args{reverse}      = 0;
 $args{level}        = undef;
 $args{cache}        = 0;
@@ -243,6 +249,7 @@ GetOptions(
    'reverse|r!'              =>  \$args{reverse},
    'level|l=i'               =>  \$args{level},
    'async!'                  =>  \$args{async},
+   'keep-dot!'               =>  \$args{keep_dot},
    'help|h'                  =>  \$help
 ) or pod2usage(1);
 
@@ -354,5 +361,5 @@ if (defined $args{level}) {
 run(\%args); # Can die.
 
 say '';
-say "File $args{out}.dot contains graph in dot format.";
+say "File $args{out}.dot contains graph in dot format." if $args{keep_dot};
 say "File $args{out}.$args{format} contains graph in $args{format} format.";
