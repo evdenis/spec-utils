@@ -3,7 +3,6 @@ use strict;
 
 use Plack::Request;
 use Plack::Builder;
-use YAML::XS qw/LoadFile/;
 
 use File::Spec::Functions qw/catdir catfile/;
 use FindBin;
@@ -17,6 +16,7 @@ use Try::Tiny;
 use File::Modified;
 
 use App::Graph;
+use Local::Config qw(load_config merge_config_keys update_config_keys);
 
 my %config;
 sub read_config
@@ -39,9 +39,14 @@ sub read_config
 }
 
 read_config catfile $FindBin::Bin, '.config';
-$config{config} = LoadFile($config{graph_config_file});
-my $cmonitor = File::Modified->new(files => [$config{graph_config_file}]);
-delete $config{graph_config_file};
+my $priority = load_config $config{priority_config_file};
+my $status   = load_config $config{status_config_file};
+merge_config_keys $config{config}, $priority;
+merge_config_keys $config{config}, $status;
+
+my $cmonitor = File::Modified->new(files => [@config{qw/priority_config_file status_config_file/}]);
+delete $config{priority_config_file};
+delete $config{status_config_file};
 
 $config{functions} = [];
 $config{async}     = 0;
@@ -74,8 +79,13 @@ sub generate_image
 {
    if (my (@cf) = $cmonitor->changed) {
       try {
-         $config{config} = LoadFile($cf[0]);
-         warn "Loading updated configuration\n";
+             my $new_config;
+             foreach (@cf) {
+                my $c = load_file($_);
+                merge_config_keys $new_config, $c;
+             }
+             update_config_keys $config{config}, $new_config;
+             warn "Loading updated configuration @cf\n";
       } catch {
          warn "Can't load updated configuration\n"
       };
