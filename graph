@@ -318,24 +318,27 @@ sub merge_keys {
    undef
 }
 
-### CONFIG FILE: $priority
-$priority = load_config $priority;
-die("Can't read priority config file.\n")
-    unless $priority;
-
-### CONFIG FILE: $status
-$status = load_config $status;
-die("Can't read status config file.\n")
-    unless $status;
-
-### CONFIG FILE: $issues
-$issues = load_config $issues;
-die("Can't read issues config file.\n")
-    unless $issues;
-
-$args{config} = $priority;
-merge_keys $args{config}, $status;
-merge_keys $args{config}, $issues;
+if ($args{priority}) {
+   ### CONFIG FILE: $priority
+   $priority = load_config $priority;
+   die( "Can't read priority config file.\n" )
+       unless $priority;
+   merge_keys $args{config}, $priority;
+}
+if ($args{done}) {
+   ### CONFIG FILE: $status
+   $status = load_config $status;
+   die( "Can't read status config file.\n" )
+       unless $status;
+   merge_keys $args{config}, $status;
+}
+if ($args{issues}) {
+   ### CONFIG FILE: $issues
+   $issues = load_config $issues;
+   die( "Can't read issues config file.\n" )
+       unless $issues;
+   merge_keys $args{config}, $issues;
+}
 
 
 # level checks
