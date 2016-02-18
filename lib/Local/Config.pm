@@ -8,8 +8,9 @@ use FindBin;
 use File::Basename;
 use File::Spec::Functions qw(catfile);
 use YAML::XS qw(LoadFile);
+use Carp;
 
-our @EXPORT_OK = qw(find_config load_config merge_config_keys);
+our @EXPORT_OK = qw(find_config load_config merge_config_keys update_config_keys);
 
 sub find_config
 {
@@ -39,7 +40,8 @@ sub find_config
    $r
 }
 
-sub load_config {
+sub load_config
+{
    if ($_[0] && -r $_[0]) {
       LoadFile( $_[0] )
    } else {
@@ -47,13 +49,22 @@ sub load_config {
    }
 }
 
-sub merge_config_keys {
+sub merge_config_keys
+{
    foreach (keys %{$_[1]}) {
       unless (exists $_[0]->{$_}) {
          $_[0]->{$_} = $_[1]->{$_}
       } else {
-         die "Duplicate key $_ in configurations\n"
+         croak "Duplicate key $_ in configurations\n"
       }
+   }
+   undef
+}
+
+sub update_config_keys
+{
+   foreach (keys %{$_[1]}) {
+      $_[0]->{$_} = $_[1]->{$_}
    }
    undef
 }
