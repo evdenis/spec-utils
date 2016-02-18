@@ -24,6 +24,7 @@ use C::FunctionSet;
 use Kernel::Module::Graph qw/build_sources_graph/;
 use Kernel::Module qw/preprocess_module_sources/;
 use C::Util::Transformation;
+use Local::Config qw/find_config/;
 
 
 unless (which('lizard')) {
@@ -32,20 +33,20 @@ unless (which('lizard')) {
 
 my $modified = 0; #Calculate modified cyclomatic complexity number
 my $output_format = 'table'; # table csv odf
-my %config_file = (status => '.graph.conf', priority => '.graph.conf');
+my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my $output_file = undef;
 my $force = 0;
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 
 GetOptions(
-    "modified!"    => \$modified,
-    "kernel|k=s"   => \$kernel,
-    "module|m=s"   => \$module,
-    "force!"       => \$force,
-    "status|s=s"   => \$config_file{status},
-    "priority|p=s" => \$config_file{priority},
-    "format|f=s"   => \$output_format,
-    "output|o=s"   => \$output_file,
+    "modified!"         => \$modified,
+    "kernel|k=s"        => \$kernel,
+    "module|m=s"        => \$module,
+    "force!"            => \$force,
+    "conf-status|s=s"   => \$config_file{status},
+    "conf-priority|p=s" => \$config_file{priority},
+    "format|f=s"        => \$output_format,
+    "output|o=s"        => \$output_file,
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
