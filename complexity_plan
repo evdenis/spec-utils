@@ -13,7 +13,6 @@ use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
 use File::Which;
-#use ODF::lpOD;
 use YAML::XS qw/LoadFile/;
 use Getopt::Long;
 use File::Slurp qw/write_file/;
@@ -69,7 +68,7 @@ $config{priority} = load_config($config_file{priority});
 die("Can't read config file.\n")
     unless $config{status} && $config{priority};
 
-unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'odf') {
+unless ($output_format eq 'table' || $output_format eq 'csv') {
    die "Format $output_format is not supported by the programm.\n"
 }
 
@@ -312,31 +311,6 @@ sub prepare_output_document($output_format, $output_file)
       $addfunc = \&Class::CSV::add_line;
       $retfunc = \&Class::CSV::string;
       $addfunc->($obj, $column_names);
-   } elsif ($output_format eq 'odf') {
-=test
-      my $document = odf_new_document('text');
-      my $meta = $document->get_part(META);
-      $meta->set_title('Verification Plan.');
-
-      my $content = $document->get_part(CONTENT);
-      my $context = $content->get_body;
-      my $width = scalar @$column_names;
-      my $table = odf_table->create('Plan', width => $width);
-      $context->append_element($table);
-      $table->add_row();
-
-      my @cells = $table->get_cells(0, 0, 0, $width);
-      foreach (@{$cells[0]}) {
-         $_->set_value('TEST');
-      }
-      #$table->set_column_header();
-
-
-      $obj = [$document, $table];
-      $addfunc = sub { my $t = $_[0]->[1]; my $r = $t->add_row(); use Data::Printer; p $r; exit;};
-      $retfunc = sub { $_[0]->[0] }; # return document from obj
-      $outfunc = sub { $_[0]->save(target => 'report.odt') }; # document->save
-=cut
    } else {
       die "Program doesn't have support for output format $output_format.\n"
    }
