@@ -50,7 +50,7 @@ sub run
       preprocessed => { required => 0 },
       functions    => { required => 0 },
       mark_anyway  => { default => 1 },
-      stat         => { default => 0 },
+      statistics   => { default => 0 },
       keep_dot     => { default => 0 },
       issues       => { default => 0 },
       async        => { default => 0 },
@@ -246,7 +246,7 @@ CACHE: if ($args->{cache}) {
       }
    }
 
-   if ($args->{stat}) {
+   if ($args->{statistics}) {
       ### GATHERING STATISTICS
       say "\n--- Статистика ---";
       say "Общее количество функций: " . $graph->vertices;
@@ -294,8 +294,8 @@ CACHE: if ($args->{cache}) {
             $graph = get_predecessors_subgraph($graph, @e);
          }
 
-         say "Количество функций в подграфе в выбранном подграфе: " . $graph->vertices
-            if $args->{stat};
+         say "Количество функций в выбранном подграфе: " . $graph->vertices
+            if $args->{statistics};
       } else {
          warn "--functions parameter will not be taken into account.\n"
       }
