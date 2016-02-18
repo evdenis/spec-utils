@@ -36,6 +36,8 @@ BEGIN {
 
 graph - построить граф вызовов функций модуля ядра Linux
 
+Для полноценной работы требуется программа dot из пакета graphviz.
+
 =head1 SYNOPSIS
 
  graph [options]
@@ -202,6 +204,12 @@ graph - построить граф вызовов функций модуля �
 
 =cut
 
+my $dot_exists = 0;
+unless (which('dot')) {
+   warn "Please, install graphviz package. This program requires dot to operate properly.\n"
+} else {
+   $dot_exists = 1;
+}
 
 my %args;
 $args{functions}    = [];
@@ -252,6 +260,11 @@ GetOptions(
    'keep-dot!'               =>  \$args{keep_dot},
    'help|h'                  =>  \$help
 ) or pod2usage(1);
+
+unless ($dot_exists) {
+   $args{view}     = undef;
+   $args{keep_dot} = 1;
+}
 
 $args{cache} = 0
    if $args{renew_cache};
