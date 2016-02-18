@@ -88,7 +88,7 @@ my $metrics = create_table($graph, $preprocessed, $modified, $config{status});
 delete $metrics->{__inittest};
 delete $metrics->{__check_enabled};
 
-output_plan(prepare_output_document($output_format, $output_file), $metrics);
+output_plan(prepare_output_document($output_format, $output_file, $config{priority}), $metrics);
 ##END OF A PROGRAM
 
 sub get_preprocessed_sources($kernel, $module)
@@ -255,7 +255,7 @@ sub generate_sort_function
    }
 }
 
-sub prepare_output_document($output_format, $output_file)
+sub prepare_output_document($output_format, $output_file, $config)
 {
    my $column_names = ['№', 'Имя', 'Аргументы', 'SLOC', 'CCN', 'Вызвано функций ядра', 'Вызвано функций модуля',
        'Приоритет', 'Уровень в иерархии', 'Статус верификации'];
@@ -308,11 +308,15 @@ sub prepare_output_document($output_format, $output_file)
       $retfunc = \&Class::CSV::string;
       $addfunc->($obj, $column_names);
    } elsif ($output_format eq 'excel') {
+      shift @$column_names;
       my $workbook = Excel::Writer::XLSX->new($output_file);
       my $center  = $workbook->add_format(align => 'center');
-      my $left  = $workbook->add_format(align => 'left');
-      my $heading = $workbook->add_format(align => 'center', bold => 1);
-      shift @$column_names;
+      my $left    = $workbook->add_format(align => 'left');
+      my $heading = $workbook->add_format(align => 'center', bold => 1, bg_color => 'silver', underline => 1);
+      my $warning = $workbook->add_format(bold => 1, color => 'red', align => 'center');
+      my @colors      = map { $config->{priority}{colors}{$_} } @{$config->{priority}{lists}};
+      my @color_codes = map { $config->{priority}{color_codes}{$_} } @colors;
+      my @formats     = map { $workbook->add_format(align => 'center', bg_color => '#' . $_) } @color_codes;
 
       my $worksheet = $workbook->add_worksheet('Verification Plan');
       while (my ($i, $value) = each @$column_names) {
@@ -332,9 +336,15 @@ sub prepare_output_document($output_format, $output_file)
       my $row_iter = 1;
       $addfunc = sub {
          shift @{$_[1]};
-         while (my ($i, $value) = each @{$_[1]}) {
-            $_[0]->write($row_iter, $i, $value);
-         }
+         $_[0]->write($row_iter, 0, $_[1]->[0]);
+         $_[0]->write($row_iter, 1, $_[1]->[1]);
+         $_[0]->write($row_iter, 2, $_[1]->[2]);
+         $_[0]->write($row_iter, 3, $_[1]->[3], $_[1]->[3] > 15 ? $warning : ());
+         $_[0]->write($row_iter, 4, $_[1]->[4]);
+         $_[0]->write($row_iter, 5, $_[1]->[5]);
+         $_[0]->write($row_iter, 6, $_[1]->[6], defined $_[1]->[6] ? $formats[$_[1]->[6] - 1] : ());
+         $_[0]->write($row_iter, 7, $_[1]->[7]);
+         $_[0]->write($row_iter, 8, $_[1]->[8 ]);
          $row_iter++;
       };
       $retfunc = sub {};
