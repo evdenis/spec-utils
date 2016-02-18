@@ -289,7 +289,7 @@ sub prepare_output_document($output_format, $output_file, $config)
       $t->set_column_style('Вызвано функций модуля', align  => 'middle');
       $t->set_column_style('Приоритет',              align  => 'middle');
       $t->set_column_style('Уровень в иерархии',     align  => 'middle');
-      $t->set_column_style('Статус Верификации',     align  => 'middle');
+      $t->set_column_style('Статус верификации',     align  => 'middle');
 
       $obj = $t;
       $addfunc = \&Text::ANSITable::add_row;
