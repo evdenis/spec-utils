@@ -26,6 +26,7 @@ use Kernel::Module::Graph qw/build_sources_graph/;
 use Kernel::Module qw/preprocess_module_sources/;
 use C::Util::Transformation;
 use Local::Config qw/find_config load_config merge_config_keys/;
+use Local::Config::Format qw/check_priority_format check_status_format/;
 
 
 unless (which('lizard')) {
@@ -58,10 +59,14 @@ die "Please, provide valid path to module.\n"
 my $conf_status = load_config($config_file{status});
 die( "Can't read status config file.\n" )
     unless $conf_status;
+die("Wrong file format.\n")
+    unless check_status_format($conf_status);
 
 my $conf_priority = load_config($config_file{priority});
 die("Can't read priority config file.\n")
     unless $conf_priority;
+die("Wrong file format.\n")
+    unless check_priority_format($conf_priority);
 my $config;
 merge_config_keys $config, $conf_status;
 merge_config_keys $config, $conf_priority;
