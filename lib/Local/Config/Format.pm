@@ -1,4 +1,4 @@
-package Local::Format;
+package Local::Config::Format;
 use strict;
 use warnings;
 
