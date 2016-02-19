@@ -16,6 +16,7 @@ use FindBin;
 use lib::abs 'lib';
 
 use Local::Config qw(find_config load_config merge_config_keys);
+use Local::Config::Format qw(check_issues_format check_priority_format check_status_format);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use App::Graph;
 
@@ -334,22 +335,28 @@ $args{cache} = 0 unless -r $args{cache_file};
 if ($args{priority}) {
    ### CONFIG FILE: $priority
    $priority = load_config $priority;
-   die( "Can't read priority config file.\n" )
+   die("Can't read priority config file.\n")
        unless $priority;
+   die("Wrong file format.\n")
+      unless check_priority_format($priority);
    merge_config_keys $args{config}, $priority;
 }
 if ($args{done}) {
    ### CONFIG FILE: $status
    $status = load_config $status;
-   die( "Can't read status config file.\n" )
+   die("Can't read status config file.\n")
        unless $status;
+   die("Wrong file format.\n")
+       unless check_status_format($status);
    merge_config_keys $args{config}, $status;
 }
 if ($args{issues}) {
    ### CONFIG FILE: $issues
    $issues = load_config $issues;
-   die( "Can't read issues config file.\n" )
+   die("Can't read issues config file.\n")
        unless $issues;
+   die("Wrong file format.\n")
+       unless check_issues_format($issues);
    merge_config_keys $args{config}, $issues;
 }
 
