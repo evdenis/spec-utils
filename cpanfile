@@ -1,6 +1,8 @@
 requires 'Algorithm::Diff';
 requires 'Class::CSV';
+requires 'Color::Library';
 requires 'Data::Alias';
+requires 'Excel::Writer::XLSX';
 requires 'File::Modified';
 requires 'File::Slurp';
 requires 'File::Which';
