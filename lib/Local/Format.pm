@@ -9,6 +9,7 @@ use Try::Tiny;
 
 our @EXPORT_OK = qw(check_issues_format check_status_format check_priority_format);
 
+
 sub check_issues_format($)
 {
     my $conf = shift @_;
@@ -17,33 +18,46 @@ sub check_issues_format($)
     try {
         my $fail = 0;
 
-        unless (exists $conf->{issues}) {
-            carp "Issues configuration should have 'issues' key.\n";
+        my @keys = keys %$conf;
+        unless (@keys == 1 && $keys[0] eq 'issues') {
+            carp "Issues configuration should have only 'issues' key at the root level.\n";
             $fail = 1;
             goto FAIL;
         }
 
         my $i = $conf->{issues};
-        foreach (keys %$i) {
-            unless (exists $i->{$_}{description}) {
+        foreach my $n (keys %$i) {
+            my ($d, $r) = (0, 0);
+            foreach (keys %{$i->{$n}}) {
+                if ($_ eq 'description') {
+                    $d = 1;
+                } elsif ($_ eq 're') {
+                    $r = 1;
+                    $i->{$n}{re} = qr/$i->{$n}{re}/; # Compile && test
+                } else {
+                    carp "Issues configuration doesn't support '$_' key in $n.\n";
+                    $fail = 1;
+                    goto FAIL;
+                }
+            }
+            unless ($d) {
                 carp "Issues configuration suppose each issue have 'description' key.\n";
                 $fail = 1;
                 goto FAIL;
             }
-            unless (exists $i->{$_}{re}) {
+            unless ($r) {
                 carp "Issues configuration suppose each issue have 'decsription' key.\n";
                 $fail = 1;
                 goto FAIL;
             }
         }
-        # Don't check re compiles. Takes too long.
 
 FAIL:
         if ($fail) {
             $ok = 0;
         }
     } catch {
-        carp "Issues configuration file has improper structure. $_\n";
+        carp "Issues configuration file have improper structure. Error: '$_'"; # to indicate regexp errors
         $ok = 0;
     };
 
@@ -102,21 +116,37 @@ sub check_priority_format($)
     try {
         my $fail = 0;
 
-        unless (exists $conf->{priority}) {
-            carp "Priority configuration should have 'priority' key.\n";
+        my @keys = keys %$conf;
+        unless (@keys == 1 && $keys[0] eq 'priority') {
+            carp "Priority configuration should have only 'priority' key at the root level.\n";
             $fail = 1;
             goto FAIL;
         }
-        unless (exists $conf->{priority}{lists}) {
-            carp "Priority configuration should have 'lists' key.\n";
+
+        my $p = $conf->{priority};
+        my ($l, $c) = (0, 0);
+        foreach (keys %$p) {
+            if ($_ eq 'lists') {
+                $l = 1;
+            } elsif ($_ eq 'colors') {
+                $c = 1;
+            } else {
+                carp "Issues configuration doesn't support '$_' key in priority.\n";
+                $fail = 1;
+                goto FAIL;
+            }
+        }
+        unless ($l) {
+            carp "Priority configuration should have 'lists' key in priority.\n";
             $fail = 1;
             goto FAIL;
         }
-        unless (exists $conf->{priority}{colors}) {
-            carp "Priority configuration should have 'colors' key.\n";
+        unless ($c) {
+            carp "Priority configuration should have 'colors' key in priority.\n";
             $fail = 1;
             goto FAIL;
         }
+
         my $lists  = $conf->{priority}{lists};
         my $colors = $conf->{priority}{colors};
 
