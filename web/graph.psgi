@@ -17,6 +17,7 @@ use File::Modified;
 
 use App::Graph;
 use Local::Config qw(load_config merge_config_keys update_config_keys);
+use Local::Config::Format qw(check_priority_format check_status_format detect_and_check_format);
 
 my %config;
 sub read_config
@@ -80,7 +81,11 @@ sub generate_image
              my $new_config;
              foreach (@cf) {
                 my $c = load_config $_;
-                merge_config_keys $new_config, $c;
+                if (detect_and_check_format($c)) {
+                   merge_config_keys $new_config, $c;
+                } else {
+                   warn "Incorrect configuration update. Will use previous.\n";
+                }
              }
              update_config_keys $config{config}, $new_config;
              warn "Loading updated configuration @cf\n";
