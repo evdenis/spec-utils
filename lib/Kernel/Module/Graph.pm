@@ -184,7 +184,7 @@ RECHECK:
                   } else {
                      #print $index{$_}{$tn}->code . "\n";
                      #print $n->code . "\n";
-                     die("Internal error: $tn duplicate. ID: $_")
+                     die("Internal error: $tn duplicate. ID: $_\n")
                   }
                } else {
                   $index{$_} = {};
