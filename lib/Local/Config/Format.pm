@@ -7,8 +7,37 @@ use Carp;
 use Color::Library;
 use Try::Tiny;
 
-our @EXPORT_OK = qw(check_issues_format check_status_format check_priority_format);
+our @EXPORT_OK = qw(check_issues_format check_status_format check_priority_format detect_format);
 
+
+sub detect_format($)
+{
+    my $conf = shift @_;
+    my $format = undef;
+
+    try {
+        my @keys = keys %$conf;
+        foreach (@keys) {
+            if ($_ eq 'priority') {
+                $format = 'priority';
+                last;
+            } elsif ($_ eq 'issues') {
+                $format = 'issues';
+                last;
+            } elsif ($_ eq 'done' || $_ eq 'specs-only' || $_ eq 'partial-specs' || $_ eq 'lemma-proof-required') {
+                $format = 'status';
+                last;
+            } else {
+                carp "Can't determine configuration file format. Unknown key $_.\n";
+                last;
+            }
+        }
+    } catch {
+        carp "Can't determine configuration file format. Unknown structure.\n"
+    };
+
+    return $format;
+}
 
 sub check_issues_format($)
 {
