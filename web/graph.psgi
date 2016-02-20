@@ -51,6 +51,7 @@ delete $config{status_config_file};
 $config{functions} = [];
 $config{async}     = 0;
 $config{keep_dot}  = 0;
+$config{issues}    = 0;
 
 $config{out}        .= $$;
 $config{cache_file} .= $$;
