@@ -166,7 +166,7 @@ RECHECK:
                   } elsif ($tn eq 'C::Global') {
                      #Just skip;
                      unless (_norm($index{$_}{$tn}->type) eq _norm($n->type)) {
-                        die("Internal error: $tn duplicate. ID: $_.\n".
+                        die("Internal error: $tn duplicate. ID: $_.\n" .
                             "Globals have different types: " . $n->type . ", " . $index{$_}{$tn}->type . "\n");
                      } else {
                         my ($old, $new) = ($index{$_}{$tn}, $n);
