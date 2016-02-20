@@ -7,8 +7,26 @@ use Carp;
 use Color::Library;
 use Try::Tiny;
 
-our @EXPORT_OK = qw(check_issues_format check_status_format check_priority_format detect_format);
+our @EXPORT_OK = qw(check_issues_format check_status_format check_priority_format detect_format detect_and_check_format);
 
+sub detect_and_check_format($)
+{
+    my $ok = 0;
+    my $format = detect_format($_[0]);
+    if ($format) {
+        if ($format eq 'issues') {
+            $ok = check_issues_format($_[0])
+        } elsif ($format eq 'status') {
+            $ok = check_status_format($_[0])
+        } elsif ($format eq 'priority') {
+            $ok = check_priority_format($_[0])
+        } else {
+            carp "Unknown format $format.\n"
+        }
+    }
+
+    $ok
+}
 
 sub detect_format($)
 {
