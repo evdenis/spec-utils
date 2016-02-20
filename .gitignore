@@ -4,10 +4,8 @@
 *.pdf
 *.iml
 
-.graph.conf
-.dismember.conf
-.config
-progress.txt
+*.conf
+*.config
 
 .cache/
 result/
