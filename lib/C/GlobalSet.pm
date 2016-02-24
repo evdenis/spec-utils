@@ -27,7 +27,7 @@ sub parse
    my $sbody  = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
    my $init   = qr/(?:${s}*+(?:\[[^\]]*+\]))?(?:${s}*+=${s}*+(?:$sbody|[^;]++))?/;
    my $ptr    = qr/(\*|${s}++|const)*+/;
-   my $type   = qr/(?<type>\b(?!PARSEC_PACKED)${varname}\b${ptr})/;
+   my $type   = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
 
    while (${$_[0]} =~ m/(?:(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\})))(*SKIP)(*FAIL)
                         |
@@ -38,15 +38,15 @@ sub parse
                               |
                               (?>(?<type>(?>float|double|size_t|u?int(8|16|32|64)_t|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)${ptr})(*SKIP)${name}${init})
                               |
-                              (?>enum(*SKIP)${s}++(?<type>${varname}${ptr})${name}${init})
+                              (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${init})
                               |
                               (?>
-                                 (?>struct|union)(*SKIP)${s}++${type}${name}${init}
+                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${name}${init}
                                  |
                                  (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK)${s}*+\(${s}*+${name}${s}*+\)
                               )
                               |
-                              (?:${type}${name}${init})
+                              (?:(?<type>${type})${name}${init})
                            )
                         )(*SKIP)
                         ${s}*+;
