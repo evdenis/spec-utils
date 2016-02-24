@@ -21,6 +21,8 @@ use YAML::XS qw(LoadFile);
 use FindBin;
 use lib::abs 'lib';
 
+use Local::Config qw(load_config);
+use Local::Config::Format qw(check_status_format);
 use Local::List::Util qw(uniq difference);
 use Local::Config qw(find_config);
 use Local::Terminal qw(window_size);
@@ -343,11 +345,12 @@ if (@ARGV) {
 
 # after these check we can handle $config{done}
 if ($config{done}) {
-   my $conf = LoadFile($config{done});
+   ### CONFIG FILE: $config{done}
+   my $conf = load_config $config{done};
    die "Can't read $config{done} file.\n"
       unless $conf;
    die "File $config{done} has improper format.\n"
-      unless exists $conf->{done};
+      unless check_status_format($conf);
    push @functions, uniq @{$conf->{done}};
 }
 
