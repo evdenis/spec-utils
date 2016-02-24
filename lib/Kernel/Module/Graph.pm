@@ -66,6 +66,22 @@ sub __dependencies_graph_iterator_generic
    my $sources = shift;
    my @vertices = @_ ? grep { m/$_[0]/ } $dg->vertices : $dg->vertices;
    my $l = $#vertices;
+   my %_sort_order = (
+                        macro       => 1,
+                        enum        => 2,
+                        structure   => 3,
+                        typedef     => 4,
+                        declaration => 5,
+                        global      => 6,
+                        function    => 7,
+                        acslcomment => 8
+   );
+
+   # Strict order
+   # reverse because of vertices[$l--]
+   @vertices = reverse sort {
+         $_sort_order{(split /_/, $a)[1]} <=> $_sort_order{(split /_/, $b)[1]}
+      } @vertices;
 
    return sub {
       NEXT:
