@@ -180,12 +180,37 @@ RECHECK:
                      $index{$_}{$tn} = [ $index{$_}{$tn} ];
                      push @{$index{$_}{$tn}}, $n
                   } elsif ($tn eq 'C::Global') {
-                     #Just skip;
-                     unless (_norm($index{$_}{$tn}->type) eq _norm($n->type)) {
-                        die("Internal error: $tn duplicate. ID: $_.\n" .
-                            "Globals have different types: " . $n->type . ", " . $index{$_}{$tn}->type . "\n");
+                     my ($old, $new) = ($index{$_}{$tn}, $n);
+                     my $die = 1;
+
+                     unless (_norm($old->type) eq _norm($new->type)) {
+                        warn "$tn type conflict. Trying to resolve...\n";
+                        # Checking for 'typedef struct name1 {} name2'
+                        if ($old->type =~ m/\bstruct\b/ || $new->type =~ m/\bstruct\b/) {
+                           # FIXME: const
+                           my @old_type_words = ($old->type =~ m/\w++/g);
+                           my @new_type_words = ($old->type =~ m/\w++/g);
+                           my $old_type_id = $#old_type_words > 1 ? $old_type_words[1] : $old_type_words[0];
+                           my $new_type_id = $#new_type_words > 1 ? $new_type_words[1] : $new_type_words[0];
+                           my $type_old = 1;
+                           my $type_new = 2;
+
+                           $type_old = $index{$old_type_id}
+                              if exists $index{$old_type_id};
+                           $type_new = $index{$new_type_id}
+                              if exists $index{$new_type_id};
+
+                           if ($type_old == $type_new && defined $type_old) {
+                              warn "Resolved.\n";
+                              $die = 0;
+                           }
+                        }
+
+                        if ($die) {
+                           die("Internal error: $tn duplicate. ID: $_.\n" .
+                              "Globals have different types: " . $new->type . ", " . $old->type . "\n")
+                        }
                      } else {
-                        my ($old, $new) = ($index{$_}{$tn}, $n);
                         if ($old->initialized && $new->initialized) {
                            die "Globals duplicate with initialization: $_\n";
                         }
