@@ -772,7 +772,7 @@ digraph g
       kernel_declaration -> module_global;
       kernel_declaration -> module_function;
 
-      module_decalration -> module_macro;
+      module_declaration -> module_macro;
       module_declaration -> module_global;
       module_declaration -> module_function;
 
