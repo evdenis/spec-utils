@@ -142,8 +142,8 @@ sub to_string
 FW_DECL:
 
    unless ($full) {
-      $prior = index($code, '{'); # we need to recalculate it
-      $code = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
+      $prior = rindex(substr($code, 0, index($code, '{')), ')') + 1;
+      $code  = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
    } else {
       my $fw_decl = $_[0]->forward_declaration;
       if (@$fw_decl) {
