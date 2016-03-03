@@ -44,9 +44,9 @@ GetOptions(
    'csv-output|c!' => \$csvout,
 ) or die "Incorrect usage!\n";
 
-my $mh_path = catfile($mdir, $sec_hooks_file);
+
 die(qq(Incorrect path to module: "$mdir"\n))
-   if $mdir && !( -d $mdir && -r $mh_path );
+   if $mdir && !( -d $mdir );
 
 $kdir //= autodetect_kernel_directory(files => [qw/Makefile/]);
 
@@ -63,6 +63,10 @@ unless ($mdir) {
 
 die "Can't find path to module sources directory.\n"
    unless $mdir;
+
+my $mh_path = catfile($mdir, $sec_hooks_file);
+die "Can't read file $mh_path\n"
+    unless -r $mh_path;
 
 my $kernel_version = do {
    open my $MK, '<', "$kdir/Makefile";
