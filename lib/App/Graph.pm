@@ -40,28 +40,29 @@ sub run
    my $args = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
 
    my $tmpl = {
-      kernel_dir   => { required => 1, defined => 1 },
-      module_dir   => { required => 1, defined => 1 },
-      cache        => { required => 0, defined => 1 },
-      cache_file   => { required => 1, defined => 1 },
-      config       => { default  => undef },
-      renew_cache  => { required => 0 },
-      done         => { required => 0 },
-      display_done => { default  => 1 },
-      preprocessed => { required => 0 },
-      functions    => { required => 0 },
-      mark_anyway  => { default => 1 },
-      statistics   => { default => 0 },
-      keep_dot     => { default => 0 },
-      issues       => { default => 0 },
-      async        => { default => 0 },
-      view         => { default => undef },
-      priority     => { default => 1 },
-      legenda      => { default => 1 },
-      reverse      => { default => 0 },
-      level        => { default => undef },
-      out          => { default => 'graph' },
-      format       => { default => 'svg' },
+      kernel_dir        => { required => 1, defined => 1 },
+      module_dir        => { required => 1, defined => 1 },
+      cache             => { required => 0, defined => 1 },
+      cache_file        => { required => 1, defined => 1 },
+      config            => { default  => undef },
+      renew_cache       => { required => 0 },
+      done              => { required => 0 },
+      display_done      => { default  => 1 },
+      preprocessed      => { required => 0 },
+      functions         => { required => 0 },
+      mark_anyway       => { default => 1 },
+      statistics        => { default => 0 },
+      keep_dot          => { default => 0 },
+      issues            => { default => 0 },
+      async             => { default => 0 },
+      view              => { default => undef },
+      priority          => { default => 1 },
+      reverse           => { default => 0 },
+      priority_legenda  => { default => 1 },
+      issues_legenda    => { default => 1 },
+      level             => { default => undef },
+      out               => { default => 'graph' },
+      format            => { default => 'svg' },
    };
 
    check($tmpl, $args, 1)
@@ -312,10 +313,10 @@ CACHE: if ($args->{cache}) {
       Graph::Writer::Dot->new()->write_graph($graph, $dotfile)
    }
 
-   if (($args->{priority} || $args->{issues}) && $args->{legenda}) {
+   if ($args->{priority} && $args->{priority_legenda} || $args->{issues} && $args->{issues_legenda}) {
       my @legenda;
 
-      if ($args->{issues} && %used_issues) {
+      if ($args->{issues} && $args->{issues_legenda} && %used_issues) {
          push @legenda, qq(  subgraph "cluster_issues_legenda" {\n);
          push @legenda, qq(    style = "filled";\n);
          push @legenda, qq(    color = "lightgrey";\n);
@@ -331,7 +332,7 @@ CACHE: if ($args->{cache}) {
          push @legenda, qq(  }\n);
       }
 
-      if ($args->{priority}) {
+      if ($args->{priority} && $args->{priority_legenda}) {
          push @legenda, qq(  subgraph "cluster_priority_legenda" {\n);
          push @legenda, qq(    style = "filled";\n);
          push @legenda, qq(    color = "lightgrey";\n);
@@ -346,9 +347,11 @@ CACHE: if ($args->{cache}) {
          push @legenda, qq(  }\n);
       }
 
-      my @dot = read_file($dotfile, { binmode => ':utf8' });
-      splice @dot, 2, 0, @legenda;
-      write_file($dotfile, { binmode => ':utf8' }, @dot);
+      if (@legenda) {
+         my @dot = read_file( $dotfile, { binmode => ':utf8' } );
+         splice @dot, 2, 0, @legenda;
+         write_file( $dotfile, { binmode => ':utf8' }, @dot );
+      }
    }
 
    if (which('dot')) {

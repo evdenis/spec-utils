@@ -85,6 +85,12 @@ graph - построить граф вызовов функций модуля �
                              (default: off)
   -i|--[no-]issues         - помечает на карте issues
                              (default: off)
+  --[no-]priority-legenda  - отображать на карте табличку приоритетов
+                             (default: on
+  --[no-]issues-legenda    - отображать на карте табличку проблем
+                             (default: on
+  --[no-]legenda           - регилирует совместно поведение двух прошлых опций
+                             (default: on)
 
   -a|--[no-]mark-anyway    - помечать функции из списка приоритетов в любом случае
                              (default: off)
@@ -176,10 +182,17 @@ graph - построить граф вызовов функций модуля �
 
 Помечает на карте проблемы. Критерии, в соответствии с которыми необходимо помечать вершины, как и сами метки, задаются в файле F<.issues.conf>
 
+=item B<--[no-]priority-legenda>
+
+Отображать на карте дополнительную информацию по цветовым обозначениям приоритетов. По умолчанию включено.
+
+=item B<--[no-]issues-legenda>
+
+Отображать на карте дополнительную информацию по проблемам. По умолчанию включено.
+
 =item B<--[no-]legenda>
 
-Отображать на карте дополнительную информацию по цветовым обозначениям приоритетов, информацию по проблемам. По
-улочанию включено. Работает только в паре с опцией --priority или --issues.
+Отображать на карте дополнительную информацию по цветовым обозначениям приоритетов, информацию по проблемам. По умолчанию включено. Объединяет в себе поведение двух опций --[no-]priority-legenda и --[no-]issues-legenda.
 
 =item B<-a|--[no-]mark-anyway>
 
@@ -229,25 +242,26 @@ unless (which('dot')) {
 }
 
 my %args;
-$args{functions}    = [];
-$args{format}       = 'svg';
-$args{out}          = 'graph';
-$args{cache_file}   = 'graph_map.cache';
-$args{done}         = 1;
-$args{display_done} = 1;
-$args{priority}     = 1;
-$args{issues}       = 0;
-$args{statistics}   = 1; # Always print level statistics
-$args{mark_anyway}  = 0;
-$args{view}         = 1;
-$args{async}        = 1;
-$args{keep_dot}     = defined $ENV{DISPLAY} ? 0 : 1;
-$args{reverse}      = 0;
-$args{level}        = undef;
-$args{cache}        = 0;
-$args{renew_cache}  = 0;
-$args{legenda}      = 1;
-$args{config}       = undef;
+$args{functions}        = [];
+$args{format}           = 'svg';
+$args{out}              = 'graph';
+$args{cache_file}       = 'graph_map.cache';
+$args{done}             = 1;
+$args{display_done}     = 1;
+$args{priority}         = 1;
+$args{issues}           = 0;
+$args{statistics}       = 1; # Always print level statistics
+$args{mark_anyway}      = 0;
+$args{view}             = 1;
+$args{async}            = 1;
+$args{keep_dot}         = defined $ENV{DISPLAY} ? 0 : 1;
+$args{reverse}          = 0;
+$args{level}            = undef;
+$args{cache}            = 0;
+$args{renew_cache}      = 0;
+$args{priority_legenda} = 1;
+$args{issues_legenda}   = 1;
+$args{config}           = undef;
 
 my $open_with = 'xdg-open';
 
@@ -281,7 +295,9 @@ GetOptions(
    'level|l=i'               =>  \$args{level},
    'async!'                  =>  \$args{async},
    'keep-dot!'               =>  \$args{keep_dot},
-   'legenda!'                =>  \$args{legenda},
+   'priority-legenda!'       =>  \$args{priority_legenda},
+   'issues-legenda!'         =>  \$args{issues_legenda},
+   'legenda!'                =>  sub {$args{priority_legenda} = $args{issues_legenda} = $_[1]},
    'help|h'                  =>  \$help
 ) or pod2usage(1);
 
