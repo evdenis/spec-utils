@@ -44,7 +44,7 @@ sub run
       module_dir   => { required => 1, defined => 1 },
       cache        => { required => 0, defined => 1 },
       cache_file   => { required => 1, defined => 1 },
-      config       => { required => 1, defined => 1 },
+      config       => { default  => undef },
       renew_cache  => { required => 0 },
       done         => { required => 0 },
       preprocessed => { required => 0 },
