@@ -47,6 +47,7 @@ sub run
       config       => { default  => undef },
       renew_cache  => { required => 0 },
       done         => { required => 0 },
+      display_done => { default  => 1 },
       preprocessed => { required => 0 },
       functions    => { required => 0 },
       mark_anyway  => { default => 1 },
@@ -115,10 +116,6 @@ CACHE: if ($args->{cache}) {
       exit 0
          if $args->{renew_cache}
    }
-
-   #1
-   $graph->set_vertex_attribute($_, shape => 'octagon')
-      foreach $graph->successorless_vertices();
 
    my $stat_done = 0;
    my @marked_as_done;
@@ -301,6 +298,12 @@ CACHE: if ($args->{cache}) {
          warn "--functions parameter will not be taken into account.\n"
       }
    }
+
+   $graph->delete_vertices(@marked_as_done)
+         unless $args->{display_done};
+
+   $graph->set_vertex_attribute($_, shape => 'octagon')
+       foreach $graph->successorless_vertices();
 
    my $dotfile = $args->{out} . '.dot';
 
