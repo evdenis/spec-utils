@@ -56,6 +56,7 @@ sub run
       async        => { default => 0 },
       view         => { default => undef },
       priority     => { default => 1 },
+      legenda      => { default => 1 },
       reverse      => { default => 0 },
       level        => { default => undef },
       out          => { default => 'graph' },
@@ -308,7 +309,7 @@ CACHE: if ($args->{cache}) {
       Graph::Writer::Dot->new()->write_graph($graph, $dotfile)
    }
 
-   if ($args->{priority} || $args->{issues}) {
+   if (($args->{priority} || $args->{issues}) && $args->{legenda}) {
       my @legenda;
 
       if ($args->{issues} && %used_issues) {
