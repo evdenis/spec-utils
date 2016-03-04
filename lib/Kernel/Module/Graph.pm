@@ -21,7 +21,7 @@ use C::Util::Cycle qw(resolve);
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
-our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph %out_file @out_order);
+our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph get_isolated_subgraph);
 
 our %out_file = (
    module_c => undef,
@@ -508,6 +508,23 @@ sub get_successors_subgraph
    _generic_get_subgraph('all_successors', @_)
 }
 
+sub get_isolated_subgraph
+{
+   my $graph = $_[0];
+
+   my $subgraph = Graph->new();
+   my @vertices = $graph->isolated_vertices();
+
+   $subgraph->add_vertices(@vertices);
+
+   $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
+       foreach @vertices;
+
+   $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'))
+       if $graph->has_graph_attribute('comments');
+
+   $subgraph
+}
 
 sub _write_to_files
 {
