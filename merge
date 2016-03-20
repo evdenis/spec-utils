@@ -131,6 +131,11 @@ GetOptions(
    'help|h'       => \$help,
 ) or pod2usage(1);
 
+if (@ARGV) {
+   warn "Unknown options '@ARGV'\n";
+   pod2usage(1);
+}
+
 @skip = split(/,/,join(',',@skip));
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
