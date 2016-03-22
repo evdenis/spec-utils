@@ -14,6 +14,7 @@ use HTTP::Date;
 use File::Slurp qw/read_file write_file/;
 use Try::Tiny;
 use File::Modified;
+use Scalar::Util qw(looks_like_number);
 
 use App::Graph;
 use Local::Config qw(load_config merge_config_keys update_config_keys);
@@ -173,13 +174,17 @@ my $image = sub {
    if ($req->param('func')) {
       $config{functions} = [ split(/,/, $req->param('func')) ]
    }
+   if ($req->param('level') && looks_like_number($req->param('level'))) {
+      $config{level} = $req->param('level')
+   }
 
    return return_500
       if generate_image('image');
 
    my $file = $config{out} . '.' . $config{format};
-   $config{format} = $original{format};
+   $config{format}    = $original{format};
    $config{functions} = $original{functions};
+   $config{level}     = $original{level};
 
    open my $fh, "<:raw", $file
       or return return_500;
@@ -314,6 +319,9 @@ HTML
    if ($req->param('func')) {
       $config{functions} = [ split(/,/, $req->param('func')) ]
    }
+   if ($req->param('level') && looks_like_number($req->param('level'))) {
+      $config{level} = $req->param('level')
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -339,8 +347,9 @@ HTML
 
    $res->body($html);
 
-   $config{format} = $original{format};
+   $config{format}    = $original{format};
    $config{functions} = $original{functions};
+   $config{level}     = $original{level};
 
    return $res->finalize();
 };
