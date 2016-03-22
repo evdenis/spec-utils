@@ -65,7 +65,7 @@ sub run
       format            => { default => 'svg' },
    };
 
-   check($tmpl, $args, 1)
+   $args = check($tmpl, $args, 1)
       or croak "Arguments could not be parsed.\n";
 
    if (defined $args->{level}) {
