@@ -53,6 +53,7 @@ sub run
       config            => { default  => undef },
       renew_cache       => { required => 0 },
       done              => { required => 0 },
+      from_done         => { required => 0, default => 0 },
       display_done      => { default  => 1 },
       preprocessed      => { required => 0 },
       functions         => { required => 0 },
@@ -83,6 +84,17 @@ sub run
       } else {
          $args->{functions} = $args->{config}{priority}{lists}[$args->{level} - 1];
       }
+   }
+
+   if ($args->{config}{done} && $args->{from_done}) {
+      if (!$args->{reverse} && $args->{display_done} == 0) {
+         croak "It's pointless to use --from-done and --no-display-done.\n";
+      }
+      $args->{functions} = [@{$args->{config}{done}}]; #clone
+      push @{$args->{functions}}, @{$args->{config}{'specs-only'}}
+          if exists $args->{config}{'specs-only'};
+      push @{$args->{functions}}, @{$args->{config}{'lemma-proof-required'}}
+          if exists $args->{config}{'lemma-proof-required'};
    }
 
    #Initializing the library
@@ -385,5 +397,4 @@ CACHE: if ($args->{cache}) {
    } else {
       croak("Can't find dot program to create the source map.\n");
    }
-
 }

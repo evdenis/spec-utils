@@ -83,6 +83,7 @@ graph - построить граф вызовов функций модуля �
                              (default: on)
   --[no-]display-done      - не отображать на карте проверифицированные функции
                              (default: off)
+  --from-done              - строить граф от проверифицированных функций
   -i|--[no-]issues         - помечает на карте issues
                              (default: off)
   --[no-]priority-legenda  - отображать на карте табличку приоритетов
@@ -178,6 +179,10 @@ graph - построить граф вызовов функций модуля �
 
 По умолчанию включён. Если используется флаг --done и флаг --no-display-done, то проверифицированные функции учитываются, но не отображаются на карте.
 
+=item B<--from-done>
+
+Использовать функции done, specs-only, lemma-proof-required из F<.status.conf> в качестве параметра для аргумента --functions.
+
 =item B<--[no-]issues>
 
 Помечает на карте проблемы. Критерии, в соответствии с которыми необходимо помечать вершины, как и сами метки, задаются в файле F<.issues.conf>
@@ -262,6 +267,7 @@ $args{renew_cache}      = 0;
 $args{priority_legenda} = 1;
 $args{issues_legenda}   = 1;
 $args{config}           = undef;
+$args{from_done}        = 0;
 
 my $open_with = 'xdg-open';
 
@@ -285,6 +291,7 @@ GetOptions(
    'cache!'                  =>  \$args{cache},
    'renew-cache'             =>  \$args{renew_cache},
    'done!'                   =>  \$args{done},
+   'from-done'               =>  \$args{from_done},
    'display-done!'           =>  \$args{display_done},
    'priority!'               =>  \$args{priority},
    'issues!'                 =>  \$args{issues},
@@ -335,6 +342,14 @@ if (!@{$args{functions}} && $args{reverse}) {
 
 if (defined $args{view} && !which($args{view})) {
    die "Can't find program $args{view}.\n"
+}
+
+if (!$args{done} && $args{from_done} == 1) {
+   die "Flag --from-done should be used in combination with flag --done.\n"
+}
+
+if ($args{display_done} == 0 && $args{from_done}) {
+   die "It's pointless to use --no-display-done and --from-done.\n"
 }
 
 ### KERNEL DIRECTORY: $args{kernel_dir}
