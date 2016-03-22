@@ -128,11 +128,14 @@ sub generate_image
       my $svg = read_file($filename);
 
       my $link_begin;
+      my $link_level_begin;
       my $link_begin_end = qq|">\n|;
       if ($_[0] eq 'image') {
-         $link_begin = qq|<a xlink:href="/graph/image?func=|;
+         $link_begin       = qq|<a xlink:href="/graph/image?func=|;
+         $link_level_begin = qq|<a xlink:href="/graph/image?level=|;
       } elsif ($_[0] eq 'page') {
-         $link_begin = qq|<a xlink:href="/graph?func=|;
+         $link_begin       = qq|<a xlink:href="/graph?func=|;
+         $link_level_begin = qq|<a xlink:href="/graph?level=|;
       }
       my $link_end   = qq|</a>\n|;
 
@@ -142,9 +145,14 @@ sub generate_image
 
          my $end = index($svg, "</g>\n", $begin) + 5;
          my $area = substr($svg, $begin, $end - $begin);
-         my ($title) = $area =~ m!<title>([a-zA-Z_]\w++)</title>!;
+         my ($title) = $area =~ m!<title>([a-zA-Z_]\w++|\d++)</title>!;
          next unless $title;
-         my $link = $link_begin . $title . $link_begin_end;
+         my $link;
+         unless (looks_like_number($title)) {
+            $link = $link_begin.$title.$link_begin_end;
+         } else {
+            $link = $link_level_begin.$title.$link_begin_end;
+         }
 
          substr($svg, $end, 0, $link_end);
          substr($svg, $begin, 0, $link);
