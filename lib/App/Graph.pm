@@ -17,7 +17,13 @@ use Storable;
 use Local::List::Util qw(uniq difference intersection any);
 use C::Util::Transformation;
 use Kernel::Module qw(preprocess_module_sources_nocomments);
-use Kernel::Module::Graph qw(build_sources_graph get_successors_subgraph get_predecessors_subgraph);
+use Kernel::Module::Graph qw(
+    build_sources_graph
+    get_successors_subgraph
+    get_strict_successors_subgraph
+    get_predecessors_subgraph
+    get_strict_predecessors_subgraph
+);
 
 use C::FunctionSet;
 use Carp;
@@ -291,7 +297,7 @@ CACHE: if ($args->{cache}) {
          unless ($args->{reverse}) {
             $graph = get_successors_subgraph($graph, @e);
          } else {
-            $graph = get_predecessors_subgraph($graph, @e);
+            $graph = get_strict_predecessors_subgraph($graph, @e);
          }
 
          say "Количество функций в выбранном подграфе: " . $graph->vertices

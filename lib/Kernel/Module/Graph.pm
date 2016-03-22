@@ -15,13 +15,24 @@ use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
 
+use Local::List::Util qw(any);
 use C::Util::Transformation qw(restore);
 use C::Util::Cycle qw(resolve);
 
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
-our @EXPORT_OK = qw(build_sources_graph get_predecessors_subgraph get_successors_subgraph output_sources_graph get_isolated_subgraph);
+our @EXPORT_OK = qw(
+    build_sources_graph
+    get_predecessors_subgraph
+    get_successors_subgraph
+    get_strict_predecessors_subgraph
+    get_strict_successors_subgraph
+    output_sources_graph
+    get_isolated_subgraph
+    %out_file
+    @out_order
+);
 
 our %out_file = (
    module_c => undef,
@@ -478,13 +489,49 @@ sub build_sources_graph
 
 
 my %ft = (all_predecessors => 'edges_to', all_successors => 'edges_from');
+my %rft = (all_predecessors => 'edges_from', all_successors => 'edges_to'); # reverse
 sub _generic_get_subgraph
 {
-   my ($method, $graph, @id) = @_;
+   my ($method, $strict, $graph, @id) = @_;
    my $em = $ft{$method};
+   my $me = $rft{$method};
+   my $from_edge_gen = sub {$_[0] eq 'edges_from' ? sub {$_->[1]} : sub {$_->[0]}};
+   my $from_em_edge = $from_edge_gen->($em);
+   my $from_me_edge = $from_edge_gen->($me);
 
-   my @pr = (@id, $graph->$method(@id));
-   my $subgraph = Graph::Directed->new(edges => [ map $graph->$em($_), @pr ]);
+   my @pr;
+   my $subgraph;
+
+   if ($strict) {
+      @pr = @id;
+      my @queue = @id;
+      while (my $v = shift @queue) {
+         my @vs = map $from_em_edge->($_), $graph->$em($v);
+         my @sv;
+
+         foreach (@vs) {
+            my $all = 1;
+            foreach (map $from_me_edge->($_), $graph->$me($_)) {
+               if (!any($_, @pr)) {
+                  $all = 0;
+                  last;
+               }
+            }
+            push @sv, $_
+                if $all;
+         }
+
+         push @queue, @sv;
+         push @pr, @sv;
+      }
+
+      $subgraph = Graph::Directed->new(vertices => [@pr]);
+      my %pr; @pr{@pr} = undef;
+      $subgraph->add_edges(grep {exists $pr{$_->[0]} && exists $pr{$_->[1]}} $graph->edges);
+   } else {
+      @pr = (@id, $graph->$method(@id));
+      $subgraph = Graph::Directed->new(edges => [ map $graph->$em($_), @pr ]);
+   }
 
    $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
       foreach @pr;
@@ -500,12 +547,22 @@ sub _generic_get_subgraph
 
 sub get_predecessors_subgraph
 {
-   _generic_get_subgraph('all_predecessors', @_)
+   _generic_get_subgraph('all_predecessors', 0, @_)
+}
+
+sub get_strict_predecessors_subgraph
+{
+   _generic_get_subgraph('all_predecessors', 1, @_)
 }
 
 sub get_successors_subgraph
 {
-   _generic_get_subgraph('all_successors', @_)
+   _generic_get_subgraph('all_successors', 0, @_)
+}
+
+sub get_strict_successors_subgraph
+{
+   _generic_get_subgraph('all_successors', 1, @_)
 }
 
 sub get_isolated_subgraph
