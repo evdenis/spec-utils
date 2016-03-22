@@ -191,6 +191,9 @@ my $image = sub {
    if ($req->param('reverse')) {
       $config{reverse} = 1
    }
+   if ($req->param('from_done')) {
+      $config{from_done} = 1
+   }
 
    return return_500
       if generate_image('image');
@@ -201,6 +204,7 @@ my $image = sub {
    delete $config{level};
    delete $config{display_done};
    delete $config{reverse};
+   delete $config{from_done};
 
    open my $fh, "<:raw", $file
       or return return_500;
@@ -344,6 +348,9 @@ HTML
    if ($req->param('reverse')) {
       $config{reverse} = 1
    }
+   if ($req->param('from_done')) {
+      $config{from_done} = 1
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -374,6 +381,7 @@ HTML
    delete $config{level};
    delete $config{display_done};
    delete $config{reverse};
+   delete $config{from_done};
 
    return $res->finalize();
 };
