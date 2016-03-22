@@ -46,7 +46,7 @@ sub any_l
 #sub any ($\[$@])
 sub any
 {
-   return any_l(@_) if $#_ > 2;
+   return any_l(@_) if $#_ >= 2;
 
    if (ref($_[0]) eq 'ARRAY' ) {
       return any_ref($_[1], $_[0])
