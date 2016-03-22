@@ -74,8 +74,9 @@ sub run
       if ($level <= 0 || $level > $max) {
          warn "Level option is out of bounds. Ignoring.\n";
          $args->{level} = undef;
+      } else {
+         $args->{functions} = $args->{config}{priority}{lists}[$args->{level} - 1];
       }
-      $args->{functions} = $args->{config}{priority}{lists}[$args->{level} - 1];
    }
 
    #Initializing the library
