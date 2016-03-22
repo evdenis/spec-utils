@@ -185,13 +185,13 @@ my $image = sub {
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level')
    }
-   if ($req->param('no_display_done')) {
+   if ($req->param('no-display-done')) {
       $config{display_done} = 0
    }
    if ($req->param('reverse')) {
       $config{reverse} = 1
    }
-   if ($req->param('from_done')) {
+   if ($req->param('from-done')) {
       $config{from_done} = 1
    }
 
@@ -342,13 +342,13 @@ HTML
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level')
    }
-   if ($req->param('no_display_done')) {
+   if ($req->param('no-display-done')) {
       $config{display_done} = 0
    }
    if ($req->param('reverse')) {
       $config{reverse} = 1
    }
-   if ($req->param('from_done')) {
+   if ($req->param('from-done')) {
       $config{from_done} = 1
    }
 
