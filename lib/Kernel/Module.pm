@@ -156,7 +156,8 @@ sub _generic_handle_sources
       $include_dirs{realpath((splitpath($_))[1])} = undef;
    }
 
-   $defines = join("\n", @$defines) . "\n";
+   $defines = join("\n", @$defines) . "\n"
+              if $defines;
 
    my ($o,$f) = $func->(
                      realpath($kdir),
