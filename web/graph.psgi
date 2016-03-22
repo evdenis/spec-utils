@@ -177,14 +177,18 @@ my $image = sub {
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level')
    }
+   if ($req->param('no_display_done')) {
+      $config{display_done} = 0
+   }
 
    return return_500
       if generate_image('image');
 
    my $file = $config{out} . '.' . $config{format};
-   $config{format}    = $original{format};
-   $config{functions} = $original{functions};
-   $config{level}     = $original{level};
+   $config{format}       = $original{format};
+   $config{functions}    = $original{functions};
+   delete $config{level};
+   delete $config{display_done};
 
    open my $fh, "<:raw", $file
       or return return_500;
@@ -322,6 +326,9 @@ HTML
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level')
    }
+   if ($req->param('no_display_done')) {
+      $config{display_done} = 0
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -347,9 +354,10 @@ HTML
 
    $res->body($html);
 
-   $config{format}    = $original{format};
-   $config{functions} = $original{functions};
-   $config{level}     = $original{level};
+   $config{format}       = $original{format};
+   $config{functions}    = $original{functions};
+   delete $config{level};
+   delete $config{display_done};
 
    return $res->finalize();
 };
