@@ -194,6 +194,11 @@ my $image = sub {
    if ($req->param('from-done')) {
       $config{from_done} = 1
    }
+   if ($req->param('available')) {
+      $config{from_done}    = 1;
+      $config{reverse}      = 1;
+      $config{display_done} = 0;
+   }
 
    return return_500
       if generate_image('image');
@@ -350,6 +355,11 @@ HTML
    }
    if ($req->param('from-done')) {
       $config{from_done} = 1
+   }
+   if ($req->param('available')) {
+      $config{from_done}    = 1;
+      $config{reverse}      = 1;
+      $config{display_done} = 0;
    }
 
    if ($config{format} eq 'svg') {
