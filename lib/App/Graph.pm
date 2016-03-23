@@ -92,11 +92,19 @@ sub run
       if (!$args->{reverse} && $args->{display_done} == 0) {
          croak "It's pointless to use --from-done and --no-display-done.\n";
       }
-      $args->{functions} = [@{$args->{config}{done}}]; #clone
-      push @{$args->{functions}}, @{$args->{config}{'specs-only'}}
+      my @from_done = @{$args->{config}{done}}; #clone
+      push @from_done, @{$args->{config}{'specs-only'}}
           if exists $args->{config}{'specs-only'};
-      push @{$args->{functions}}, @{$args->{config}{'lemma-proof-required'}}
+      push @from_done, @{$args->{config}{'lemma-proof-required'}}
           if exists $args->{config}{'lemma-proof-required'};
+
+      if (@{$args->{functions}}) {
+         $args->{functions} = [ intersection($args->{functions}, \@from_done) ];
+         carp "Intersection of --level and --from-done options results in empty set.\n"
+            unless @{$args->{functions}};
+      } else {
+         $args->{functions} = \@from_done
+      }
    }
 
    #Initializing the library
