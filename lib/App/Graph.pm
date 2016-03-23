@@ -76,6 +76,8 @@ sub run
       or croak "Arguments could not be parsed.\n";
 
    if (defined $args->{level}) {
+      croak "Can't handle arguments --functions and --level simultaneously.\n"
+          if @{$args->{functions}};
       my $level = $args->{level};
       my $max = @{$args->{config}{priority}{lists}};
       if ($level <= 0 || $level > $max) {

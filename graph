@@ -406,16 +406,16 @@ if ($args{issues}) {
    merge_config_keys $args{config}, $issues;
 }
 
-
 # level checks
 if (defined $args{level}) {
+   die "Can't handle arguments --functions and --level simultaneously.\n"
+       if @{$args{functions}};
    my $level = $args{level};
    my $max = @{$args{config}{priority}{lists}};
    if ($level <= 0 || $level > $max) {
       die "Level option is out of bounds.\n"
    }
 }
-
 
 run(\%args); # Can die.
 
