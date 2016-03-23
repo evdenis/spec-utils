@@ -299,7 +299,7 @@ GetOptions(
    'view|v!'                 =>  \$args{view},
    'open-with|w=s'           =>  \$open_with,
    'reverse|r!'              =>  \$args{reverse},
-   'level|l=i'               =>  sub {$args{level} = $_[1]; $args{priority_legenda} = 0},
+   'level|l=i'               =>  \$args{level},
    'async!'                  =>  \$args{async},
    'keep-dot!'               =>  \$args{keep_dot},
    'priority-legenda!'       =>  \$args{priority_legenda},
