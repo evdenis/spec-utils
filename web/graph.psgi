@@ -199,6 +199,10 @@ my $image = sub {
       $config{reverse}      = 1;
       $config{display_done} = 0;
    }
+   if (defined $req->param('legenda') && !$req->param('legenda')) {
+      $config{priority_legenda} = 0;
+      $config{issues_legenda} = 0;
+   }
 
    return return_500
       if generate_image('image');
@@ -210,6 +214,8 @@ my $image = sub {
    delete $config{display_done};
    delete $config{reverse};
    delete $config{from_done};
+   delete $config{priority_legenda};
+   delete $config{issues_legenda};
 
    open my $fh, "<:raw", $file
       or return return_500;
@@ -361,6 +367,10 @@ HTML
       $config{reverse}      = 1;
       $config{display_done} = 0;
    }
+   if (defined $req->param('legenda') && !$req->param('legenda')) {
+      $config{priority_legenda} = 0;
+      $config{issues_legenda} = 0;
+   }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
@@ -392,6 +402,8 @@ HTML
    delete $config{display_done};
    delete $config{reverse};
    delete $config{from_done};
+   delete $config{priority_legenda};
+   delete $config{issues_legenda};
 
    return $res->finalize();
 };
