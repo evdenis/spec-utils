@@ -336,8 +336,8 @@ unless ($args{preprocessed}) {
    pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $args{module_dir};
 }
 
-if (!@{$args{functions}} && $args{reverse}) {
-   warn "There is not point in using reverse option without --functions\n"
+if (!@{$args{functions}} && $args{reverse} && !(defined $args{level}) && !$args{from_done}) {
+   warn "It's pointless to use --reverse option without --functions\n"
 }
 
 if (defined $args{view} && !which($args{view})) {
@@ -348,7 +348,7 @@ if (!$args{done} && $args{from_done} == 1) {
    die "Flag --from-done should be used in combination with flag --done.\n"
 }
 
-if ($args{display_done} == 0 && $args{from_done}) {
+if ($args{display_done} == 0 && $args{from_done} && !$args{reverse}) {
    die "It's pointless to use --no-display-done and --from-done.\n"
 }
 
