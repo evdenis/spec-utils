@@ -104,6 +104,7 @@ while ($graph->has_a_cycle) {
 
 my $i = 0;
 foreach (@dot) {
+   print "Output: out$i.dot out$i.svg\n";
    write_file("out$i.dot", $_);
    system('dot', "-Tsvg", "out$i.dot", "-oout$i.svg");
    ++$i;
