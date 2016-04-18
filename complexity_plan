@@ -100,6 +100,8 @@ my $metrics = create_table($graph, $preprocessed, $modified, $config);
 delete $metrics->{__inittest};
 delete $metrics->{__check_enabled};
 
+gather_statistics($metrics);
+
 output_plan(prepare_output_document($output_format, $output_file, $config), $metrics);
 ##END OF A PROGRAM
 
@@ -366,6 +368,72 @@ sub prepare_output_document($output_format, $output_file, $config)
    }
 
    ($obj, $addfunc, $retfunc, $outfunc)
+}
+
+sub gather_statistics($metrics)
+{
+   my ($total_sloc, $done_sloc);
+   my @columns;
+   my @rows; #my %stat_types;
+   my %done_in_prio;
+   my %sloc_in_prio;
+   my %ccn_in_prio;
+   foreach (keys %$metrics) {
+      my $m = $metrics->{$_};
+      my $prio   = $m->{priority}; $prio //= "без приоритета";
+      my $status = $m->{status};
+      my $sloc   = $m->{SLOC};
+      my $ccn    = $m->{CCN};
+
+      my $ref = \%{$done_in_prio{$prio}};
+      $ref->{total}++;
+      if ($status) {
+         $ref->{status}{$status}++;
+         #$stat_types{$status}++;
+      }
+
+      $ref = \%{$sloc_in_prio{$prio}};
+      $ref->{total} += $sloc;
+      if ($status) {
+         $ref->{status}{$status} += $sloc;
+      }
+
+      $ref = \%{$ccn_in_prio{$prio}};
+      $ref->{total} += $ccn;
+      if ($status) {
+         $ref->{status}{$status} += $ccn;
+      }
+   }
+
+   sub output_stat ($head, $in_prio ) {
+      my $cross_prio_total   = 0;
+      my $cross_prio_remains = 0;
+      my %cross_prio_status;
+      foreach(sort keys %$in_prio) {
+         print "Приоритет: $_\n";
+         print "\t$head " . $in_prio->{$_}{total} . "\n";
+         $cross_prio_total += $in_prio->{$_}{total};
+         my $remains = $in_prio->{$_}{total};
+         foreach my $s (keys %{$in_prio->{$_}{status}}) {
+            my $n = $in_prio->{$_}{status}{$s};
+            $remains -= $n;
+            $cross_prio_status{$s} += $n;
+            print "\tИз них в статусе '" . $s . "': $n\n";
+         }
+         print "\tОсталось: " . $remains . "\n";
+         $cross_prio_remains += $remains;
+      }
+      print "По всему модулю: $cross_prio_total\n";
+      foreach (sort keys %cross_prio_status) {
+         print ucfirst($_) . ": $cross_prio_status{$_}\n";
+      }
+      print "Осталось: $cross_prio_remains\n";
+      print "\n";
+   }
+
+   output_stat "Всего функций: ",    \%done_in_prio;
+   output_stat "Всего строк кода: ", \%sloc_in_prio;
+   output_stat "Полная сложность: ", \%ccn_in_prio;
 }
 
 sub output_plan($obj, $addfunc, $retfunc, $outfunc, $metrics)
