@@ -3,7 +3,7 @@ requires 'Plack::Builder';
 requires 'YAML::XS';
 requires 'File::Spec::Functions';
 requires 'lib::abs';
-requires 'Plack::Util;
+requires 'Plack::Util';
 requires 'Plack::MIME';
 requires 'HTTP::Date';
 requires 'File::Slurp';
