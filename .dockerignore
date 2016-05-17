@@ -3,6 +3,11 @@
 *.svg
 *.pdf
 *.iml
+*.md
+TODO
+.gitignore
+
+.git/
 
 *.conf
 *.config
@@ -10,6 +15,10 @@
 .cache/
 result/
 
+.ctags
+.ctagslist
+
+/t
 /tags
 .idea/
 .frama-c/
