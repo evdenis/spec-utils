@@ -41,7 +41,8 @@ sub read_config
 }
 
 my $ppid = getppid();
-read_config catfile $FindBin::Bin, '.config';
+my $config_file = $ENV{GRAPH_CONFIG} // '.config';
+read_config catfile $FindBin::Bin, $config_file;
 my $priority = load_config $config{priority_config_file};
 unless ($priority) {
    warn "Can't read priority config file.\n";
