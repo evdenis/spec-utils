@@ -45,8 +45,8 @@ GetOptions(
     "kernel|k=s"        => \$kernel,
     "module|m=s"        => \$module,
     "force!"            => \$force,
-    "conf-status|s=s"   => \$config_file{status},
-    "conf-priority|p=s" => \$config_file{priority},
+    "conf-status|status|s=s"     => \$config_file{status},
+    "conf-priority|priority|p=s" => \$config_file{priority},
     "format|f=s"        => \$output_format,
     "output|o=s"        => \$output_file,
 ) or die("Error in command line arguments\n");
