@@ -171,7 +171,6 @@ my $image = sub {
    my %original = (format => $config{format}, functions => $config{functions});
 
    my $req = Plack::Request->new($env);
-   my $res = $req->new_response(200);
 
    if ($req->param('fmt')) {
       if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
@@ -409,10 +408,20 @@ HTML
    return $res->finalize();
 };
 
+my $info = sub {
+   my $env = shift;
+
+   my $req = Plack::Request->new($env);
+   if ($req->param('func')) {
+      $config{functions} = [ split(/,/, $req->param('func')) ]
+   }
+};
+
 my $main_app = builder {
    mount '/graph/image' => builder { $image };
    mount '/graph'       => builder { $page };
    mount '/map'         => builder { $page };
+   mount '/info'        => builder { $info };
    mount '/favicon.ico' => builder { \&return_404 };
    mount '/'            => builder { \&return_404 };
 };
