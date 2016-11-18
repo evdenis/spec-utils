@@ -15,6 +15,8 @@ use File::Slurp qw/read_file write_file/;
 use Try::Tiny;
 use File::Modified;
 use Scalar::Util qw(looks_like_number);
+use DBI;
+use JSON qw/encode_json/;
 
 use App::Graph;
 use Local::Config qw(load_config merge_config_keys update_config_keys);
@@ -74,6 +76,15 @@ $config{out}        .= $$;
 $config{cache_file} .= $$;
 my $cache_default = $config{cache};
 
+my $dsn = "dbi:SQLite:dbname=$config{dbfile}";
+my $dbh = DBI->connect($dsn, "", "", {
+        PrintError       => 0,
+        RaiseError       => 1,
+        AutoCommit       => 1,
+        FetchHashKeyName => 'NAME_lc',
+    });
+my $sth = $dbh->prepare('SELECT * FROM astraver_functions WHERE name = ?');
+delete $config{dbfile};
 
 sub return_403
 {
@@ -412,9 +423,23 @@ my $info = sub {
    my $env = shift;
 
    my $req = Plack::Request->new($env);
+   my $func;
    if ($req->param('func')) {
-      $config{functions} = [ split(/,/, $req->param('func')) ]
+      $func = $req->param('func')
+   } else {
+      return return_403
    }
+
+   $sth->execute($func);
+   my $hash = $sth->fetchrow_hashref; $sth->finish(); #$dbh->disconnect;
+
+   return return_404
+      unless $hash;
+
+   my $res = $req->new_response(200);
+   $res->body(encode_json($hash));
+
+   return $res->finalize();
 };
 
 my $main_app = builder {
