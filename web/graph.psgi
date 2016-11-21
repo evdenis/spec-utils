@@ -255,15 +255,75 @@ my $page = sub {
 <html>
    <head>
       <meta charset="UTF-8">
+
       <style type="text/css">
          body {
             overflow: hidden;
          }
       </style>
+
+      <script
+         src="https://code.jquery.com/jquery-3.1.1.min.js"
+         integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+         crossorigin="anonymous">
+      </script>
+
+      <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/default.min.css">
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+
+      <script>
+         $(function() {
+            $("g.node").contextmenu(function(event) {
+               fname = $(this).children("title").text();
+               $.ajax("/info?func=" + fname).done(function(result) {
+                        $("#finfo__name").text(result.name);
+                        $("#finfo__code").text(result.code);
+
+                        hljs.highlightBlock($("#finfo__code")[0]);
+
+                        $("#finfo").css({
+                           top: event.pageY + 5,
+                           left: event.pageX + 5
+                        }).show();
+               });
+
+               return false;
+            });
+
+            $("body").click(function() {
+               $("#finfo").hide();
+            });
+         });
+      </script>
+
+      <style>
+         #finfo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: white;
+            border: solid 1px black;
+            display: none;
+         }
+
+         #finfo__name {
+            font-weight: bold;
+         }
+
+         #finfo__code {
+            font-family: monospace;
+            white-space: pre;
+         }
+      </style>
+
       <title>Functions graph</title>
    </head>
 
-   <body>
+   <body data-gr-c-s-loaded="true">
+      <div id="finfo">
+         <div id="finfo__name"></div>
+         <div id="finfo__code"></div>
+      </div>
       ###INLINE###
    </body>
    <script>
