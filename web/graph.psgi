@@ -404,6 +404,14 @@ function move(e) {
    return false;
 }
 
+function stop(e) {
+	e = e ? e : window.event;
+	var from = e.relatedTarget || e.toElement;
+	if (!from || from.nodeName == "HTML") {
+		sx = sy = 0;
+	}
+}
+
 hljs.configure({
    languages: ["c"]
 });
@@ -435,6 +443,7 @@ window.DOMMouseScroll = window.onwheel = window.onmousewheel = document.onmousew
 
 window.onload = function () {
    document.addEventListener('mousemove', move, false);
+   document.addEventListener('mouseout', stop, false);
    setInterval(
       function(){
          if (sx != 0 || sy != 0) {
