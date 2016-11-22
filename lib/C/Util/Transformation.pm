@@ -5,12 +5,8 @@ use re '/aa';
 use warnings;
 use strict;
 
-
 use Exporter qw(import);
-
-use Data::Alias;
 use Carp;
-
 use Local::List::Util qw(uniq);
 
 
@@ -72,29 +68,28 @@ our ($s, $h, $replacement, $special_symbols) = (undef, undef, undef, '');
 
 sub generic_remove
 {
-   alias my $code    = shift;
-   alias my $pattern = shift;
-   alias my $t       = shift;
-   alias my $opts    = ( ref $_[1] eq 'HASH' ) ? shift : { @_ };
+   #my $code    = shift; #$_[0]
+   my $pattern = $_[1];
+   my $t       = $_[2];
+   my $opts    = ( ref $_[3] eq 'HASH' ) ? $_[3] : { @_[3..$#_] };
 
-   alias my $save    = $opts->{save};
-   alias my $sub     = $opts->{sub};
-
+   my $save    = $opts->{save};
+   my $sub     = $opts->{sub};
 
    my $res = undef;
 
    if ($save) {
       if ($sub) {
-         $code =~ s/$pattern/$sub->($save, \%+)/ge
+         $_[0] =~ s/$pattern/$sub->($save, \%+)/ge
       } else {
-         $code =~ s/$pattern/push @$save, ${^MATCH}; "$t->{L}$#$save$t->{R}"/gpe
+         $_[0] =~ s/$pattern/push @$save, ${^MATCH}; "$t->{L}$#$save$t->{R}"/gpe
       }
       #push @$save, $t->{pattern} Storable can't save REGEXP's
    } else {
       if ($sub) {
-         $code =~ s/$pattern/$sub->(\%+)/ge
+         $_[0] =~ s/$pattern/$sub->(\%+)/ge
       } else {
-         $code =~ s/$pattern//g
+         $_[0] =~ s/$pattern//g
       }
    }
 
@@ -196,11 +191,10 @@ sub remove_macro
 
 sub adapt
 {
-   alias my $code = shift;
-   my $opts = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
+   my $opts = ( ref $_[1] eq 'HASH' ) ? $_[1] : { @_[1..$#_] };
 
    return undef
-      unless $code;
+      unless $_[0];
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
@@ -214,10 +208,10 @@ sub adapt
       }
    };
 
-   $tmpl->($opts->{comments},   \&remove_comments,   $code);
-   $tmpl->($opts->{strings},    \&remove_strings,    $code);
-   $tmpl->($opts->{macro},      \&remove_macro,      $code);
-   $tmpl->($opts->{attributes}, \&remove_attributes, $code);
+   $tmpl->($opts->{comments},   \&remove_comments,   $_[0]);
+   $tmpl->($opts->{strings},    \&remove_strings,    $_[0]);
+   $tmpl->($opts->{macro},      \&remove_macro,      $_[0]);
+   $tmpl->($opts->{attributes}, \&remove_attributes, $_[0]);
 
    undef
 }
@@ -251,19 +245,18 @@ sub restore_macro
 
 sub restore
 {
-   alias my $code = shift;
-   my $opts = ( ref $_[0] eq 'HASH' ) ? shift : { @_ };
+   my $opts = ( ref $_[1] eq 'HASH' ) ? $_[1] : { @_[1..$#_] };
 
    return undef
-      unless $code;
+      unless $_[0];
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
    #The order matters.
-   restore_attributes($code, $opts->{attributes}) if $opts->{attributes};
-   restore_macro($code, $opts->{macro})           if $opts->{macro};
-   restore_strings($code, $opts->{strings})       if $opts->{strings};
-   restore_comments($code, $opts->{comments})     if $opts->{comments};
+   restore_attributes($_[0], $opts->{attributes}) if $opts->{attributes};
+   restore_macro     ($_[0], $opts->{macro})      if $opts->{macro};
+   restore_strings   ($_[0], $opts->{strings})    if $opts->{strings};
+   restore_comments  ($_[0], $opts->{comments})   if $opts->{comments};
 
    undef
 }
