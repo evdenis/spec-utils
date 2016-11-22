@@ -319,8 +319,9 @@ my $page = sub {
                   kordered.forEach(function (k) {
                      v = result[k];
                      if (v === "") { v = "UNDEF"; }
-                        columns += "<th><b>" + hdr[k] + "</b></th>";
-                        values  += "<td>" + v.toString() + "</td>";
+                     if (v === null) { v = -1; }
+                     columns += "<th><b>" + hdr[k] + "</b></th>";
+                     values  += "<td>" + v.toString() + "</td>";
                   });
                   columns += "</tr>";
                   values  += "</tr>";
