@@ -356,6 +356,10 @@ function move(e) {
    return false;
 }
 
+hljs.configure({
+   languages: ["c"]
+});
+
 var c = 1;
 var g = document.getElementById("graph0");
 
