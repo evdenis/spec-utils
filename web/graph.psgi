@@ -497,6 +497,7 @@ my $info = sub {
       unless $hash;
 
    my $res = $req->new_response(200);
+   $res->content_type('application/json');
    $res->body(encode_json($hash));
 
    return $res->finalize();
