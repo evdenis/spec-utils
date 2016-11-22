@@ -1,0 +1,41 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use lib::abs 'lib';
+use DBI;
+use Kernel::Module qw/prepare_module_sources/;
+use C::Util::Transformation qw/adapt restore/;
+use C::FunctionSet;
+
+die "$0 path/to/the/db/file.db\n"
+    unless $ARGV[0];
+
+my $res = prepare_module_sources($ENV{CURRENT_KERNEL}, $ENV{CURRENT_PROJECT}, ["#define SPECIFICATION 1\n"]);
+my @c;
+adapt($$res, comments => \@c, macro => 1);
+my $parsed = C::FunctionSet->parse($res, 'module');
+
+my $dbh = sqlite_connect($ARGV[0]);
+my $ins_sth = $dbh->prepare(qq/UPDATE astraver_functions SET code = ? WHERE name = ?;/);
+
+foreach (@{$parsed->set}) {
+    my $str = $_->to_string(\@c, undef, 1);
+    restore($str, comments => \@c);
+    $ins_sth->execute($str, $_->name());
+}
+
+sub sqlite_connect
+{
+    my ($dbfile) = @_;
+    my $dsn      = "dbi:SQLite:dbname=" . $dbfile;
+    my $dbh = DBI->connect($dsn, '', '', {
+            PrintError       => 0,
+            RaiseError       => 1,
+            AutoCommit       => 1,
+            FetchHashKeyName => 'NAME_lc',
+        }) or die "$DBI::errstr\n";
+
+    return $dbh;
+}
