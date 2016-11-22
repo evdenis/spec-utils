@@ -83,6 +83,7 @@ my $dbh = DBI->connect($dsn, "", "", {
         AutoCommit       => 1,
         FetchHashKeyName => 'NAME_lc',
     });
+$dbh->{sqlite_unicode} = 1;
 my $sth = $dbh->prepare('SELECT * FROM astraver_functions WHERE name = ?');
 delete $config{dbfile};
 
