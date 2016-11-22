@@ -260,6 +260,18 @@ my $page = sub {
          body {
             overflow: hidden;
          }
+         table {
+            border-collapse: collapse;
+            width: 100%;
+         }
+         td, th {
+            padding: 3px;
+            border: 1px solid black;
+            text-align: center;
+         }
+         th {
+            background: #b0e0e6;
+         }
       </style>
 
       <script
@@ -272,19 +284,58 @@ my $page = sub {
       <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
 
       <script>
+         var kordered = [
+         "priority",
+         "status",
+         "ccn",
+         "sloc",
+         "level",
+         "module_calls",
+         "kernel_calls",
+         "args"
+         ];
+
+         var hdr = {
+         "module_calls": "MC",
+         "sloc" : "SLOC",
+         "args" : "ARGS",
+         "level": "LVL",
+         "kernel_calls": "KC",
+         "priority": "PRIO",
+         "ccn": "CCN",
+         "status": "STATUS",
+         "name": "NAME",
+         "code": "CODE"
+         };
+
          $(function() {
             $("g.node").contextmenu(function(event) {
                fname = $(this).children("title").text();
                $.ajax("/info?func=" + fname).done(function(result) {
-                        $("#finfo__name").text(result.name);
-                        $("#finfo__code").text(result.code);
+                  //$("#finfo__name").text(result.name);
+                  var columns = "<tr>";
+                  var values  = "<tr>";
+                  kordered.forEach(function (k) {
+                     v = result[k];
+                     if (v === "") { v = "UNDEF"; }
+                        columns += "<th><b>" + hdr[k] + "</b></th>";
+                        values  += "<td>" + v.toString() + "</td>";
+                  });
+                  columns += "</tr>";
+                  values  += "</tr>";
 
-                        hljs.highlightBlock($("#finfo__code")[0]);
+                  var tbody = $("#tbody");
+                  tbody.html(columns);
+                  tbody.append(values);
 
-                        $("#finfo").css({
-                           top: event.pageY + 5,
-                           left: event.pageX + 5
-                        }).show();
+                  $("#finfo__code").text(result.code);
+
+                  hljs.highlightBlock($("#finfo__code")[0]);
+
+                  $("#finfo").css({
+                     top: event.pageY + 5,
+                     left: event.pageX + 5
+                  }).show();
                });
 
                return false;
@@ -306,10 +357,6 @@ my $page = sub {
             display: none;
          }
 
-         #finfo__name {
-            font-weight: bold;
-         }
-
          #finfo__code {
             font-family: monospace;
             white-space: pre;
@@ -321,7 +368,7 @@ my $page = sub {
 
    <body data-gr-c-s-loaded="true">
       <div id="finfo">
-         <div id="finfo__name"></div>
+         <div id="finfo__name"><table><tbody id="tbody"></tbody></table></div>
          <div id="finfo__code"></div>
       </div>
       ###INLINE###
