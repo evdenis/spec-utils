@@ -190,18 +190,21 @@ sub _generic_handle_sources
    (\$kernel_code, \$module_code)
 }
 
+#-E and keep comments
 sub preprocess_module_sources
 {
    push @_, \&preprocess_as_kernel_module;
    goto \&_generic_handle_sources
 }
 
+#-E
 sub preprocess_module_sources_nocomments
 {
    push @_, \&preprocess_as_kernel_module_nocomments;
    goto \&_generic_handle_sources
 }
 
+#-E, keep comments and don't expand macro definitions except compilation directives
 sub prepare_module_sources
 {
    push @_, \&preprocess_as_kernel_module_directives;
