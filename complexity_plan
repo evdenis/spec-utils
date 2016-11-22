@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use v5.20;
-use feature qw/say signatures/;
+use feature qw/say signatures state/;
 use strict;
 use warnings;
 no warnings qw/experimental::signatures/;
@@ -504,7 +504,7 @@ sub insert_to_database
        SLOC
        status/;
 
-   my $ins_sth = $dbh->prepare(qq/
+   state $ins_sth = $dbh->prepare(qq/
       INSERT OR REPLACE INTO astraver_functions (/ . join(',', @order) . qq/) VALUES (/ . join(',', ('?') x @order) . ');'
    );
 
