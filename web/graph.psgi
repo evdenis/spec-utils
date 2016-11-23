@@ -346,6 +346,10 @@ my $page = sub {
             $("body").click(function() {
                $("#finfo").hide();
             });
+
+            $("body").contextmenu(function(evt) {
+                $("#finfo").hide(); return false;
+            });
          });
       </script>
 
