@@ -76,15 +76,18 @@ $config{out}        .= $$;
 $config{cache_file} .= $$;
 my $cache_default = $config{cache};
 
-my $dsn = "dbi:SQLite:dbname=$config{dbfile}";
-my $dbh = DBI->connect($dsn, "", "", {
+my $dbh = undef;
+my $sth = undef;
+if (exists $config{dbfile} && -r $config{dbfile}) {
+   $dbh = DBI->connect("dbi:SQLite:dbname=$config{dbfile}", "", "", {
         PrintError       => 0,
         RaiseError       => 1,
         AutoCommit       => 1,
         FetchHashKeyName => 'NAME_lc',
-    });
-$dbh->{sqlite_unicode} = 1;
-my $sth = $dbh->prepare('SELECT * FROM astraver_functions WHERE name = ?');
+   });
+   $dbh->{sqlite_unicode} = 1;
+   $sth = $dbh->prepare('SELECT * FROM astraver_functions WHERE name = ?');
+}
 delete $config{dbfile};
 
 sub return_403
@@ -101,6 +104,12 @@ sub return_500
 {
    return [500, ['Content-Type' => 'text/plain', 'Content-Length' => 37], ["Internal error. Can't generate image."]];
 }
+
+sub return_503
+{
+   return [503, ['Content-Type' => 'text/plain', 'Content-Length' => 26], ["Database isn't configured."]];
+}
+
 
 sub generate_image
 {
@@ -547,6 +556,9 @@ HTML
 
 my $info = sub {
    my $env = shift;
+   
+   return return_503
+      if !$dbh || !$sth;
 
    my $req = Plack::Request->new($env);
    my $func;
