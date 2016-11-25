@@ -367,7 +367,7 @@ CACHE: if ($args->{cache}) {
          push @legenda, qq(    color = "lightgrey";\n);
          push @legenda, qq(    label = "Priority levels";\n);
          push @legenda, qq(    node [shape = "box", style = "filled"];\n);
-         push @legenda, '    ' . join(' -> ', (1 .. @{$args->{config}{priority}{lists}}) ) . ' [ style = "invis" ];' . "\n";
+         push @legenda, '    ' . join(' -> ', map { "\"$_\"" } (1 .. @{$args->{config}{priority}{lists}})) . ' [ style = "invis" ];' . "\n";
          my @colors = map { $args->{config}{priority}{colors}{$_} } @{ $args->{config}{priority}{lists} };
          while (my ($idx, $color) = each @colors) {
             ++$idx;
