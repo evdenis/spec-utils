@@ -26,3 +26,5 @@ requires 'lib::abs';
 requires 'namespace::autoclean';
 requires 'utf8::all';
 requires 'XML::Simple';
+requires 'DBI';
+requires 'DBD::SQLite';

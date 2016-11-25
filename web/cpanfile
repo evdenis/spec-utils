@@ -10,3 +10,5 @@ requires 'File::Slurp';
 requires 'Try::Tiny';
 requires 'Starman';
 requires 'JSON';
+requires 'DBI';
+requires 'DBD::SQLite';
