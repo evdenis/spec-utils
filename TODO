@@ -3,3 +3,7 @@ PARSEC_PACKED workaround plugin?
 удалять макросы, которые содержат attribute plugin?
 
 Files (static)
+add files handling
+test on: minix p9 fat 
+global_function
+
