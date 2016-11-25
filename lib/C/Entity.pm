@@ -47,6 +47,13 @@ has 'area' => (
    required => 1
 );
 
+has 'file' => (
+   is => 'ro',
+   isa => 'Str',
+   required => 1
+);
+
+
 sub to_string
 {
    $_[0]->code

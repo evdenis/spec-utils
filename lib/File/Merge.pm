@@ -25,7 +25,11 @@ sub find_all ($$)
 sub merge (@)
 {
    my $code;
-   $code .= read_file($_, err_mode => 'carp') foreach @_;
+   foreach (@_) {
+      my $file = read_file($_, err_mode => 'carp');
+      $file = "# gcc include filename\n" . $file;
+      $code .= $file;
+   }
 
    $code
 }

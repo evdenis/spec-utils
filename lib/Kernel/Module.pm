@@ -166,28 +166,34 @@ sub _generic_handle_sources
                      \$defines
                 );
 
-   my $kernel_code;
-   my $module_code;
+   my %module_code;
+   my %kernel_code;
    {
-      my @mo;
-      my @ko;
+      my %mo;
+      my %ko;
 
       foreach (@$o) {
-         if (index($_, $mdir) != -1) {
-            push @mo, $_
-         } elsif ($_ eq '<stdin>') {
-            push @mo, $_
+         if (index($_, $mdir) != -1 || $_ eq '<stdin>') {
+            push @{$mo->{$_}}, $_
          } else {
-            push @ko, $_
+            push @{$ko->{$_}}, $_
          }
       }
 
-      $module_code = join("\n", map { $f->{$_} // '' } @mo);
-      $kernel_code = join("\n", map { $f->{$_} // '' } @ko);
+      use Data::Printer;
+      p %mo;
+      p %ko;
+      exit 0;
+      foreach (keys %mo) {
+         $module_code{$_} = join("\n", map { $f->{$_} // '' } @mo);
+      }
+      foreach (keys %ko) {
+         $kernel_code{$_} = join("\n", map { $f->{$_} // '' } @ko);
+      }
    }
 
 
-   (\$kernel_code, \$module_code)
+   (\%kernel_code, \%module_code)
 }
 
 #-E and keep comments
@@ -277,6 +283,7 @@ sub _parse_kernel_part
 sub parse_sources
 {
    my $kernel_parse = pop @_;
+   FIXME
    my ($kernel_code, $module_code) =
       prepare_module_sources(@_);
 
