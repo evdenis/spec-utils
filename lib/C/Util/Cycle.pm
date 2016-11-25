@@ -168,7 +168,7 @@ sub resolve_typedef_typedef
    0
 }
 
-sub resolver_function_global
+sub resolve_function_global
 {
    my ($graph, @obj) = @_;
    $obj[0]->add_fw_decl($obj[1]->type . " " . $obj[1]->name . ";");
