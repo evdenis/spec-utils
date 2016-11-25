@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 use DBI;
 use Kernel::Module qw/prepare_module_sources/;
 use C::Util::Transformation qw/adapt restore/;
