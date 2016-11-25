@@ -32,7 +32,7 @@ sub parse
    while (${$_[0]} =~ m/(?:(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\})))(*SKIP)(*FAIL)
                         |
                         (?>
-                           (?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+
+                           (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
                               (?>(?<type>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}*+)?(?:char|short|int|long|long${s}++long)${ptr})(*SKIP)${name}${init})
                               |
@@ -51,7 +51,7 @@ sub parse
                         )(*SKIP)
                         ${s}*+;
                      /gxp) {
-      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{type}}
+      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{modifiers} . $+{type}}
          if exists $+{name} && ! exists $+{td}
    }
 
