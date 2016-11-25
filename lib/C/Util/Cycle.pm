@@ -38,25 +38,23 @@ sub resolve_structure_structure ($$$)
    my ($graph, @obj) = @_;
    my @ctype = map $_->type, @obj;
    my @name  = map $_->name, @obj;
-
-   ## 0 -> 1 exists; checking for reverse dependency
-   #if ($graph->has_edge($obj[1]->id, $obj[0]->id)) {
-   #   # 0 -> 1
-   #   if ($obj[1]->code =~ m/$ctype[0]${s}*+$name[0]${s}*+\*/) {
-   #      $graph->delete_edge($obj[0]->id, $obj[1]->id)
-   #      return 1
-   #   }
-   #   # 1 -> 0; overstatement
-   #   if ($obj[0]->code =~ m/$ctype[1]${s}*+$name[1]${s}*+\*/) {
-   #      $graph->delete_edge($obj[1]->id, $obj[0]->id)
-   #      return 1
-   #   }
-   #}
+   if ((blessed($obj[0]) eq 'C::Typedef') && (defined $obj[0]->inside)) {
+      $name[0] = $obj[0]->inside->[1];
+   }
+   if ((blessed($obj[1]) eq 'C::Typedef') && (defined $obj[1]->inside)) {
+      $name[1] = $obj[1]->inside->[1];
+   }
 
    #multiple fields 'struct test; struct test *;' possible
    if ($obj[1]->code !~ m/$ctype[0]${s}++$name[0]\b${s}*+[^*]/) {
       $graph->delete_edge($obj[0]->id, $obj[1]->id);
       return 1
+   }
+   if ($graph->has_edge($obj[1]->id, $obj[0]->id)) {
+      if ($obj[0]->code !~ m/$ctype[1]${s}++$name[1]\b${s}*+[^*]/) {
+         $graph->delete_edge($obj[1]->id, $obj[0]->id);
+         return 1
+      }
    }
 
    0
@@ -190,7 +188,7 @@ sub resolve
 
       my $ok = 0;
 LOOP: foreach (@obj_pairs) {
-         my @t   = map blessed $_, @$_;
+         my @t = map blessed $_, @$_;
 
          my $trans = sub { lc(substr($_[0], 3)) };
          my $sub = join('_', ('resolve', $trans->($t[0]), $trans->($t[1])));
