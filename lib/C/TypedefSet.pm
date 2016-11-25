@@ -22,7 +22,7 @@ sub parse
    my $set = $self->new(set => []);
    my %typedefs;
 
-   my $name = qr/(?:[\*\s]+)?(?<name>$varname)\b${s}*+(?:\[[^\]]+\])?/;
+   my $name = qr/(?:[\*\s]+)?(?<name>$varname)\b${s}*+(?:\[[^\]]*\])?/;
 
    while (${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
          (?:
