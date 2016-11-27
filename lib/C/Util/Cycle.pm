@@ -168,21 +168,6 @@ sub resolve_typedef_typedef
    0
 }
 
-sub resolve_function_global
-{
-   my ($graph, @obj) = @_;
-   $obj[0]->add_fw_decl($obj[1]->type . " " . $obj[1]->name . ";");
-   $graph->delete_edge($obj[1]->id, $obj[0]->id);
-   1
-}
-
-sub resolve_global_function
-{
-   my ($graph, @obj) = @_;
-   $obj[1]->add_fw_decl($obj[0]->type . " " . $obj[0]->name . ";");
-   $graph->delete_edge($obj[0]->id, $obj[1]->id);
-   1
-}
 
 sub resolve
 {
