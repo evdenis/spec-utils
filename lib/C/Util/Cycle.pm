@@ -8,6 +8,7 @@ use re '/aa';
 use Exporter qw(import);
 use Scalar::Util qw(blessed);
 use C::Util::Transformation qw(:RE);
+use Local::String::Util qw(trim);
 
 our @EXPORT = qw/resolve/;
 
@@ -168,6 +169,22 @@ sub resolve_typedef_typedef
    0
 }
 
+sub resolve_function_global
+{
+   0
+}
+
+sub resolve_global_function
+{
+   my ($graph, @obj) = @_;
+   my $global_decl = trim($obj[0]->type) . " " . $obj[0]->name . ";";
+   if (defined $obj[0]->modifier) {
+      $global_decl = trim($obj[0]->modifier) . " " . $global_decl;
+   }
+   $obj[1]->add_fw_decl($global_decl);
+   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+   1
+}
 
 sub resolve
 {
