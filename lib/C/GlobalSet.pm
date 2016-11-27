@@ -43,7 +43,7 @@ sub parse
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${name}${init}
                                  |
-                                 (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK)${s}*+\(${s}*+${name}${s}*+\)
+                                 (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               )
                               |
                               (?:(?<type>${type})${name}${init})
