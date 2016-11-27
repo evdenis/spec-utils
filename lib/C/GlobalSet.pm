@@ -51,11 +51,11 @@ sub parse
                         )(*SKIP)
                         ${s}*+;
                      /gxp) {
-      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{modifiers} . $+{type}}
+      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{type}, modifier => $+{modifiers}}
          if exists $+{name} && ! exists $+{td}
    }
 
-   return $self->new(set => [ map {C::Global->new(name => $_->{name}, code => $_->{code}, type => $_->{type}, area => $area)} @globals ]);
+   return $self->new(set => [ map {C::Global->new(name => $_->{name}, code => $_->{code}, type => $_->{type}, modifier => $_->{modifier}, area => $area)} @globals ]);
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -17,6 +17,11 @@ has 'type' => (
    required => 1
 );
 
+has 'modifier' => (
+   is => 'rw',
+   isa => 'Str'
+);
+
 
 sub _build_initialized
 {
