@@ -87,7 +87,7 @@ sub resolve_function_function
       }
    } else {
       if (!$spec_edge) { # Можно разорвать если цикл
-         $obj[0]->add_fw_decl($obj[1]->declaration);
+         $obj[1]->add_fw_decl($obj[0]->declaration);
          $graph->delete_edge(@ids);
          return 1;
       }
