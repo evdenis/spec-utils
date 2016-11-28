@@ -46,6 +46,8 @@ sub parse
                                  (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |
                                  (?<type>DEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                                 |
+                                 (?<type>FULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                               )
                               |
                               (?:(?<type>${type})${name}${init})
@@ -53,8 +55,23 @@ sub parse
                         )(*SKIP)
                         ${s}*+;
                      /gxp) {
-      push @globals, {name => $+{name}, code => ${^MATCH}, type => $+{type}, modifier => $+{modifiers}}
-         if exists $+{name} && ! exists $+{td}
+         if (exists $+{name} && ! exists $+{td}) {
+            my $name     = $+{name};
+            my $code     = ${^MATCH};
+            my $type     = $+{type};
+            my $modifier = $+{modifiers};
+
+            if ($type eq 'FULL_PROXY_FUNC') {
+               $name = 'full_proxy_' . $name
+            }
+
+            push @globals, {
+               name     => $name,
+               code     => $code,
+               type     => $type,
+               modifier => $modifier
+            };
+         }
    }
 
    return $self->new(set => [ map {C::Global->new(name => $_->{name}, code => $_->{code}, type => $_->{type}, modifier => $_->{modifier}, area => $area)} @globals ]);
