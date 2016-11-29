@@ -150,6 +150,9 @@ sub _generic_handle_sources
 {
    my ($kdir, $mdir, $defines, $func) = @_;
 
+   $kdir = realpath $kdir;
+   $mdir = realpath $mdir;
+
    my $code = __get_module_folder_c_contents($mdir);
 
    my %include_dirs;

@@ -17,6 +17,7 @@ use POSIX qw/setsid/;
 use Module::Loader;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
+use Cwd qw(realpath);
 
 use FindBin;
 use lib::abs 'lib';
@@ -268,6 +269,9 @@ pod2usage({ -msg => "$config{module} is not a directory.\n", -exitval => 2 })
     unless -d $config{module};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
     unless check_kernel_dir($config{kernel});
+
+$config{kernel} = realpath $config{kernel};
+$config{module} = realpath $config{module};
 
 ### KERNEL DIRECTORY: $config{kernel}
 ### MODULE DIRECTORY: $config{module}
