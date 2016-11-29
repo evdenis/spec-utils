@@ -28,25 +28,29 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my @globals;
-   my $name   = qr/(?<name>${varname})/;
-   my $sbody  = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
-   my $init   = qr/(?:${s}*+(?:\[[^\]]*+\]))?(?:${s}*+=${s}*+(?:$sbody|"[^\n]*(?="\h*;)"|[^;]++))?/;
-   my $ptr    = qr/(\*|${s}++|const)*+/;
-   my $type   = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
+   my $name           = qr/(?<name>${varname})/;
+   my $sbody          = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
+   my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]))/;
+   my $decl           = qr/(?:${s}*+${sbody})/;
+   my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|"[^\n]*(?="\h*;)"|[^;]++))/;
+   #my $mandatory_init = qr/${array}?${init}/;
+   my $optional_init  = qr/${array}?${init}?/;
+   my $ptr            = qr/(\*|${s}++|const)*+/;
+   my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
 
    while (${$_[0]} =~ m/(?:(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\})))(*SKIP)(*FAIL)
                         |
                         (?>
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
-                              (?>(?<type>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}*+)?(?:char|short|int|long|long${s}++long)(?:\h+(?:volatile|__jiffy_data))*${ptr})(*SKIP)${name}${init})
+                              (?>(?<type>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}*+)?(?:char|short|int|long|long${s}++long)(?:\h+(?:volatile|__jiffy_data))*${ptr})(*SKIP)${name}${optional_init})
                               |
-                              (?>(?<type>(?>float|double|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)(?:\h+__jiffy_data)?${ptr})(*SKIP)${name}${init})
+                              (?>(?<type>(?>float|double|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)(?:\h+__jiffy_data)?${ptr})(*SKIP)${name}${optional_init})
                               |
-                              (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${init})
+                              (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${optional_init})
                               |
                               (?>
-                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${name}${init}
+                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
                                  |
                                  (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |
@@ -55,7 +59,7 @@ sub parse
                                  (?<type>FULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                               )
                               |
-                              (?:(?<type>${type})${name}${init})
+                              (?:(?<type>${type})${name}${optional_init})
                            )
                         )(*SKIP)
                         ${s}*+;
