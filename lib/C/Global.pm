@@ -19,7 +19,7 @@ has 'type' => (
 
 has 'modifier' => (
    is => 'rw',
-   isa => 'Str'
+   isa => 'Maybe[Str]'
 );
 
 

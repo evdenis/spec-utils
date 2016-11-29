@@ -59,12 +59,14 @@ sub parse
                            )
                         )(*SKIP)
                         ${s}*+;
+                        |
+                        (?<type>FAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                      /gxp) {
          if (exists $+{name} && ! exists $+{td}) {
             my $name     = $+{name};
             my $code     = ${^MATCH};
             my $type     = $+{type};
-            my $modifier = $+{modifiers};
+            my $modifier = $+{modifiers} || undef;
 
             if ($type eq 'FULL_PROXY_FUNC') {
                $name = 'full_proxy_' . $name
