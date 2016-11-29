@@ -30,7 +30,7 @@ sub parse
    my @globals;
    my $name   = qr/(?<name>${varname})/;
    my $sbody  = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
-   my $init   = qr/(?:${s}*+(?:\[[^\]]*+\]))?(?:${s}*+=${s}*+(?:$sbody|[^;]++))?/;
+   my $init   = qr/(?:${s}*+(?:\[[^\]]*+\]))?(?:${s}*+=${s}*+(?:$sbody|"[^\n]*(?="\h*;)"|[^;]++))?/;
    my $ptr    = qr/(\*|${s}++|const)*+/;
    my $type   = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
 
