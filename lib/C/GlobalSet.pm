@@ -17,6 +17,11 @@ has '+set' => (
    isa => 'ArrayRef[C::Global]'
 );
 
+my %type_alias = (
+    DEFINE_SPINLOCK => 'spinlock_t',
+    DEFINE_RWLOCK   => 'rwlock_t',
+    LIST_HEAD       => 'struct list_head',
+);
 
 sub parse
 {
@@ -63,6 +68,10 @@ sub parse
 
             if ($type eq 'FULL_PROXY_FUNC') {
                $name = 'full_proxy_' . $name
+            }
+
+            if (exists $type_alias{$type}) {
+               $type = $type_alias{$type}
             }
 
             push @globals, {
