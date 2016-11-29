@@ -12,6 +12,7 @@ use Cwd qw(realpath);
 use File::C::Merge qw(merge_headers merge_sources find_headers);
 use File::Merge qw(merge);
 use C::Util::Transformation qw(adapt);
+use Local::List::Util qw(uniq);
 use Kernel::Makefile qw(get_modules_deps);
 use GCC::Preprocess qw(
       get_macro
@@ -45,7 +46,7 @@ sub __get_module_folder_c_contents
    if (-r $makefile) {
       my $files = get_modules_deps($makefile);
       if (%$files) {
-         $code = merge(map {@{$_}} values %$files) # Just use them all
+         $code = merge(uniq map {@{$_}} values %$files) # Just use them all
       } else {
          goto FALLBACK
       }
