@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use File::Slurp qw/read_file/;
+
+sub detect_include_guard
+{
+   my @file = read_file($_[0]);
+   my $mc = 0; # multiline comment
+   my $maybe_guard = 0;
+   foreach (@file) {
+      if (!$mc && m!\A\h*+\/\*!) {
+         $mc = 1;
+      }
+      if ($mc && index($_, '*/') != -1) {
+         $mc = 0;
+         next;
+      }
+
+      next
+         if $mc;
+      next
+         if m/\A\h*+\Z/;
+
+      if (m/\A\h*+#\h*+pragma\h++once/) {
+         return 1;
+      }
+      if (m!\A\h*+//!) {
+         next;
+      }
+      if (m/\A\h*+#\h*+include/) {
+         next;
+      }
+      if (!$mc && m/\A\h*+#\h*+ifndef\h++(\w++)/) {
+         $maybe_guard = $1;
+         next;
+      }
+      if (!$mc && $maybe_guard && m/\A\h*+#\h*+define\h++${maybe_guard}/) {
+         return 1;
+      }
+
+      return 0;
+   }
+
+   return 0
+}
+
+foreach (@ARGV) {
+   my $d = detect_include_guard($_);
+   print "$d $_\n";
+}
