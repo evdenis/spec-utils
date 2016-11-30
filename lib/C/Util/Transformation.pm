@@ -21,6 +21,7 @@ our @EXPORT_OK = qw(
          filter_dup
          filter_comments
          filter_comments_dup
+         norm
 
          %comment_t
          %attribute_t
@@ -286,5 +287,9 @@ sub filter_dup ($)
    $_[0] =~ s/$replacement//gr
 }
 
+sub norm ($)
+{
+   $_[0] =~ s/${s}++//rg
+}
 
 1;

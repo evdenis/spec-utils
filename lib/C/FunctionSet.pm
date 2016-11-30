@@ -1,11 +1,9 @@
 package C::FunctionSet;
 use Moose;
 
-use Carp;
-
 use RE::Common qw($varname);
 use C::Function;
-use C::Util::Transformation qw(:RE filter_dup);
+use C::Util::Transformation qw(:RE filter_dup norm);
 use Local::List::Util qw(any);
 use Local::String::Util qw(normalize);
 use C::Keywords;
@@ -45,12 +43,12 @@ sub parse
       my $decl = normalize(filter_dup("${ret} ${name}${args};"));
 
       if (any($name, \@keywords)) {
-         carp("Parsing error; function name: '$name'. Skipping.");
+         warn "Parsing error; function name: '$name'. Skipping.\n";
          next
       }
 
-      if ($functions{$name}) {
-         carp("Repeated defenition of function $name")
+      if ($functions{$name} && (norm($functions{$name}{code}) ne norm($code))) {
+         warn "Repeated defenition of function $name\n"
       }
 
       @{ $functions{$name} }{qw/code declaration ret args body/} = ($code, $decl, $ret, $args, $fbody);

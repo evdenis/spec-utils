@@ -2,8 +2,8 @@ package C::MacroSet;
 use Moose;
 
 use RE::Common qw($varname);
-use Carp;
 use C::Macro;
+use C::Util::Transformation qw(:RE norm);
 use namespace::autoclean;
 
 use re '/aa';
@@ -71,10 +71,6 @@ sub get
    $_[0]->get_from_index($_[0]->get_index($_[1]))
 }
 
-sub _norm
-{
-   $_[0] =~ s/\s++//rg
-}
 
 #FIXME: only oneline defines currently allowed
 sub parse
@@ -101,7 +97,7 @@ sub parse
          my $code = ${^MATCH};
 
          if (exists $defines{$name}) {
-            unless (_norm($defines{$name}->code) eq _norm($code)) {
+            unless (norm($defines{$name}->code) eq norm($code)) {
                warn("Redefinition of macro $name:\nPrevious:\n" . $defines{$name}->code . "\nNew:\n$code\n\n")
             }
          } else {

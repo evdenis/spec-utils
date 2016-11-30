@@ -1,8 +1,6 @@
 package C::GlobalSet;
 use Moose;
 
-use Carp;
-
 use RE::Common qw($varname);
 use C::Global;
 use C::Util::Transformation qw(:RE);

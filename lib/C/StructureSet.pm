@@ -3,7 +3,7 @@ use Moose;
 
 use RE::Common qw($varname);
 use C::Structure;
-use C::Util::Transformation qw(:RE);
+use C::Util::Transformation qw(:RE norm);
 use namespace::autoclean;
 
 use re '/aa';
@@ -41,14 +41,16 @@ sub parse
          )${s}*+;
       /gmpx) {
       my $name = $+{sname};
+      my $code = ${^MATCH};
+      my $type = $1;
 
       warn("Repeated defenition of structure $name\n")
-         if (exists $structures{$name});
+         if (exists $structures{$name} && (norm($structures{$name}{code}) ne norm($code)));
 
       $structures{$name} = C::Structure->new(
                                  name => $name,
-                                 code => ${^MATCH},
-                                 type => $1,
+                                 code => $code,
+                                 type => $type,
                                  area => $area
                            );
    }

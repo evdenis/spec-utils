@@ -3,7 +3,7 @@ use Moose;
 
 use RE::Common qw($varname);
 use C::Enum;
-use C::Util::Transformation qw(:RE);
+use C::Util::Transformation qw(:RE norm);
 use namespace::autoclean;
 
 use re '/aa';
@@ -20,7 +20,8 @@ has '+set' => (
 sub parse
 {
    my $self = shift;
-   my @enums;
+   my $area = $_[1];
+   my %enums;
 
    my $name = qr!(?<ename>$varname)!;
    
@@ -41,10 +42,23 @@ sub parse
             )
          )${s}*+;
       /gmpx) {
-      push @enums, C::Enum->new(name => $+{ename}, code => ${^MATCH}, area => $_[1])
+      my $code = ${^MATCH};
+      my $ename = $+{ename};
+      my $id = $ename || norm(substr($code,0,256));
+
+      if (exists $enums{$id} && (norm($enums{$id}{code}) ne norm($id))) {
+         warn "Redefinition of enum " . ($ename ? $ename : $id) . "\n";
+      }
+      $enums{$id} = { name => $ename, code => $code };
    }
 
-   return $self->new(set => \@enums);
+   return $self->new(set => [
+           map { C::Enum->new(
+               name => $enums{$_}{name},
+               code => $enums{$_}{code},
+               area => $area) } keys %enums
+       ]
+   );
 }
 
 
