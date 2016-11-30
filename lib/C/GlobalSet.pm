@@ -65,29 +65,38 @@ sub parse
                         (?<type>FAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                      /gxp) {
          if (exists $+{name} && ! exists $+{td}) {
-            my $name     = $+{name};
-            my $code     = ${^MATCH};
-            my $type     = $+{type};
-            my $modifier = $+{modifiers} || undef;
+            my $mname     = $+{name};
+            my $mcode     = ${^MATCH};
+            my $mtype     = $+{type};
+            my $mmodifier = $+{modifiers} || undef;
 
-            if ($type eq 'FULL_PROXY_FUNC') {
-               $name = 'full_proxy_' . $name
+            if ($mtype eq 'FULL_PROXY_FUNC') {
+               $mname = 'full_proxy_' . $mname
             }
 
-            if (exists $type_alias{$type}) {
-               $type = $type_alias{$type}
+            if (exists $type_alias{$mtype}) {
+               $mtype = $type_alias{$mtype}
             }
 
             push @globals, {
-               name     => $name,
-               code     => $code,
-               type     => $type,
-               modifier => $modifier
+               name     => $mname,
+               code     => $mcode,
+               type     => $mtype,
+               modifier => $mmodifier
             };
          }
    }
 
-   return $self->new(set => [ map {C::Global->new(name => $_->{name}, code => $_->{code}, type => $_->{type}, modifier => $_->{modifier}, area => $area)} @globals ]);
+   return $self->new(set => [
+           map { C::Global->new(
+               name     => $_->{name},
+               code     => $_->{code},
+               type     => $_->{type},
+               modifier => $_->{modifier},
+               area     => $area)
+           } @globals
+       ]
+   );
 }
 
 __PACKAGE__->meta->make_immutable;
