@@ -259,6 +259,7 @@ sub _parse_module_part
 sub _parse_kernel_part
 {
    my $kernel_code = $_[0];
+   my $full_kernel = $_[1];
    my %kernel;
 
    my $kernel_macro = get_macro($kernel_code, 1);
@@ -267,8 +268,12 @@ sub _parse_kernel_part
    #remove attributes
    adapt($$kernel_code, attributes => 1);
 
-   %kernel = map { $_ => $kernel_code } qw(typedef enum structure global declaration)
-      if $$kernel_code;
+   if ($$kernel_code) {
+      my @types = qw(typedef enum structure global declaration);
+      push @types, 'function'
+         if $full_kernel;
+      %kernel = map { $_ => $kernel_code } @types;
+   }
 
    $kernel{macro} = $kernel_macro
       if @$kernel_macro;
@@ -280,6 +285,7 @@ sub _parse_kernel_part
 
 sub parse_sources
 {
+   my $full_kernel  = pop @_;
    my $kernel_parse = pop @_;
    my ($kernel_code, $module_code) =
       prepare_module_sources(@_);
@@ -287,7 +293,7 @@ sub parse_sources
    my %ret;
    @ret{qw/kernel module comments/} =
       (
-         ($kernel_parse ? _parse_kernel_part($kernel_code) : undef),
+         ($kernel_parse ? _parse_kernel_part($kernel_code, $full_kernel) : undef),
          _parse_module_part($module_code)
       );
 

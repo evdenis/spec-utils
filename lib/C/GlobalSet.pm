@@ -55,6 +55,8 @@ sub parse
                                  (?<type>DEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                                  |
                                  (?<type>FULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
+                                 |
+                                 (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
                               )
                               |
                               (?:(?<type>${type})${name}${optional_init})
@@ -63,19 +65,26 @@ sub parse
                         ${s}*+;
                         |
                         (?<type>FAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                        |
+                        (?:\bEXPORT_SYMBOL(?:_GPL)\b${s}*+\([^)]++\))
+                        |
+                        (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
                      /gxp) {
-         if (exists $+{name} && ! exists $+{td}) {
-            my $mname     = $+{name};
+         if (!exists $+{td}) {
+            my $mname     = $+{name} // '';
             my $mcode     = ${^MATCH};
             my $mtype     = $+{type};
             my $mmodifier = $+{modifiers} || undef;
 
-            if ($mtype eq 'FULL_PROXY_FUNC') {
-               $mname = 'full_proxy_' . $mname
-            }
-
-            if (exists $type_alias{$mtype}) {
-               $mtype = $type_alias{$mtype}
+            unless ($mtype) {
+               $mtype = "--MODULE--"
+            } else {
+               if ($mtype eq 'FULL_PROXY_FUNC') {
+                  $mname = 'full_proxy_' . $mname
+               }
+               if (exists $type_alias{$mtype}) {
+                  $mtype = $type_alias{$mtype}
+               }
             }
 
             push @globals, {

@@ -56,7 +56,7 @@ sub to_string
 {
    my $code = $_[0]->code;
    my $comments = $_[1];
-   $code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
+   #$code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
 
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
    foreach (@cmnt) {

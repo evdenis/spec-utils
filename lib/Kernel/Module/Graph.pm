@@ -126,7 +126,7 @@ sub _dependencies_graph_iterator_module
 #\%sources
 sub __add_vertices
 {
-   my ($graph, $sources, $iterator) = @_;
+   my ($graph, $iterator) = @_;
 
    while (my $set = $iterator->()) {
       $set = $set->set;
@@ -431,7 +431,7 @@ sub build_sources_graph
 
       $graph = Graph::Directed->new();
 
-      __add_vertices($graph, $sources, _dependencies_graph_iterator_kernel($sources));
+      __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
 
       $graph = _form_graph($graph, $index,
          _dependencies_graph_iterator_kernel($sources)
@@ -445,7 +445,7 @@ sub build_sources_graph
                _dependencies_graph_iterator_module($sources)
             );
 
-   __add_vertices($graph, $sources, _dependencies_graph_iterator_module($sources));
+   __add_vertices($graph, _dependencies_graph_iterator_module($sources));
 
 
    $graph = _form_graph($graph, $index,
@@ -668,7 +668,7 @@ my %sp = (
 
 sub output_sources_graph
 {
-   my ($graph, $ids, $output_dir, $single_file, $remove_fields, $full, $call) = @_;
+   my ($graph, $ids, $output_dir, $single_file, $remove_fields, $fullkernel, $full, $call) = @_;
 
    my %out = map { $_ => [] } qw/
       kernel_h
@@ -724,7 +724,7 @@ sub output_sources_graph
          my $content;
 
          if ($a eq 'kernel') {
-            if ($t eq 'C::Declaration' || $t eq 'C::Global') {
+            if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration') {
                $content = $out{extern_h}
             } elsif ($t eq 'C::Macro') {
                $content = $out{kernel_macro}
@@ -758,7 +758,7 @@ sub output_sources_graph
       foreach (keys %out) {
          foreach (@{ $out{$_} }) {
             if ($_->area eq 'kernel') {
-               $_ = $_->to_string($c, $remove_fields, 0)
+               $_ = $_->to_string($c, $remove_fields, $fullkernel)
             } else {
                unless (exists $ids{$_->id}) {
                   $_ = $_->to_string($c, 0, $full)
@@ -794,6 +794,7 @@ digraph g
       kernel_macro;
       kernel_structure;
       kernel_declaration;
+      kernel_function;
       kernel_typedef;
       kernel_enum;
       kernel_global;
@@ -801,6 +802,7 @@ digraph g
       kernel_macro -> kernel_macro;
       kernel_macro -> kernel_structure;
       kernel_macro -> kernel_declaration;
+      kernel_macro -> kernel_function;
       kernel_macro -> kernel_typedef;
       kernel_macro -> kernel_enum;
       kernel_macro -> kernel_global;
@@ -808,16 +810,23 @@ digraph g
       kernel_structure -> kernel_macro;
       kernel_structure -> kernel_structure;
       kernel_structure -> kernel_declaration;
+      kernel_structure -> kernel_function;
       kernel_structure -> kernel_typedef;
       kernel_structure -> kernel_enum; //sizeof
       kernel_structure -> kernel_global;
 
       kernel_declaration -> kernel_macro;
       kernel_declaration -> kernel_global;
+      kernel_declaration -> kernel_function;
+
+      kernel_function -> kernel_macro;
+      kernel_function -> kernel_global;
+      kernel_function -> kernel_function;
 
       kernel_typedef -> kernel_macro;
       kernel_typedef -> kernel_structure;
       kernel_typedef -> kernel_declaration;
+      kernel_typedef -> kernel_function;
       kernel_typedef -> kernel_typedef;
       kernel_typedef -> kernel_enum;
       kernel_typedef -> kernel_global;
@@ -825,12 +834,14 @@ digraph g
       kernel_enum -> kernel_macro;
       kernel_enum -> kernel_structure;
       kernel_enum -> kernel_declaration;
+      kernel_enum -> kernel_function;
       kernel_enum -> kernel_typedef;
       kernel_enum -> kernel_enum;
       kernel_enum -> kernel_global;
 
       kernel_global -> kernel_macro;
       kernel_global -> kernel_global;
+      kernel_global -> kernel_function;
    }
 
    subgraph cluster_module {
@@ -886,6 +897,10 @@ digraph g
       kernel_declaration -> module_macro;
       kernel_declaration -> module_global;
       kernel_declaration -> module_function;
+      //
+      kernel_function -> module_macro;
+      kernel_function -> module_global;
+      kernel_function -> module_function;
 
       module_declaration -> module_macro;
       module_declaration -> module_global;
