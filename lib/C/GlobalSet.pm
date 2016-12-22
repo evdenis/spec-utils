@@ -50,13 +50,15 @@ sub parse
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
                                  |
-                                 (?<type>DEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
+                                 (?<type>\bDEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |
-                                 (?<type>DEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                                 (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                                  |
-                                 (?<type>FULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
+                                 (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                                  |
                                  (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
+                                 |
+                                 (?:\bDECLARE_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               )
                               |
                               (?:(?<type>${type})${name}${optional_init})
@@ -64,7 +66,7 @@ sub parse
                         )(*SKIP)
                         ${s}*+;
                         |
-                        (?<type>FAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                        (?<type>\bFAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                         |
                         (?:\bEXPORT_SYMBOL(?:_GPL)\b${s}*+\([^)]++\))
                         |
