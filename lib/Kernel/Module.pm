@@ -232,9 +232,9 @@ sub __generic_parse
 sub _parse_module_part
 {
    my $module_code = $_[0];
-   my (%module, @comments);
+   my (%module, @comments, @strings);
 
-   adapt($$module_code, comments => \@comments);
+   adapt($$module_code, comments => \@comments, strings => \@strings);
 
    my @module_macro;
    my $macro_re = qr/^\h*+#\h*+define.*+\n/m;
@@ -253,13 +253,14 @@ sub _parse_module_part
 
    __generic_parse(\%module, 'module');
 
-   (\%module, \@comments)
+   (\%module, \@comments, \@strings)
 }
 
 sub _parse_kernel_part
 {
    my ($kernel_code, $full_kernel, $preprocess) = @_;
    my %kernel;
+   my @strings;
 
    my $kernel_macro = get_macro($kernel_code, 1);
    $kernel_code = preprocess($kernel_code)
@@ -267,6 +268,7 @@ sub _parse_kernel_part
 
    #remove attributes
    my %remove = (attributes => 1);
+   $remove{strings} = \@strings;
    unless ($preprocess) {
       $remove{comments} = 1;
       $remove{macro}    = 1;
@@ -285,7 +287,7 @@ sub _parse_kernel_part
 
     __generic_parse(\%kernel, 'kernel');
 
-    \%kernel
+   (\%kernel, \@strings)
 }
 
 sub parse_sources
@@ -296,7 +298,7 @@ sub parse_sources
       prepare_module_sources(@_);
 
    my %ret;
-   @ret{qw/kernel module comments/} =
+   @ret{qw/kernel kernel_strings module comments module_strings/} =
       (
          ($kernel_parse ? _parse_kernel_part($kernel_code, $full_kernel, 1) : undef),
          _parse_module_part($module_code)

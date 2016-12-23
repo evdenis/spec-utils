@@ -420,6 +420,8 @@ my %sources = parse_sources($config{kernel}, $config{module},
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $cache, file => $cache_file[1]}});
 $g->set_graph_attribute('comments', $sources{comments});
+$g->set_graph_attribute('module_strings', $sources{module_strings});
+$g->set_graph_attribute('kernel_strings', $sources{kernel_strings});
 $g->set_graph_attribute('index', $sources{module}{function}->index);
 
 

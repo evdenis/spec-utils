@@ -542,8 +542,10 @@ sub _generic_get_subgraph
    $subgraph->set_edge_attributes(@$_, $graph->get_edge_attributes(@$_))
       foreach $subgraph->edges;
 
-   $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'))
-      if $graph->has_graph_attribute('comments');
+   foreach (qw/comments module_strings kernel_strings/) {
+      $subgraph->set_graph_attribute($_, $graph->get_graph_attribute($_))
+          if $graph->has_graph_attribute($_);
+   }
 
    $subgraph
 }
@@ -756,6 +758,8 @@ sub output_sources_graph
 
    {
       my $c = $graph->get_graph_attribute('comments');
+      my $ms = $graph->get_graph_attribute('module_strings');
+      my $ks = $graph->get_graph_attribute('kernel_strings');
 
       my %ids = map {$_ => undef} @$ids;
       foreach (keys %out) {
@@ -775,7 +779,11 @@ sub output_sources_graph
       %out = map { $_ => join("\n\n", grep {$_} @{ $out{$_} } ) } keys %out;
 
       foreach (qw/module_h module_c/) {
-         restore($out{$_}, comments => $c)
+         restore($out{$_}, comments => $c, strings => $ms)
+      }
+
+      foreach (qw/kernel_h extern_h/) {
+         restore($out{$_}, strings => $ks)
       }
    }
 

@@ -33,8 +33,9 @@ sub prepare_tags
    my %filter = map { $_ => undef } @{$_[1]};
    my $name = qr/\b($varname)\b/;
 
+   # All strings should be already removed at least at module part.
    #remove strings
-   $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
+   #$code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
 
    my @tokens;
    while ($code =~ m/$name/g) {
