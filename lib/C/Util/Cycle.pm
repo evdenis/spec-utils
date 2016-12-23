@@ -78,10 +78,10 @@ sub resolve_function_function
          return 0;
       } else {  # Если это не спецификационная связь
          if (!$rspec_edge) { # Если обратная не спецификационная
-            $obj[0]->add_fw_decl($obj[1]->declaration);
+            $obj[1]->add_fw_decl($obj[0]->declaration);
             $graph->delete_edge(@ids);
          } else {
-            $obj[1]->add_fw_decl($obj[0]->declaration);
+            $obj[0]->add_fw_decl($obj[1]->declaration);
             $graph->delete_edge(@ids);
          }
          return 1;
