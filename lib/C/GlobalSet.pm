@@ -74,7 +74,7 @@ sub parse
                         |
                         (?<type>\bFAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                         |
-                        (?:\bEXPORT_SYMBOL(?:_GPL)\b${s}*+\([^)]++\)${s}*+;)
+                        (?:\bEXPORT_SYMBOL(?:_GPL)?\b${s}*+\([^)]++\)${s}*+;)
                         |
                         (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
                      /gxp) {
