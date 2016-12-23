@@ -590,7 +590,7 @@ sub get_isolated_subgraph
 
 sub _write_to_files
 {
-   my ($output_dir, $single_file, $content, $call) = @_;
+   my ($output_dir, $output_file, $single_file, $content, $call) = @_;
 
    $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r
       foreach keys %out_file;
@@ -604,6 +604,10 @@ sub _write_to_files
       $out_file{kernel_h} = '';
       $out_file{extern_h} = '';
 
+      if ($output_file) {
+         $out_file{module_c} = catfile $output_dir, $output_file
+      }
+
       $call->( level      => 'raw_data',
                files      => \%out_file,
                output_dir => $output_dir,
@@ -615,11 +619,14 @@ sub _write_to_files
                output     => $content );
 
       write_file($out_file{module_c},
-                     join("\n" . '//' . '-' x 78 . "\n\n",
-                        map { $content->{$_} } @out_order
-                     )
+                 join("\n" . '//' . '-' x 78 . "\n\n",
+                    map { $content->{$_} } @out_order
+                 )
       )
    } else {
+
+      warn "Can't write result to a single file $output_file. Will use default scheme with 4 files.\n"
+          if $output_file;
 
       $call->( level      => 'raw_data',
                files      => \%out_file,
@@ -673,7 +680,7 @@ my %sp = (
 
 sub output_sources_graph
 {
-   my ($graph, $ids, $output_dir, $single_file, $remove_fields, $fullkernel, $full, $call) = @_;
+   my ($graph, $ids, $output_dir, $output_file, $single_file, $remove_fields, $fullkernel, $full, $call) = @_;
 
    my %out = map { $_ => [] } qw/
       kernel_h
@@ -790,6 +797,7 @@ sub output_sources_graph
 
    _write_to_files(
       $output_dir,
+      $output_file,
       $single_file,
       \%out,
       $call

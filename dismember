@@ -10,7 +10,7 @@ use re '/aa';
 use Pod::Usage;
 use List::Util qw(any);
 use Getopt::Long qw(:config gnu_compat no_getopt_compat pass_through);
-use File::Spec::Functions qw(catfile catdir);
+use File::Spec::Functions qw(catfile catdir splitpath);
 use File::Which;
 use Storable;
 use POSIX qw/setsid/;
@@ -72,7 +72,8 @@ dismember - программа для выборки из общего набо�
   --asmodule                  - перекомбинировать исходные коды в собираемый модуль ядра
   -r|--remove-fields          - адаптивно убрать неиспользуемые поля из enum
 
-  -o|--output-dir dir         - задаёт директорию для вывода результатов
+  -o|--output-file file       - задаёт файл для вывода результатов
+  --output-dir dir            - задаёт директорию для вывода результатов
 
   -c|--cache num - три уровня кэша:
                       0 - отсутствует,
@@ -136,9 +137,13 @@ dismember - программа для выборки из общего набо�
 
 Убрать неиспользуемые константы из определений enum. Значения остальных изменяются так, чтобы соответствовать оригинальному определению.
 
-=item B<-o|--output-dir dir>
+=item B<-o|--output-file file>
 
-Задаёт директорию для вывода файлов. По умолчанию используется директория result в папке с программой.
+Задаёт путь для вывода результатов. Директория определяется автоматически из пути и создаётся при необходимости. При использовании, опция включает флаги --single и --merge. --merge используется для того, чтобы объединить результаты вывода всех функций. --single для того, чтобы не разделять вывод на 4 стандартных файла. Если поведение этих опций не укладывается в желаемый результат, используйте --output-dir. Опция не совместима с --output-dir. --output-file всегда имеет приоритет.
+
+=item B<--output-dir dir>
+
+Задаёт директорию для вывода результатов. По умолчанию используется директория result в папке с программой. Опция не совместима с --output-file. --output-file всегда имеет приоритет.
 
 =item B<-c|cache num>
 
@@ -195,6 +200,7 @@ $config{'remove-fields'}     = 0;
 $config{module}              = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}              = undef;
 $config{'output-dir'}        = catdir $FindBin::Bin, 'result';
+$config{'output-file'}       = undef;
 $config{editor}              = 0;
 $config{plugin}              = [];
 $config{full}                = 0;
@@ -255,7 +261,8 @@ GetOptions(
    'full'                  =>  \$config{full},
    'asmodule'              =>  \$config{asmodule},
    'remove-fields|r!'      =>  \$config{'remove-fields'},
-   'oudput-dir|o=s'        =>  \$config{'output-dir'},
+   'output-file|o=s'       =>  \$config{'output-file'},
+   'output-dir=s'          =>  \$config{'output-dir'},
    'editor|e!'             =>  \$config{editor},
    'plugin=s@'             =>  \@args_plugins,
    'list-plugins'          =>  \$list_plugins,
@@ -267,6 +274,16 @@ $cache = 0
 $config{functions} = \@functions;
 $config{plugin} = [ split(/,/, join(',', @{$config{plugin}})) ];
 push @{$config{plugin}}, @args_plugins;
+
+if ($config{'output-file'}) {
+   $config{single} = 1;
+   $config{merge}  = 1;
+   (undef, $config{'output-dir'}, $config{'output-file'}) =
+       splitpath($config{'output-file'});
+   unless ($config{'output-dir'}) {
+      $config{'output-dir'} = '.'
+   }
+}
 
 if ($config{asmodule}) {
    $config{all}         = 1;
@@ -496,13 +513,18 @@ sub generate_files
    my ($graph, @functions) = @_;
    @functions = sort @functions;
    my @ids = map { $indx->{$_} // $_ } @functions;
+   my $fd;
 
-   my $fd = catdir $config{'output-dir'},
+   unless ($config{'output-file'}) {
+      $fd = catdir $config{'output-dir'},
                generate_merged_dirname(\@functions,
-                                       $config{all},
-                                       $config{done},
-                                       $config{asmodule});
-   create_directory $fd;
+                  $config{all},
+                  $config{done},
+                  $config{asmodule});
+      create_directory $fd;
+   } else {
+      $fd = $config{'output-dir'};
+   }
 
    my $rgraph = get_predecessors_subgraph($graph, @ids);
    call_plugins
@@ -516,7 +538,7 @@ sub generate_files
    #Graph::Writer::Dot->new->write_graph($ng, \*STDOUT);
    #exit;
 
-   output_sources_graph($rgraph, \@ids, $fd,
+   output_sources_graph($rgraph, \@ids, $fd, $config{'output-file'},
                                  $config{single},
                                  $config{'remove-fields'},
                                  $config{fullkernel},
@@ -525,9 +547,12 @@ sub generate_files
                                     call_plugins function => \@functions, graph => $rgraph, @_
                                  }
                         );
-   print "OUTPUT: " . ($config{single} ? catfile($fd, 'module.c') : $fd) . "\n\n";
+   print "OUTPUT: " . ($config{single} ? catfile($fd, $config{'output-file'} // 'module.c') : $fd) . "\n\n";
 
-   {dir => $fd}
+   my $res = {dir => $fd};
+   $res->{file} = $config{'output-file'}
+       if $config{'output-file'};
+   return $res;
 }
 
 {
