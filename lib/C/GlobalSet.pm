@@ -17,6 +17,7 @@ has '+set' => (
 
 my %type_alias = (
     DEFINE_SPINLOCK => 'spinlock_t',
+    DEFINE_MUTEX    => 'struct mutex',
     DEFINE_RWLOCK   => 'rwlock_t',
     LIST_HEAD       => 'struct list_head',
 );
@@ -52,7 +53,7 @@ sub parse
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
                                  |
-                                 (?<type>\bDEFINE_SPINLOCK|DEFINE_RWLOCK|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
+                                 (?<type>\bDEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |
                                  (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                                  |
