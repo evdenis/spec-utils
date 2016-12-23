@@ -47,6 +47,8 @@ sub parse
                               |
                               (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${optional_init})
                               |
+                              (?>__typeof__${s}*+\(${s}*+(?<type>(?>struct|union)(*SKIP)${s}++${type})\)${s}*+${name}${optional_init})
+                              |
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
                                  |

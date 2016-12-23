@@ -44,3 +44,4 @@ static struct file_operations parsec_info_ops = {
 
 static DEFINE_SPINLOCK(socket_update_slock);
 
+extern  __typeof__(struct task_struct *) current_task;
