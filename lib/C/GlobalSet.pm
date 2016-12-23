@@ -61,6 +61,8 @@ sub parse
                                  (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
                                  |
                                  (?:\bDECLARE_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
+                                 |
+                                 (?:\bDECLARE_WORK\b${s}*+\(${s}*+${name}${s}*+,[^)]++\))
                               )
                               |
                               (?:(?<type>${type})${name}${optional_init})
