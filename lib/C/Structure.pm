@@ -12,13 +12,11 @@ use re '/aa';
 extends 'C::Entity';
 
 
-
 has 'type' => (
    is => 'ro',
    isa => enum([qw(struct union)]),
    required => 1
 );
-
 
 around BUILDARGS => sub {
    my $orig = shift;

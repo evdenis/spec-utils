@@ -22,6 +22,13 @@ has 'modifier' => (
    isa => 'Maybe[Str]'
 );
 
+has 'extern' => (
+   is => 'ro',
+   isa => 'Bool',
+   lazy => 1,
+   builder => '_is_extern'
+);
+
 
 sub _build_initialized
 {
@@ -38,6 +45,17 @@ sub to_string
    #}
 
    $code
+}
+
+sub _is_extern
+{
+   my $modifier = $_[0]->modifier;
+
+   if ($modifier) {
+      return index($modifier, 'extern') != -1;
+   } else {
+      return 0;
+   }
 }
 
 

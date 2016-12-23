@@ -225,7 +225,8 @@ RECHECK:
                         if ($old->initialized && $new->initialized) {
                            die "Globals duplicate with initialization: $_\n";
                         }
-                        if ($new->initialized && !$old->initialized) {
+                        if (($new->initialized && !$old->initialized)
+                            || (!$new->extern && $old->extern)) {
                            $index{$_}{$tn} = $new;
                         }
                      }
