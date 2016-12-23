@@ -52,7 +52,7 @@ sub parse
                               (?>__typeof__${s}*+\(${s}*+(?<type>${simple_type}|(?>struct|union)(*SKIP)${s}++${type})\)${s}*+${name}${optional_init})
                               |
                               (?>
-                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
+                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+(?:__packed(*SKIP)(*FAIL)|${name})${optional_init}
                                  |
                                  (?<type>\bDEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |

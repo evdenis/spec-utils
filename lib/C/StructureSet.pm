@@ -38,7 +38,7 @@ sub parse
                )*
             \}
             )
-         )${s}*+;
+         )${s}*+(?:__packed)?${s}*+;
       /gmpx) {
       my $name = $+{sname};
       my $code = ${^MATCH};
