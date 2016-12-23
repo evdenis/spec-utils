@@ -322,20 +322,22 @@ sub _create_edges
 
    my @from;
    #only one instance of type possible
-   my $legal = 0;
+   my $single = 0;
    foreach (@possible) {
       my $type = blessed($_);
       if ($label) {
          if (_allow($label, $type)) {
             push @from, $_;
-            $legal = 1;
+            $single = 1;
             last
          }
       } else {
          if ($type eq 'C::Macro') {
             push @from, $_;
-            $legal = 1;
-            last
+            unless ($_->expands_to_itself) {
+               $single = 1;
+               last
+            }
          }
          # Should bind them anyway
          #if ($t eq 'C::Structure' || $t eq 'C::Enum') {
@@ -350,11 +352,11 @@ sub _create_edges
       push @from, $_;
    }
 
-   if ($legal && @from == 1) {
+   if ($single && @from == 1) {
       __add_edge($graph, $from[0], $to, $tag)
-   } elsif (!$legal && $label) {
+   } elsif (!$single && $label) {
       die('Internal error')
-   } elsif (!$legal && !$label) {
+   } elsif (!$single && !$label) {
       foreach(@from) {
          __add_edge($graph, $_, $to, $tag)
       }

@@ -20,6 +20,13 @@ has 'substitution' => (
    builder => '_build_substitution'
 );
 
+has 'expands_to_itself' => (
+   is => 'ro',
+   isa => 'Bool',
+   lazy => 1,
+   builder => '_is_expands_to_itself'
+);
+
 sub _build_substitution
 {
    my $self = shift;
@@ -36,13 +43,17 @@ sub _build_substitution
    undef
 }
 
-
 sub get_code_tags
 {
    my $filter = $_[0]->get_code_ids();
    push @$filter, @{ $_[0]->args } if $_[0]->args; #struct arg case ?
 
    prepare_tags($_[0]->substitution, $filter)
+}
+
+sub _is_expands_to_itself
+{
+   $_[0]->substitution eq $_[0]->name
 }
 
 
