@@ -33,7 +33,7 @@ sub parse
    my @globals;
    my $name           = qr/(?<name>${varname})/;
    my $sbody          = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
-   my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]))/;
+   my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
    my $decl           = qr/(?:${s}*+${sbody})/;
    my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/; # requires strings to be previously hided
    my $standard_type  = qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
