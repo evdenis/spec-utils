@@ -27,7 +27,7 @@ sub check_kernel_dir ($)
       closedir $kdir;
 
       #Check for standard files
-      foreach (qw(Kbuild Kconfig MAINTAINERS Makefile drivers include arch kernel security)) {
+      foreach (qw(Kconfig Makefile drivers include arch kernel security)) {
          goto OUT
             unless any($_, \@files);
       }
