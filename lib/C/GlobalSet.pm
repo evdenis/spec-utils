@@ -45,7 +45,7 @@ sub parse
                         (?>
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
-                              (?>(?<type>${simple_type}(?:\h+(?:volatile|__jiffy_data))*${s}++${ptr})(*SKIP)${name}${optional_init})
+                              (?>(?<type>${simple_type}(?:\h+(?:volatile|__jiffy_data))*${s}++${ptr})(*SKIP)${name}(?:${s}*+__initdata${s}*+)?${optional_init})
                               |
                               (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${optional_init})
                               |
