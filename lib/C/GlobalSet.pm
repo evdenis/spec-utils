@@ -62,9 +62,9 @@ sub parse
                                  |
                                  (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
                                  |
-                                 (?:\bDECLARE_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
+                                 (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                                  |
-                                 (?:\bDECLARE_WORK\b${s}*+\(${s}*+${name}${s}*+,[^)]++\))
+                                 (?:\b(?<special_declare>DECLARE)_WORK\b${s}*+\(${s}*+${name}${s}*+,[^)]++\))
                               )
                               |
                               (?:(?<type>${type})${name}${optional_init})
@@ -83,6 +83,7 @@ sub parse
             my $mcode     = ${^MATCH};
             my $mtype     = $+{type};
             my $mmodifier = $+{modifiers} || undef;
+            my $special_declare = $+{special_declare};
 
             unless ($mtype) {
                $mtype = "--MODULE--"
@@ -93,6 +94,10 @@ sub parse
                if (exists $type_alias{$mtype}) {
                   $mtype = $type_alias{$mtype}
                }
+            }
+
+            if ($special_declare) {
+               $mmodifier = 'extern ' . ($mmodifier // '');
             }
 
             push @globals, {
