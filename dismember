@@ -469,6 +469,28 @@ call_plugins level => 'full_graph', graph => $g;
 
 my $indx = $g->get_graph_attribute('index');
 
+sub generate_merged_dirname
+{
+   my ($functions, $all, $done, $asmodule) = @_;
+
+   if (@$functions == 1) {
+      return $functions->[0];
+   } else {
+      my $pf = 'merged_';
+
+      if ($asmodule) {
+         $pf = 'fullmodule'
+      } elsif ($done) {
+         $pf .= 'done'
+      } elsif ($all) {
+         $pf .= 'all'
+      } else {
+         $pf .= join('-', sort(@$functions));
+      }
+      return  $pf;
+   }
+}
+
 sub generate_files
 {
    my ($graph, @functions) = @_;
@@ -476,8 +498,10 @@ sub generate_files
    my @ids = map { $indx->{$_} // $_ } @functions;
 
    my $fd = catdir $config{'output-dir'},
-                   @functions == 1 ? $functions[0] :
-                   'merged_' . ($config{all} ? 'all' : $functions[0]);
+               generate_merged_dirname(\@functions,
+                                       $config{all},
+                                       $config{done},
+                                       $config{asmodule});
    create_directory $fd;
 
    my $rgraph = get_predecessors_subgraph($graph, @ids);
