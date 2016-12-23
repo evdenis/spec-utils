@@ -16,10 +16,14 @@ has '+set' => (
 );
 
 my %type_alias = (
-    DEFINE_SPINLOCK => 'spinlock_t',
-    DEFINE_MUTEX    => 'struct mutex',
-    DEFINE_RWLOCK   => 'rwlock_t',
-    LIST_HEAD       => 'struct list_head',
+    DEFINE_SPINLOCK         => 'spinlock_t',
+    DEFINE_MUTEX            => 'struct mutex',
+    DEFINE_RWLOCK           => 'rwlock_t',
+    DECLARE_WAIT_QUEUE_HEAD => 'wait_queue_head_t',
+    DECLARE_WORK            => 'struct work_struct',
+    DECLARE_DELAYED_WORK    => 'struct delayed_work',
+    DECLARE_DEFERRABLE_WORK => 'struct delayed_work',
+    LIST_HEAD               => 'struct list_head',
 );
 
 sub parse
@@ -31,7 +35,7 @@ sub parse
    my $sbody          = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
    my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]))/;
    my $decl           = qr/(?:${s}*+${sbody})/;
-   my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|"[^\n]*(?="\h*;)"|[^;]++))/;
+   my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/; # requires strings to be previously hided
    my $standard_type  = qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
    my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
    my $simple_type    = qr/(?:$standard_type|$common_typedef)/;
@@ -54,17 +58,17 @@ sub parse
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+(?:__packed(*SKIP)(*FAIL)|${name})${optional_init}
                                  |
-                                 (?<type>\bDEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)${s}*+\(${s}*+${name}${s}*+\)
+                                 (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                                  |
                                  (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                                 |
+                                 (?<type>\bDECLARE_(?:DELAYED_|DEFERRABLE_)?WORK)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                                  |
                                  (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                                  |
                                  (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
                                  |
                                  (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
-                                 |
-                                 (?:\b(?<special_declare>DECLARE)_WORK\b${s}*+\(${s}*+${name}${s}*+,[^)]++\))
                               )
                               |
                               (?:(?<type>${type})${name}${optional_init})
