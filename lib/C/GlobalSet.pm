@@ -32,6 +32,9 @@ sub parse
    my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]))/;
    my $decl           = qr/(?:${s}*+${sbody})/;
    my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|"[^\n]*(?="\h*;)"|[^;]++))/;
+   my $standard_type  = qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
+   my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
+   my $simple_type    = qr/(?:$standard_type|$common_typedef)/;
    #my $mandatory_init = qr/${array}?${init}/;
    my $optional_init  = qr/${array}?${init}?/;
    my $ptr            = qr/(\*|${s}++|const)*+/;
@@ -42,13 +45,11 @@ sub parse
                         (?>
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
-                              (?>(?<type>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|long${s}++long)(?:\h+(?:volatile|__jiffy_data))*${s}++${ptr})(*SKIP)${name}${optional_init})
-                              |
-                              (?>(?<type>(?>float|double|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)(?:\h+__jiffy_data)?${ptr})(*SKIP)${name}${optional_init})
+                              (?>(?<type>${simple_type}(?:\h+(?:volatile|__jiffy_data))*${s}++${ptr})(*SKIP)${name}${optional_init})
                               |
                               (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${optional_init})
                               |
-                              (?>__typeof__${s}*+\(${s}*+(?<type>(?>struct|union)(*SKIP)${s}++${type})\)${s}*+${name}${optional_init})
+                              (?>__typeof__${s}*+\(${s}*+(?<type>${simple_type}|(?>struct|union)(*SKIP)${s}++${type})\)${s}*+${name}${optional_init})
                               |
                               (?>
                                  (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+${name}${optional_init}
