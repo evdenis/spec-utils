@@ -77,7 +77,7 @@ sub BUILD
 
    my $last_expr_dep;
    foreach (@fields) {
-      next if /\A\s++\z/;
+      next if /\A${s}++\z/;
 
       if (m/\A${s}*+(${varname})(${s}*+=${s}*+)?/g) {
          my $f = $1;
