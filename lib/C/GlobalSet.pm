@@ -40,7 +40,7 @@ sub parse
    my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
    my $simple_type    = qr/(?:$standard_type|$common_typedef)/;
    #my $mandatory_init = qr/${array}?${init}/;
-   my $optional_init  = qr/${array}?${init}?/;
+   my $optional_init  = qr/${array}?(?:\h*+__initdata)?${init}?/;
    my $ptr            = qr/(\*|${s}++|const)*+/;
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
 
