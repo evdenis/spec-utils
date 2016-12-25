@@ -36,42 +36,37 @@ sub parse
    my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
    my $decl           = qr/(?:${s}*+${sbody})/;
    my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/; # requires strings to be previously hided
+   my $ptr            = qr/(\*|${s}++|const)*+/;
    my $standard_type  = qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
    my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
-   my $simple_type    = qr/(?:$standard_type|$common_typedef)/;
+   my $simple_type    = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
    my $optional_init  = qr/${array}?(?:\h*+__initdata)?${init}?/;
-   my $ptr            = qr/(\*|${s}++|const)*+/;
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
+   my $complex_type   = qr/(?>struct|union|enum)(*SKIP)${s}++${type}/;
 
-   while (${$_[0]} =~ m/(?:(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\})))(*SKIP)(*FAIL)
+   while (${$_[0]} =~ m/(?:${sbody})(*SKIP)(*FAIL)
                         |
                         (?>
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
-                              (?>(?<type>${simple_type}(?:\h+(?:volatile|__jiffy_data))*${s}++${ptr})(*SKIP)${name}(?:${s}*+__initdata${s}*+)?${optional_init})
+                              (?<typeof>__typeof__${s}*+\(${s}*+)?+
+                              (?<type>${simple_type}|${complex_type})(*SKIP)
+                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_init}
                               |
-                              (?>(?<type>enum(*SKIP)${s}++${varname}${ptr})${name}${optional_init})
+                              (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
-                              (?>__typeof__${s}*+\(${s}*+(?<type>${simple_type}|(?>struct|union)(*SKIP)${s}++${type})\)${s}*+${name}${optional_init})
+                              (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
-                              (?>
-                                 (?<type>(?>struct|union)(*SKIP)${s}++${type})${decl}?${s}*+(?:__packed(*SKIP)(*FAIL)|${name})${optional_init}
-                                 |
-                                 (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
-                                 |
-                                 (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
-                                 |
-                                 (?<type>\bDECLARE_(?:DELAYED_|DEFERRABLE_)?WORK)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
-                                 |
-                                 (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
-                                 |
-                                 (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
-                                 |
-                                 (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
-                              )
+                              (?<type>\bDECLARE_(?:DELAYED_|DEFERRABLE_)?WORK)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
-                              (?:(?<type>${type})${name}${optional_init})
+                              (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
+                              |
+                              (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
+                              |
+                              (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
+                              |
+                              (?<type>${type})${name}${optional_init}
                            )
                         )(*SKIP)
                         ${s}*+;
