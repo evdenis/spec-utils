@@ -81,6 +81,8 @@ sub parse
                         (?:\bEXPORT_SYMBOL(?:_GPL)?\b${s}*+\([^)]++\)${s}*+;)
                         |
                         (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
+                        |
+                        (?:\b__setup\b${s}*+\([^)]++\)${s}*+;)
                      /gxp) {
          if (!exists $+{td}) {
             my $mname     = $+{name} // '';
