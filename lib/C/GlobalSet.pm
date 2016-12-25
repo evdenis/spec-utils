@@ -33,6 +33,7 @@ sub parse
    my @globals;
    my $name           = qr/(?<name>${varname})/;
    my $sbody          = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
+   my $fargs          = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
    my $array          = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
    my $decl           = qr/(?:${s}*+${sbody})/;
    my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/; # requires strings to be previously hided
@@ -51,8 +52,10 @@ sub parse
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
                            (?>
                               (?<typeof>__typeof__${s}*+\(${s}*+)?+
-                              (?<type>${simple_type}|${complex_type})(*SKIP)
+                              (?<type>${simple_type}|${complex_type})
                                       ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_init}
+                              |
+                              (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${s}*+\)${s}*+${fargs})(*SKIP)${optional_init}
                               |
                               (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
