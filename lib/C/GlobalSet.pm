@@ -66,7 +66,7 @@ sub parse
                               |
                               (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                               |
-                              (?:\bMODULE_LICENSE\b${s}*+\([^)]++\))
+                              (?:\bMODULE_(?:LICENSE|AUTHOR|DESCRIPTION|VERSION|PARM_DESC)\b${s}*+\([^)]++\))
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               |
@@ -80,6 +80,8 @@ sub parse
                         (?:\bEXPORT_SYMBOL(?:_GPL)?\b${s}*+\([^)]++\)${s}*+;)
                         |
                         (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
+                        |
+                        (?:\bmodule_param\b${s}*+\([^\)]++\)${s}*+;)
                         |
                         (?:\b__setup\b${s}*+\([^)]++\)${s}*+;)
                      /gxp) {
