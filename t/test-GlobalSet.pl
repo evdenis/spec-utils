@@ -45,3 +45,19 @@ static struct file_operations parsec_info_ops = {
 static DEFINE_SPINLOCK(socket_update_slock);
 
 extern  __typeof__(struct task_struct *) current_task;
+
+extern  __typeof__(unsigned long) cpu_stop;
+
+static int (*read_f[SYM_NUM]) (struct policydb *p, struct hashtab *h, void *fp) =
+{
+	common_read,
+	class_read,
+	role_read,
+	type_read,
+	user_read,
+	cond_read_bool,
+	sens_read,
+	cat_read,
+};
+
+

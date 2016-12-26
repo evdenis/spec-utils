@@ -42,7 +42,8 @@ sub parse
    my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
    my $simple_type    = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
-   my $optional_init  = qr/${array}?(?:\h*+__initdata)?${init}?/;
+   my $optional_init  = qr/(?:\h*+__initdata)?${init}?/;
+   my $optional_ainit = qr/${array}?${optional_init}/;
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
    my $complex_type   = qr/(?>struct|union|enum)(*SKIP)${s}++${type}/;
 
@@ -53,9 +54,9 @@ sub parse
                            (?>
                               (?<typeof>__typeof__${s}*+\(${s}*+)?+
                               (?<type>${simple_type}|${complex_type})
-                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_init}
+                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_ainit}
                               |
-                              (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${s}*+\)${s}*+${fargs})(*SKIP)${optional_init}
+                              (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_init}
                               |
                               (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
@@ -69,7 +70,7 @@ sub parse
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               |
-                              (?<type>${type})${name}${optional_init}
+                              (?<type>${type})${name}${optional_ainit}
                            )
                         )(*SKIP)
                         ${s}*+;
