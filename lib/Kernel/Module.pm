@@ -43,8 +43,11 @@ sub __get_module_folder_c_contents
 {
    my $code;
    my $makefile = catfile $_[0], 'Makefile';
+   my $includes = [];
+
    if (-r $makefile) {
-      my $files = get_modules_deps($makefile);
+      my $files;
+      ($files, $includes) = get_modules_deps($makefile, $_[1]);
       if (%$files) {
          $code = merge(uniq map {@{$_}} values %$files) # Just use them all
       } else {
@@ -55,27 +58,27 @@ FALLBACK:
       $code = merge_sources($_[0])
    }
 
-   #FIXME:
-   $code
+   (\$code, $includes)
 }
 
 sub _get_module_data
 {
    my $dir = shift;
+   my $kdir = shift;
    my @kernel_includes;
    my $headers = merge_headers($dir, \@kernel_includes);
-   my $code = __get_module_folder_c_contents($dir);
+   my ($code, undef) = __get_module_folder_c_contents($dir, $kdir);
 
    @kernel_includes = map {"#include <$_>"} @kernel_includes;
 
    #getting list of kernel headers from *.c files; and remove others
-   $code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))/
+   $$code =~ s/^\h*\#\h*include\h*(?:(<[^>]+>)|("[^"]+"))/
                push @kernel_includes, "#include $1" if defined $1;''/meg;
 
    #remove includes, because they are already included
    if ($headers) {
       $headers =~ s/^\h*\#\h*include\h*[<"][^">]+[">]//mg;
-      $code = $headers . $code;
+      $code = $headers . $$code;
    }
 
    (\$code, \@kernel_includes)
@@ -127,7 +130,7 @@ sub _generic_handle_sources_sep
 
    {
       my $kernel_includes;
-      ($module_code, $kernel_includes) = _get_module_data($module_dir);
+      ($module_code, $kernel_includes) = _get_module_data($module_dir, $kernel_dir);
       ($kernel_code, $kernel_macro)    = _get_kernel_data($kernel_dir, $kernel_includes);
    }
 
@@ -153,20 +156,24 @@ sub _generic_handle_sources
    $kdir = realpath $kdir;
    $mdir = realpath $mdir;
 
-   my $code = __get_module_folder_c_contents($mdir);
+   my ($code, $includes) = __get_module_folder_c_contents($mdir, $kdir);
 
    my %include_dirs;
    foreach(find_headers($mdir)) {
       $include_dirs{realpath((splitpath($_))[1])} = undef;
    }
+   my @sorted_includes = uniq keys %include_dirs, @$includes;
+   @sorted_includes = reverse sort @sorted_includes;
+   #FIXME: /include should go last in the same level path sequence
+   #because we need special handling for #include ""
 
    $defines = join("\n", @$defines) . "\n"
               if $defines;
 
    my ($o,$f) = $func->(
                      realpath($kdir),
-                     [ keys %include_dirs ],
-                     \$code,
+                     \@sorted_includes,
+                     $code,
                      \$defines
                 );
 

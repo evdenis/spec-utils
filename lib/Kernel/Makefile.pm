@@ -19,8 +19,12 @@ our @EXPORT = qw(get_modules_deps);
 
 sub get_modules_deps 
 {
-   my $data = read_file($_[0], scalar_ref => 1);
+   my $file = $_[0];
+   my $kdir = $_[1];
+   my $makedir = (splitpath($file))[1];
+   my $data = read_file($file, scalar_ref => 1);
    my @modules;
+   my @includes;
 
    while ( $$data =~ m/
                         obj-(?:\$\($varname\)|[mny])
@@ -58,13 +62,33 @@ sub get_modules_deps
                            $
                           /gmx ) {
          push @{ $struct{$module} },
-            map { realpath(catfile((splitpath($_[0]))[1], substr($_, 0, -2) . '.c')) }
+            map { realpath(catfile($makedir, substr($_, 0, -2) . '.c')) }
             grep { /\.o\Z/ }
             split /\s++/, $+{deps} =~ tr/\\//dr;
       }
    }
 
-   \%struct
+   if ($$data =~ m/ccflags-y\h*+[:+]?=\h*+
+                        (?<ccflags>
+                           (?<body>
+                              [^\\\n]*+
+                              \\\n
+                              (?&body)?
+                           )?
+                           .++
+                        )
+                        $/mx) {
+      my $ccflags = $+{ccflags};
+      while ($ccflags =~ m/-I\h*+([^\s]++)/g) {
+         my $include = $1;
+         if ($include =~ s!\A\$\(src(?:tree)?\)/!!) {
+            $include = catfile($kdir, $include);
+         }
+         push @includes, $include;
+      }
+   }
+
+   (\%struct, \@includes)
 }
 
 
