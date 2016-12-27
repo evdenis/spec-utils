@@ -58,6 +58,7 @@ dismember - программа для выборки из общего набо�
  Options:
   -k|--kernel dir      - директория с исходными кодами ядра
   -m|--module dir      - директория с исходными кодами модуля
+  --mname <name>       - имя модуля (например: fat, vfat, msdos)
   --config <file>      - использовать файл конфигурации file
   --plugin <name>      - загрузить плагин name
 
@@ -100,6 +101,10 @@ dismember - программа для выборки из общего набо�
 =item B<-k|--kernel dir>
 
 Указание на директорию, где расположены исходные коды ядра Linux. По умолчанию директория берётся из переменной окружения I<CURRENT_KERNEL> если она задана.
+
+=item B<--mname name>
+
+Иногда в директории --module находится несколько модулей. Это можно установить по Makefile. Например, в директории fs/fat/ находятся модули fat vfat msdos. Для того, чтобы указать какой конкретно использовать необходима эта опция. По умолчанию будет использоваться тот модуль, который состоит из большего количества *.c файлов.
 
 =item B<-f|--functions f1,f2 ...>
 
@@ -199,6 +204,7 @@ $config{merge}               = 0;
 $config{'remove-fields'}     = 0;
 $config{module}              = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}              = undef;
+$config{mname}               = undef;
 $config{'output-dir'}        = 'result';
 $config{'output-file'}       = undef;
 $config{editor}              = 0;
@@ -254,6 +260,7 @@ GetOptions(
    'functions|f=s{1,}'     =>  \@functions,
    'module|m=s'            =>  \$config{module},
    'kernel|k=s'            =>  \$config{kernel},
+   'mname=s'               =>  \$config{mname},
    'cache|c:2'             =>  \$cache,
    'renew-cache'           =>  \$renew_cache_and_exit,
    'single|s!'             =>  \$config{single},
@@ -436,7 +443,7 @@ goto CACHED_GRAPH
    if $cache == 2;
 
 ### PARSING SOURCES...
-my %sources = parse_sources($config{kernel}, $config{module},
+my %sources = parse_sources($config{kernel}, $config{module}, $config{mname},
                  ["#define SPECIFICATION 1\n"],
                  !$cache,
                  $config{fullkernel});

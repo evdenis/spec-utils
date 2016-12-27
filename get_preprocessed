@@ -38,6 +38,14 @@ package TS {
       documentation => 'module directory'
    );
 
+   option 'mname' => (
+      is         => 'ro',
+      isa        => 'Str',
+      required   => 0,
+      cmd_aliases => [qw(mn)],
+      documentation => 'module name (e.g. fat vfat msdos)'
+   );
+
    option 'strings' => (
       is         => 'ro',
       isa        => 'Bool',
@@ -76,7 +84,7 @@ package TS {
          unless -d $self->module;
 
       my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
-      my $source = ($func->($self->kernel, $self->module, ["#define SPECIFICATION 1\n"]))[1];
+      my $source = ($func->($self->kernel, $self->module, $self->mname, ["#define SPECIFICATION 1\n"]))[1];
 
       {
          my %param;

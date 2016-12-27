@@ -12,7 +12,8 @@ use C::FunctionSet;
 die "$0 path/to/the/db/file.db\n"
     unless $ARGV[0];
 
-my $res = prepare_module_sources($ENV{CURRENT_KERNEL}, $ENV{CURRENT_PROJECT}, ["#define SPECIFICATION 1\n"]);
+#kerneldir, moduledir, modulename
+my $res = prepare_module_sources($ENV{CURRENT_KERNEL}, $ENV{CURRENT_PROJECT}, undef, ["#define SPECIFICATION 1\n"]);
 my @c;
 adapt($$res, comments => \@c, macro => 1);
 my $parsed = C::FunctionSet->parse($res, 'module');

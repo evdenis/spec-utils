@@ -40,11 +40,13 @@ my %config_file = (status => find_config('status'), priority => find_config('pri
 my $output_file = undef;
 my $force = 0;
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
+my $exact_module = undef;
 
 GetOptions(
     "modified!"         => \$modified,
     "kernel|k=s"        => \$kernel,
     "module|m=s"        => \$module,
+    "mname=s"           => \$exact_module,
     "force!"            => \$force,
     "conf-status|status|s=s"     => \$config_file{status},
     "conf-priority|priority|p=s" => \$config_file{priority},
@@ -112,9 +114,9 @@ if ($output_format eq 'sqlite') {
 }
 ##END OF A PROGRAM
 
-sub get_preprocessed_sources($kernel, $module)
+sub get_preprocessed_sources($kernel, $module, $exact_module)
 {
-   my $source = (preprocess_module_sources($kernel, $module, ["#define SPECIFICATION 1\n"]))[1];
+   my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
    adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
    $$source
 }

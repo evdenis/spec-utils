@@ -36,10 +36,12 @@ my $module_dir;
 my $kernel_dir;
 my $direct   = 1;
 my $indirect = 1;
+my $exact_module = undef;
 
 GetOptions(
    'module|m=s'  => \$module_dir,
    'kernel|k=s'  => \$kernel_dir,
+   'mname=s'     => \$kernel_dir,
    'direct|d!'   => \$direct,
    'indirect|i!' => \$indirect,
 ) or die("Wrong usage.\n");
@@ -56,7 +58,7 @@ die("Nothing to search for.\n") if !$direct && !$indirect;
 Kernel::Module::Graph::init(reverse => 1);
 
 
-my $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, ["#define SPECIFICATION 1\n"]))[1];
+my $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
 adapt($$source, attributes => 1);
 
 #funcs init

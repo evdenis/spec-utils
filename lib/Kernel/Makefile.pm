@@ -47,7 +47,7 @@ sub get_modules_deps
    my %struct;
    foreach my $module (@modules) {
       while ( $$data =~ m/
-                           ${module}-(?:y|objs)
+                           \b${module}-(?:y|objs)
                            \h*+
                               [:+]?=
                            \h*+

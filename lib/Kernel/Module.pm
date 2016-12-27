@@ -75,11 +75,10 @@ FALLBACK:
 
 sub _get_module_data
 {
-   my $dir = shift;
-   my $kdir = shift;
+   my ($mdir, $kdir, $exact_module) = @_;
    my @kernel_includes;
-   my $headers = merge_headers($dir, \@kernel_includes);
-   my ($code, undef) = __get_module_folder_c_contents($dir, $kdir);
+   my $headers = merge_headers($mdir, \@kernel_includes);
+   my ($code, undef) = __get_module_folder_c_contents($mdir, $kdir, $exact_module);
 
    @kernel_includes = map {"#include <$_>"} @kernel_includes;
 
@@ -136,13 +135,13 @@ sub _preprocess_module_code
 
 sub _generic_handle_sources_sep
 {
-   my ($kernel_dir, $module_dir, $defines, $pr_handler) = @_;
+   my ($kernel_dir, $module_dir, $exact_module, $defines, $pr_handler) = @_;
    my ($kernel_code, $kernel_macro,
        $module_code, $module_macro);
 
    {
       my $kernel_includes;
-      ($module_code, $kernel_includes) = _get_module_data($module_dir, $kernel_dir);
+      ($module_code, $kernel_includes) = _get_module_data($module_dir, $kernel_dir, $exact_module);
       ($kernel_code, $kernel_macro)    = _get_kernel_data($kernel_dir, $kernel_includes);
    }
 
@@ -163,12 +162,12 @@ sub preprocess_module_sources_sep
 
 sub _generic_handle_sources
 {
-   my ($kdir, $mdir, $defines, $func) = @_;
+   my ($kdir, $mdir, $exact_module, $defines, $func) = @_;
 
    $kdir = realpath $kdir;
    $mdir = realpath $mdir;
 
-   my ($code, $includes) = __get_module_folder_c_contents($mdir, $kdir);
+   my ($code, $includes) = __get_module_folder_c_contents($mdir, $kdir, $exact_module);
 
    my %include_dirs;
    foreach(find_headers($mdir)) {
