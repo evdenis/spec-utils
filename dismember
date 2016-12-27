@@ -447,6 +447,8 @@ my %sources = parse_sources($config{kernel}, $config{module}, $config{mname},
                  ["#define SPECIFICATION 1\n"],
                  !$cache,
                  $config{fullkernel});
+die "Can't find functions in module files\n"
+    unless $sources{module}{function};
 
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $cache, file => $cache_file[1]}});
