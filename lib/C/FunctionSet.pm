@@ -31,13 +31,14 @@ sub parse
    my $area = $_[1];
    my %functions;
 
-   my $ret  = qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
-   my $name = qr/(?<name>$varname)/;
-   my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-   my $body = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
+   my $ret   = qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
+   my $name  = qr/(?<name>$varname)/;
+   my $attrs = qr/(?:${s}*+(?:__releases|__acquires)${s}*+\([^)]++\))*+/;
+   my $args  = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+   my $body  = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
    
    #get list of all module functions
-   while ( ${$_[0]} =~ m/$ret${s}*+\b$name${s}*+$args${s}*+$body/gp ) {
+   while ( ${$_[0]} =~ m/${ret}${s}*+\b${name}${s}*+${args}${s}*+${attrs}?${s}*+${body}/gp ) {
       my ($ret, $name, $args, $fbody) = @+{qw/ret name args fbody/};
       my $code = ${^MATCH};
       my $decl = normalize(filter_dup("${ret} ${name}${args};"));
