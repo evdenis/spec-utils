@@ -81,6 +81,8 @@ sub parse
                         |
                         (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
                         |
+                        (?:\b__(?:late_)?initcall\b${s}*+\([^)]++\)${s}*+;)
+                        |
                         (?:\bmodule_param\b${s}*+\([^\)]++\)${s}*+;)
                         |
                         (?:\b__setup\b${s}*+\([^)]++\)${s}*+;)
