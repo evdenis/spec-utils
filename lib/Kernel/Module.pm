@@ -61,12 +61,16 @@ sub __get_module_folder_c_contents
             croak("Can't find module $mod in Makefile.\n")
                unless exists $files->{$mod};
          }
-         $code = merge(uniq @{$files->{$mod}})
+         my @cfiles = @{$files->{$mod}};
+         goto FALLBACK
+             unless @cfiles;
+         $code = merge(uniq @cfiles);
       } else {
          goto FALLBACK
       }
    } else {
 FALLBACK:
+      warn "Can't find or parse module Makefile. Will use all *.c files.\n";
       $code = merge_sources($_[0])
    }
 
