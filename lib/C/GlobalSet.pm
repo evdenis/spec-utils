@@ -67,7 +67,21 @@ sub parse
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
    my $complex_type   = qr/(?>struct|union|enum)(*SKIP)${s}++${type}/;
 
-   while (${$_[0]} =~ m/(?:${sbody})(*SKIP)(*FAIL)
+   while (${$_[0]} =~ m/TRACE_EVENT\s*+${fargs}\s*+;(*SKIP)(*FAIL)
+                        |
+                        (?<type>\bFAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                        |
+                        (?:\bEXPORT_SYMBOL(?:_GPL)?\b${s}*+\([^)]++\)${s}*+;)
+                        |
+                        (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
+                        |
+                        (?:\b__(?:late_)?initcall\b${s}*+\([^)]++\)${s}*+;)
+                        |
+                        (?:\bmodule_param\b${s}*+\([^\)]++\)${s}*+;)
+                        |
+                        (?:\b__setup\b${s}*+\([^)]++\)${s}*+;)
+                        |
+                        (?:${sbody})(*SKIP)(*FAIL)
                         |
                         (?>
                            (?<modifiers>(?:(?:const|volatile|register|static|extern|(?<td>typedef))${s}++)*+)
@@ -96,18 +110,6 @@ sub parse
                            )
                         )(*SKIP)
                         ${s}*+;
-                        |
-                        (?<type>\bFAT_IOCTL_FILLDIR_FUNC)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
-                        |
-                        (?:\bEXPORT_SYMBOL(?:_GPL)?\b${s}*+\([^)]++\)${s}*+;)
-                        |
-                        (?:\bmodule_(?:init|exit)\b${s}*+\([^)]++\))
-                        |
-                        (?:\b__(?:late_)?initcall\b${s}*+\([^)]++\)${s}*+;)
-                        |
-                        (?:\bmodule_param\b${s}*+\([^\)]++\)${s}*+;)
-                        |
-                        (?:\b__setup\b${s}*+\([^)]++\)${s}*+;)
                      /gxp) {
          if (!exists $+{td}) {
             my $mname     = $+{name} // '';
