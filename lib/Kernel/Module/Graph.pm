@@ -223,7 +223,9 @@ RECHECK:
                         }
                      } else {
                         if ($old->initialized && $new->initialized) {
-                           die "Globals duplicate with initialization: $_\n";
+                           if ($old->initializer ne $new->initializer) {
+                              die "Globals duplicate with different initialization: $_\n";
+                           }
                         }
                         if (($new->initialized && !$old->initialized)
                             || (!$new->extern && $old->extern)) {

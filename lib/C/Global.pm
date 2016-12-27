@@ -1,5 +1,6 @@
 package C::Global;
 use Moose;
+use C::Util::Transformation qw(:RE);
 use namespace::autoclean;
 
 extends 'C::Entity';
@@ -9,6 +10,13 @@ has 'initialized' => (
    isa     => 'Bool',
    lazy    => 1,
    builder => '_build_initialized'
+);
+
+has 'initializer' => (
+   is      => 'ro',
+   isa     => 'Str',
+   lazy    => 1,
+   builder => '_build_initializer'
 );
 
 has 'type' => (
@@ -33,6 +41,13 @@ has 'extern' => (
 sub _build_initialized
 {
    index($_[0]->code, '=') != -1
+}
+
+sub _build_initializer
+{
+   my $str = substr($_[0]->code, index($_[0]->code, '=') + 1);
+   $str =~ m/${s}*+(.*?)${s}*+;/;
+   return $1;
 }
 
 sub to_string
