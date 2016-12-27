@@ -24,6 +24,26 @@ my %type_alias = (
     DECLARE_DELAYED_WORK    => 'struct delayed_work',
     DECLARE_DEFERRABLE_WORK => 'struct delayed_work',
     LIST_HEAD               => 'struct list_head',
+    GFS2_ATTR               => {
+        modifier => 'static',
+        type     => 'struct gfs2_attr',
+        name     => sub {'gfs2_attr_' . $_[0]}
+    },
+    GDLM_ATTR               => {
+        modifier => 'static',
+        type     => 'struct gfs2_attr',
+        name     => sub {'gdlm_attr_' . $_[0]}
+    },
+    TUNE_ATTR_3             => {
+        modifier => 'static',
+        type     => 'struct gfs2_attr',
+        name     => sub {'tune_attr_' . $_[0]}
+    },
+    TUNE_ATTR               => {
+        modifier => 'static',
+        type     => 'struct gfs2_attr',
+        name     => sub {'tune_attr_' . $_[0]}
+    },
 );
 
 sub parse
@@ -66,6 +86,8 @@ sub parse
                               |
                               (?<type>\bFULL_PROXY_FUNC)${s}*+\(${s}*+${name}${s}*+(?:[^(]++\([^)]++\)){2}${s}*+\)
                               |
+                              (?<type>\b(?:GFS2|GDLM|TUNE)_ATTR(?:_[123])?)${s}*+\(${s}*+${name}${s}*+[^)]++\)
+                              |
                               (?:\bMODULE_(?:LICENSE|AUTHOR|DESCRIPTION|VERSION|PARM_DESC)\b${s}*+\([^)]++\))
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
@@ -101,7 +123,21 @@ sub parse
                   $mname = 'full_proxy_' . $mname
                }
                if (exists $type_alias{$mtype}) {
-                  $mtype = $type_alias{$mtype}
+                  if (ref $type_alias{$mtype} eq 'HASH') {
+                     if (exists $type_alias{$mtype}{modifier}) {
+                        $mmodifier = $type_alias{$mtype}{modifier}
+                     }
+                     if (exists $type_alias{$mtype}{name}) {
+                        $mname = $type_alias{$mtype}{name}->($mname)
+                     }
+
+                     # LAST
+                     if (exists $type_alias{$mtype}{type}) {
+                        $mtype = $type_alias{$mtype}{type}
+                     }
+                  } else {
+                     $mtype = $type_alias{$mtype}
+                  }
                }
             }
 
