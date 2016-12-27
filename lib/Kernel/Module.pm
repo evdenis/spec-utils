@@ -8,6 +8,7 @@ use re '/aa';
 use Exporter qw(import);
 use File::Spec::Functions qw(splitpath catfile);
 use Cwd qw(realpath);
+use Carp qw(croak);
 
 use File::C::Merge qw(merge_headers merge_sources find_headers);
 use File::Merge qw(merge);
@@ -41,15 +42,26 @@ our @EXPORT_OK = qw(prepare_module_sources_sep preprocess_module_sources_sep pre
 
 sub __get_module_folder_c_contents
 {
+   my ($mdir, $kdir, $exact_module) = @_;
    my $code;
-   my $makefile = catfile $_[0], 'Makefile';
+   my $makefile = catfile $mdir, 'Makefile';
    my $includes = [];
 
    if (-r $makefile) {
       my $files;
-      ($files, $includes) = get_modules_deps($makefile, $_[1]);
+      ($files, $includes) = get_modules_deps($makefile, $kdir);
       if (%$files) {
-         $code = merge(uniq map {@{$_}} values %$files) # Just use them all
+         my $mod;
+         unless ($exact_module) {
+            my @modules = reverse sort {@{$files->{$a}} <=> @{$files->{$b}}} keys %$files;
+            $mod = $modules[0];
+         } else {
+            $mod = $exact_module;
+
+            croak("Can't find module $mod in Makefile.\n")
+               unless exists $files->{$mod};
+         }
+         $code = merge(uniq @{$files->{$mod}})
       } else {
          goto FALLBACK
       }
