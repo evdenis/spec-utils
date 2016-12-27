@@ -16,7 +16,6 @@ has '+set' => (
 );
 
 
-#FIXME: check for duplicates?
 sub parse
 {
    my $self = shift;
@@ -46,7 +45,7 @@ sub parse
       my $ename = $+{ename};
       my $id = $ename || norm(substr($code,0,256));
 
-      if (exists $enums{$id} && (norm($enums{$id}{code}) ne norm($id))) {
+      if (exists $enums{$id} && (norm($enums{$id}{code}) ne norm($code))) {
          warn "Redefinition of enum " . ($ename ? $ename : $id) . "\n";
       }
       $enums{$id} = { name => $ename, code => $code };
