@@ -81,7 +81,7 @@ sub get_modules_deps
       my $ccflags = $+{ccflags};
       while ($ccflags =~ m/-I\h*+([^\s]++)/g) {
          my $include = $1;
-         if ($include =~ s!\A\$\(src(?:tree)?\)/!!) {
+         if ($include =~ s!\A\$\(src(?:tree)?\)/?!!) {
             $include = catfile($kdir, $include);
          }
          push @includes, $include;
