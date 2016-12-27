@@ -59,7 +59,7 @@ sub parse
    my $init           = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/; # requires strings to be previously hided
    my $ptr            = qr/(\*|${s}++|const)*+/;
    my $standard_type  = qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
-   my $common_typedef = qr/(?>size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
+   my $common_typedef = qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
    my $simple_type    = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
    my $optional_init  = qr/(?:\h*+__initdata)?${init}?/;
