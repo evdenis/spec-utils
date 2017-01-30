@@ -1,0 +1,118 @@
+#!/usr/bin/env perl
+
+use v5.20;
+use feature qw/say signatures state/;
+use strict;
+use warnings;
+no warnings qw/experimental::signatures/;
+
+use utf8::all;
+use File::Temp qw/tempdir/;
+use YAML::XS qw/LoadFile/;
+use Getopt::Long;
+use File::Slurp qw/write_file/;
+use JSON;
+
+use lib::abs 'lib';
+use Local::List::Util qw/uniq/;
+use C::FunctionSet;
+use Kernel::Module::Graph qw/build_sources_graph/;
+use Kernel::Module qw/preprocess_module_sources/;
+use C::Util::Transformation;
+use Local::Config qw/find_config load_config merge_config_keys/;
+use Local::Config::Format qw/check_priority_format check_status_format/;
+
+
+my %config_file = (status => find_config('status'), priority => find_config('priority'));
+my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
+my $exact_module = undef;
+
+GetOptions(
+    "kernel|k=s"        => \$kernel,
+    "module|m=s"        => \$module,
+    "mname=s"           => \$exact_module,
+    "conf-status|status|s=s"     => \$config_file{status},
+    "conf-priority|priority|p=s" => \$config_file{priority},
+) or die("Error in command line arguments\n");
+
+die "Please, provide valid path to kernel.\n"
+    unless -d $kernel;
+die "Please, provide valid path to module.\n"
+    unless -d $module;
+
+my $conf_status = load_config($config_file{status});
+die( "Can't read status config file.\n" )
+    unless $conf_status;
+die("Wrong file format.\n")
+    unless check_status_format($conf_status);
+
+my $conf_priority = load_config($config_file{priority});
+die("Can't read priority config file.\n")
+    unless $conf_priority;
+die("Wrong file format.\n")
+    unless check_priority_format($conf_priority);
+my $config;
+merge_config_keys $config, $conf_status;
+merge_config_keys $config, $conf_priority;
+
+#BEGIN OF A PROGRAM
+my $preprocessed = get_preprocessed_sources($kernel, $module, $exact_module);
+
+#Initializing the library
+Kernel::Module::Graph::init(human_readable => 1);
+
+my $graph = build_graph($preprocessed);
+$graph = mark_priorities($graph, $config);
+my $prio = get_priorities($graph);
+print encode_json($prio);
+##END OF A PROGRAM
+
+sub get_preprocessed_sources($kernel, $module, $exact_module)
+{
+   my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
+   adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
+   $$source
+}
+
+# args $_[0] - preprocessed file
+sub build_graph
+{
+   my %sources;
+   $sources{module}{function} = C::FunctionSet->parse(\$_[0], 'module');
+
+   build_sources_graph(\%sources);
+}
+
+sub mark_priorities($graph, $config)
+{
+   while ( my ($i, $list) = each @{ $config->{priority}{lists} } ) {
+      foreach (uniq @$list) {
+         if ($graph->has_vertex($_)) {
+            unless ($graph->has_vertex_attribute($_, 'priority')) {
+               $graph->set_vertex_attribute($_, priority => $i + 1);
+            }
+            foreach ($graph->all_predecessors($_)) {
+               unless ($graph->has_vertex_attribute($_, 'priority')) {
+                  $graph->set_vertex_attribute($_, priority => $i + 1);
+               }
+            }
+         } else {
+            warn "Priority list: there is no such function '$_' in sources.\n"
+         }
+      }
+   }
+
+   $graph
+}
+
+sub get_priorities($graph)
+{
+   my %hash;
+   foreach ($graph->vertices) {
+      my $prio = $graph->get_vertex_attribute($_, 'priority') || 'other';
+      push @{$hash{$prio}}, $_;
+   }
+
+   \%hash
+}
+
