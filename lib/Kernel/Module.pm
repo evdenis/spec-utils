@@ -7,6 +7,7 @@ use re '/aa';
 
 use Exporter qw(import);
 use File::Spec::Functions qw(splitpath catfile);
+use File::Slurp qw(read_file);
 use Cwd qw(realpath);
 use Carp qw(croak);
 
@@ -44,34 +45,40 @@ sub __get_module_folder_c_contents
 {
    my ($mdir, $kdir, $exact_module) = @_;
    my $code;
-   my $makefile = catfile $mdir, 'Makefile';
    my $includes = [];
 
-   if (-r $makefile) {
-      my $files;
-      ($files, $includes) = get_modules_deps($makefile, $kdir);
-      if (%$files) {
-         my $mod;
-         unless ($exact_module) {
-            my @modules = reverse sort {@{$files->{$a}} <=> @{$files->{$b}}} keys %$files;
-            $mod = $modules[0];
-         } else {
-            $mod = $exact_module;
+   if (-f $mdir) {
+      $code = read_file($mdir);
+   } elsif(-d $mdir) {
+      my $makefile = catfile $mdir, 'Makefile';
+      if (-r $makefile) {
+         my $files;
+         ($files, $includes) = get_modules_deps($makefile, $kdir);
+         if (%$files) {
+            my $mod;
+            unless ($exact_module) {
+               my @modules = reverse sort {@{$files->{$a}} <=> @{$files->{$b}}} keys %$files;
+               $mod = $modules[0];
+            } else {
+               $mod = $exact_module;
 
-            croak("Can't find module $mod in Makefile.\n")
-               unless exists $files->{$mod};
+               croak("Can't find module $mod in Makefile.\n")
+                  unless exists $files->{$mod};
+            }
+            my @cfiles = @{$files->{$mod}};
+            goto FALLBACK
+                unless @cfiles;
+            $code = merge(uniq @cfiles);
+         } else {
+            goto FALLBACK
          }
-         my @cfiles = @{$files->{$mod}};
-         goto FALLBACK
-             unless @cfiles;
-         $code = merge(uniq @cfiles);
       } else {
-         goto FALLBACK
+FALLBACK:
+         warn "Can't find or parse module Makefile. Will use all *.c files.\n";
+         $code = merge_sources($_[0])
       }
    } else {
-FALLBACK:
-      warn "Can't find or parse module Makefile. Will use all *.c files.\n";
-      $code = merge_sources($_[0])
+      croak "$mdir is not a file or a directory.";
    }
 
    (\$code, $includes)

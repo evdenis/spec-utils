@@ -312,8 +312,6 @@ if ($list_plugins) {
 
 $config{kernel} //= autodetect_kernel_directory();
 
-pod2usage({ -msg => "$config{module} is not a directory.\n", -exitval => 2 })
-    unless -d $config{module};
 pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
     unless check_kernel_dir($config{kernel});
 
