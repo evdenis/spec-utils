@@ -19,6 +19,7 @@ use Try::Tiny;
 use YAML::XS qw(LoadFile);
 use Cwd qw(realpath);
 use Scalar::Util qw(blessed);
+use File::Path qw(make_path);
 
 use FindBin;
 use lib::abs 'lib';
@@ -406,7 +407,7 @@ if ($config{done}) {
 
 sub create_directory
 {
-   unless (mkdir($_[0])) {
+   unless (make_path($_[0])) {
       unless (-e $_[0]) {
          warn("Can't create directory $_[0]: $!\n");
          return 1
