@@ -593,6 +593,7 @@ sub get_isolated_subgraph
 sub _write_to_files
 {
    my ($output_dir, $output_file, $single_file, $content, $call) = @_;
+   my @files;
 
    $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r
       foreach keys %out_file;
@@ -624,7 +625,8 @@ sub _write_to_files
                  join("\n" . '//' . '-' x 78 . "\n\n",
                     map { $content->{$_} || () } @out_order
                  )
-      )
+      );
+      push @files, $out_file{module_c};
    } else {
 
       warn "Can't write result to a single file $output_file. Will use default scheme with 4 files.\n"
@@ -677,10 +679,14 @@ sub _write_to_files
                output     => $content );
 
       foreach (keys %out_file) {
-         write_file($out_file{$_}, $content->{$_})
-            unless $blank{$_};
+         unless ($blank{$_}) {
+            write_file($out_file{$_}, $content->{$_});
+            push @files, $out_file{$_};
+         }
       }
    }
+
+   @files;
 }
 
 
