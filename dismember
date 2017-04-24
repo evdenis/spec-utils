@@ -284,6 +284,7 @@ $config{plugin} = [ split(/,/, join(',', @{$config{plugin}})) ];
 push @{$config{plugin}}, @args_plugins;
 
 if ($config{'output-file'}) {
+   print "--output-file (-o) option forces --single and --merge options.\n";
    $config{single} = 1;
    $config{merge}  = 1;
    (undef, $config{'output-dir'}, $config{'output-file'}) =
