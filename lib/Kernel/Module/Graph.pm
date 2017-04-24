@@ -601,7 +601,7 @@ sub _write_to_files
    $out_file{module_c} = catfile $output_dir, $out_file{module_c}
       if $output_dir;
 
-   if ($single_file) {
+   if ($single_file == 1) {
 
       $out_file{module_h} = '';
       $out_file{kernel_h} = '';
@@ -626,6 +626,60 @@ sub _write_to_files
                     map { $content->{$_} || () } @out_order
                  )
       );
+      push @files, $out_file{module_c};
+   } elsif ($single_file == 2) {
+
+      $out_file{kernel_h} = '';
+      $out_file{extern_h} = '';
+
+      my $output_h_file = $out_file{module_h};
+      if ($output_file) {
+         $out_file{module_c} = catfile $output_dir, $output_file;
+         unless ($output_h_file = $output_file =~ s/\.c$/.h/r) {
+            $output_h_file = "${output_file}.h";
+         }
+      }
+
+      $call->( level      => 'raw_data',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
+      my %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
+
+      if (!$blank{kernel_h} || !$blank{module_h} || !$blank{extern_h}) {
+         $content->{module_h} =
+            join("\n" . '//' . '-' x 78 . "\n\n",
+                 map { $blank{$_} ? () : $content->{$_} } grep {m/_h$/} @out_order
+         );
+         $content->{kernel_h} = undef;
+         $content->{extern_h} = undef;
+
+         my $define = uc($output_h_file);
+         $define = $define =~ s/[^\w]/_/gr;
+         $define = '__' . $define . '__';
+         $content->{module_h} =
+            qq(#ifndef $define\n#define $define\n\n) .
+            $content->{module_h} .
+            qq(\n\n#endif // $define);
+
+         $content->{module_c} =
+            qq(#include "$output_h_file"\n\n) .
+            $content->{module_c};
+
+         $out_file{module_h} = catfile $output_dir, $output_h_file
+            if $output_dir;
+      }
+
+      $call->( level      => 'pre_output',
+               files      => \%out_file,
+               output_dir => $output_dir,
+               output     => $content );
+
+      if ($content->{module_h}) {
+         write_file($out_file{module_h}, $content->{module_h});
+         push @files, $out_file{module_h};
+      }
+      write_file($out_file{module_c}, $content->{module_c});
       push @files, $out_file{module_c};
    } else {
 
@@ -677,6 +731,8 @@ sub _write_to_files
                files      => \%out_file,
                output_dir => $output_dir,
                output     => $content );
+      # update
+      %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
 
       foreach (keys %out_file) {
          unless ($blank{$_}) {
