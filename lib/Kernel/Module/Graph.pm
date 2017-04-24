@@ -622,7 +622,7 @@ sub _write_to_files
 
       write_file($out_file{module_c},
                  join("\n" . '//' . '-' x 78 . "\n\n",
-                    map { $content->{$_} } @out_order
+                    map { $content->{$_} || () } @out_order
                  )
       )
    } else {
@@ -634,22 +634,36 @@ sub _write_to_files
                files      => \%out_file,
                output_dir => $output_dir,
                output     => $content );
+      my %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
 
+      unless ($blank{kernel_h}) {
+         $content->{kernel_h} =
+            qq(#ifndef __KERNEL_H__\n#define __KERNEL_H__\n\n) .
+            $content->{kernel_h} .
+            qq(\n\n#endif // __KERNEL_H__);
+      }
+      unless ($blank{extern_h}) {
+         $content->{extern_h} =
+            qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n) .
+            ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n\n)) .
+            $content->{extern_h} .
+            qq(\n\n#endif // __EXTERN_H__);
+      }
+      unless ($blank{module_h}) {
+         $content->{module_h} =
+            qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n) .
+            ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n)) .
+            ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n)) .
+            "\n" .
+            $content->{module_h} .
+            qq(\n\n#endif // __MODULE_H__);
+      }
       $content->{module_c} =
-         qq(#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n#include "$out_file{module_h}"\n\n) .
+         ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n)) .
+         ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n)) .
+         ($blank{module_h} ? '' : qq(#include "$out_file{module_h}"\n)) .
+         "\n" .
          $content->{module_c};
-      $content->{module_h} =
-         qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n#include "$out_file{kernel_h}"\n#include "$out_file{extern_h}"\n\n) .
-         $content->{module_h} .
-         qq(\n\n#endif // __MODULE_H__);
-      $content->{extern_h} =
-         qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n#include "$out_file{kernel_h}"\n\n) .
-         $content->{extern_h} .
-         qq(\n\n#endif // __EXTERN_H__);
-      $content->{kernel_h} =
-         qq(#ifndef __KERNEL_H__\n#define __KERNEL_H__\n\n) .
-         $content->{kernel_h} .
-         qq(\n\n#endif // __KERNEL_H__);
 
       if ($output_dir) {
          $out_file{module_h} = catfile $output_dir, $out_file{module_h};
@@ -662,8 +676,10 @@ sub _write_to_files
                output_dir => $output_dir,
                output     => $content );
 
-      write_file($out_file{$_}, $content->{$_})
-         foreach keys %out_file;
+      foreach (keys %out_file) {
+         write_file($out_file{$_}, $content->{$_})
+            unless $blank{$_};
+      }
    }
 }
 
