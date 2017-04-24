@@ -405,6 +405,13 @@ if ($config{done}) {
    push @functions, uniq @{$conf->{done}};
 }
 
+if ($#functions == 0 &&
+    $config{single}  &&
+    !defined($config{'output-file'})) {
+   my $out = "$functions[0].c";
+   print "Generation output file name: $out\n";
+   $config{'output-file'} = $out;
+}
 
 sub create_directory
 {
@@ -677,11 +684,16 @@ sub generate_files
    }
 }
 
+#FIXME: wrong logic
 if ($config{editor}) {
    if (which($ENV{EDITOR})) {
       my @exec = ($ENV{EDITOR});
-      foreach (@functions) {
-         push @exec, catfile($config{'output-dir'}, $_, 'module.c')
+      if ($config{single}) {
+         push @exec, catfile($config{'output-dir'}, $config{'output-file'} // ($_, 'module.c'));
+      } else {
+         foreach (@functions) {
+            push @exec, catfile($config{'output-dir'}, $_, 'module.c')
+         }
       }
 
       if ($#exec > 0) {
