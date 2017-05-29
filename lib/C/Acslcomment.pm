@@ -35,6 +35,14 @@ has 'function_spec' => (
    init_arg => undef
 );
 
+has 'number_of_lines' => (
+   isa => 'Int',
+   is => 'ro',
+   lazy => 1,
+   builder => '_count_lines',
+   init_arg => undef
+);
+
 sub _build_code_ids
 {
    #logic
@@ -59,6 +67,11 @@ sub _build_code_ids
    }
 
    \@ids;
+}
+
+sub _count_lines
+{
+   scalar $_[0]->code =~ tr/\n// + 1;
 }
 
 sub get_code_tags
