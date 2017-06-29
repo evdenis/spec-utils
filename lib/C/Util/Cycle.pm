@@ -169,6 +169,18 @@ sub resolve_typedef_typedef
    0
 }
 
+sub resolve_function_macro
+{
+   my ($graph, @obj) = @_;
+   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+   1
+}
+
+sub resolve_macro_function
+{
+   0
+}
+
 sub resolve_function_global
 {
    0
