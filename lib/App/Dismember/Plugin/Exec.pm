@@ -79,7 +79,7 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{'dir'};
+      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
 
    my $pid = fork();
    die "FAIL: can't fork $!"
@@ -92,6 +92,8 @@ sub action
             $args{'--' . $_} = $opts->{$_}
          }
       }
+      my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
+      $args{'--file'} = $cfile;
       print "EXEC: $self->{file} @{[%args]}\n";
 
       open (STDIN,  '</dev/null');
