@@ -73,22 +73,24 @@ sub resolve_function_function
    if ($redge) { # Если есть обратная дуга
       if ($spec_edge) {
          # Можно без проблем разъединить, но не будет выводиться последней
-         #$graph->delete_edge(@ids);
-         #return 1;
-         return 0;
+         $graph->delete_edge(@ids);
+         return 1;
       } else {  # Если это не спецификационная связь
          if (!$rspec_edge) { # Если обратная не спецификационная
             $obj[1]->add_fw_decl($obj[0]->declaration);
             $graph->delete_edge(@ids);
          } else {
-            $obj[0]->add_fw_decl($obj[1]->declaration);
-            $graph->delete_edge(@ids);
+            # обратная спецификационная
+            $graph->delete_edge(@rids);
          }
          return 1;
       }
    } else {
       if (!$spec_edge) { # Можно разорвать если цикл
          $obj[1]->add_fw_decl($obj[0]->declaration);
+         $graph->delete_edge(@ids);
+         return 1;
+      } else {
          $graph->delete_edge(@ids);
          return 1;
       }
