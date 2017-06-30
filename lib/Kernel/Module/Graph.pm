@@ -436,26 +436,24 @@ sub build_sources_graph
 
       $graph = Graph::Directed->new();
 
-      __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
-
-      $graph = _form_graph($graph, $index,
-         _dependencies_graph_iterator_kernel($sources)
-      );
-
       store([ $index, $graph, $C::Entity::_NEXT_ID, $vname, $_orderp ], $opts->{cache}{file})
          if $opts->{cache}{file};
    }
 
    $index = _update_ids_index($index,
-               _dependencies_graph_iterator_module($sources)
-            );
+       _dependencies_graph_iterator_module($sources)
+   );
 
    __add_vertices($graph, _dependencies_graph_iterator_module($sources));
-
+   __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
 
    $graph = _form_graph($graph, $index,
-               _dependencies_graph_iterator_module($sources)
-            );
+       _dependencies_graph_iterator_kernel($sources)
+   );
+
+   $graph = _form_graph($graph, $index,
+      _dependencies_graph_iterator_module($sources)
+   );
 
    # ACSL handling specs to functions edge
    if ($sources->{module}{acslcomment}) {
@@ -1004,6 +1002,10 @@ digraph g
       module_declaration -> module_macro;
       module_declaration -> module_global;
       module_declaration -> module_function;
+
+      module_declaration -> kernel_macro;
+      module_declaration -> kernel_global;
+      module_declaration -> kernel_function;
 
       module_typedef -> module_macro;
       module_typedef -> module_structure;
