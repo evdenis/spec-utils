@@ -423,20 +423,21 @@ sub build_sources_graph
    my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
 
    my $index;
-   my $graph;
    if ($opts->{cache}{use}) {
       my ($hr, $rev);
-      ($index, $graph, $C::Entity::_NEXT_ID, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
+      my ($k, $ks);
+      ($index, $k, $ks, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
       die("Internal error. Corrupted cache.\n")
          unless $hr eq $vname && $rev == $_orderp;
+
+      $sources->{kernel} = $k;
+      $sources->{kernel_strings} = $ks;
    } else {
       $index = _update_ids_index({},
                   _dependencies_graph_iterator_kernel($sources)
                );
 
-      $graph = Graph::Directed->new();
-
-      store([ $index, $graph, $C::Entity::_NEXT_ID, $vname, $_orderp ], $opts->{cache}{file})
+      store([ $index, $sources->{kernel}, $sources->{kernel_strings}, $vname, $_orderp ], $opts->{cache}{file})
          if $opts->{cache}{file};
    }
 
@@ -444,8 +445,9 @@ sub build_sources_graph
        _dependencies_graph_iterator_module($sources)
    );
 
-   __add_vertices($graph, _dependencies_graph_iterator_module($sources));
+   my $graph = Graph::Directed->new();
    __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
+   __add_vertices($graph, _dependencies_graph_iterator_module($sources));
 
    $graph = _form_graph($graph, $index,
        _dependencies_graph_iterator_kernel($sources)
