@@ -12,6 +12,18 @@ use re '/aa';
 
 extends 'C::Entity';
 
+has 'spec_ids' => (
+   isa => 'ArrayRef[Int]',
+   is => 'ro',
+   lazy => 1,
+   init_arg => undef,
+   builder => '_build_specs'
+);
+
+sub _build_specs
+{
+   [ $_[0]->code =~ m/$comment_t{pattern}/g ]
+}
 
 sub get_code_tags
 {

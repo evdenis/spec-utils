@@ -460,7 +460,7 @@ sub build_sources_graph
    # ACSL handling specs to functions edge
    if ($sources->{module}{acslcomment}) {
       my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
-      foreach (@{ $sources->{module}{function}->set }) {
+      foreach (@{ $sources->{module}{function}->set }, @{ $sources->{module}{declaration}->set }) {
          foreach my $id (@{ $_->spec_ids }) {
             if (exists $spec_index{$id}) {
                $spec_index{$id}->function_spec($_->id);
