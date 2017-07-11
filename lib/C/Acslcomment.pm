@@ -55,7 +55,7 @@ sub _build_code_ids
    my @ids = $code =~ m/(?|
                            (?:predicate\s++($varname))|
                            (?:type\s++($varname))|
-                           (?:logic[\w\s\*]+\b($varname)\s*+[(={])
+                           (?:logic[\wℤ𝔹\s\*]+\b($varname)\s*+[(={])
                         )/gx;
 
    if ((my $i = index($code, 'ghost')) != -1) {
