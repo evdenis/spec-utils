@@ -829,7 +829,7 @@ sub output_sources_graph
                $content = $out{kernel_h}
             }
          } else {
-            if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration') {
+            if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration' || $t eq 'C::Acslcomment') {
                $content = $out{module_c}
             } elsif ($t eq 'C::Macro') {
                $content = $out{module_macro}
