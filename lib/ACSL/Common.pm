@@ -7,10 +7,15 @@ use re '/aa';
 
 use Exporter qw(import);
 
-use RE::Common qw($acsl_varname);
+use RE::Common qw($acsl_varname $acsl_contract $acsl_invariant $acsl_assert);
 use C::Keywords qw(%c_keywords_filter not_special_label);
 
-our @EXPORT_OK = qw(is_acsl_spec prepare_tags);
+our @EXPORT_OK = qw(is_acsl_spec
+                    is_contract
+                    is_invariant
+                    is_assert
+                    can_detach_specification
+                    prepare_tags);
 
 sub is_acsl_spec ($)
 {
@@ -93,6 +98,26 @@ sub is_acsl_keyword
    }
 
    $r
+}
+
+sub is_contract
+{
+   $_[0] =~ $acsl_contract
+}
+
+sub is_invariant
+{
+   $_[0] =~ $acsl_invariant
+}
+
+sub is_assert
+{
+   $_[0] =~ $acsl_assert
+}
+
+sub can_detach_specification
+{
+   return !(is_contract($_[0]) || is_assert($_[0]) || is_invariant($_[0]));
 }
 
 sub prepare_tags

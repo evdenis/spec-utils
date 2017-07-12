@@ -14,6 +14,7 @@ use File::Slurp qw(write_file);
 use Storable qw(store retrieve dclone);
 use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
+use ACSL::Common qw(can_detach_specification);
 
 use Local::List::Util qw(any);
 use C::Util::Transformation qw(restore);
@@ -463,8 +464,12 @@ sub build_sources_graph
       foreach (@{ $sources->{module}{function}->set }, @{ $sources->{module}{declaration}->set }) {
          foreach my $id (@{ $_->spec_ids }) {
             if (exists $spec_index{$id}) {
-               $spec_index{$id}->function_spec($_->id);
-               $graph->add_edge($spec_index{$id}->id, $_->id);
+               unless (can_detach_specification($spec_index{$id}->code)) {
+                  $spec_index{$id}->function_spec($_->id);
+                  $graph->add_edge($spec_index{$id}->id, $_->id);
+               } else {
+                  $_->detach_specification($id);
+               }
             }
          }
       }

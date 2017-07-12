@@ -14,7 +14,7 @@ extends 'C::Entity';
 
 has 'spec_ids' => (
    isa => 'ArrayRef[Int]',
-   is => 'ro',
+   is => 'rw',
    lazy => 1,
    init_arg => undef,
    builder => '_build_specs'
@@ -62,6 +62,19 @@ sub add_spec
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
    undef
+}
+
+sub detach_specification
+{
+   my $code = $_[0]->code;
+   my $spec_id = $_[1];
+   $code =~ s/\Q$comment_t{L}\E${spec_id}\Q$comment_t{R}\E\s*+//;
+   $_[0]->code($code);
+
+   # remove id from spec_ids
+   my @ids = @{ $_[0]->spec_ids };
+   @ids = grep { $_ != $spec_id } @ids;
+   $_[0]->spec_ids(\@ids);
 }
 
 sub to_string
