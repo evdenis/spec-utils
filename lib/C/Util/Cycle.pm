@@ -145,6 +145,18 @@ sub resolve_typedef_structure
    0
 }
 
+sub resolve_function_declaration
+{
+   my ($graph, @obj) = @_;
+   $graph->delete_edge($obj[0]->id, $obj[1]->id); # specification edge
+   1
+}
+
+sub resolve_declaration_macro
+{
+   0
+}
+
 sub resolve_typedef_typedef
 {
    my (undef, @obj) = @_;
