@@ -68,7 +68,7 @@ sub add_spec
 # 2 $spec_code
 sub can_detach_specification
 {
-   is_contract($_[1])
+   !is_contract($_[2])
 }
 
 sub detach_specification

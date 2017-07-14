@@ -118,8 +118,12 @@ sub add_spec
 # 2 spec_code
 sub can_detach_specification
 {
-   if (index($_[0]->declaration, $comment_t{L} . $_[1] . $comment_t{R}) != -1) {
-      return is_contract($_[2]);
+   my $code = $_[0]->code;
+   my $br = index($code, '(');
+   my $spec_decl = substr($code, 0, $br);
+
+   if (index($spec_decl, $comment_t{L} . $_[1] . $comment_t{R}) != -1) {
+      return !is_contract($_[2]);
    } else {
       # inside function
       return 0;
