@@ -5,7 +5,7 @@ use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
 use Local::List::Util qw(difference);
-use ACSL::Common qw(is_acsl_spec);
+use ACSL::Common qw(is_acsl_spec is_contract);
 
 use namespace::autoclean;
 
@@ -112,6 +112,18 @@ sub add_spec
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
    undef
+}
+
+# 1 spec_id
+# 2 spec_code
+sub can_detach_specification
+{
+   if (index($_[0]->declaration, $comment_t{L} . $_[1] . $comment_t{R}) != -1) {
+      return is_contract($_[2]);
+   } else {
+      # inside function
+      return 0;
+   }
 }
 
 sub detach_specification

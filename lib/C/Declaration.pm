@@ -4,7 +4,7 @@ use Moose;
 use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
-use ACSL::Common qw(is_acsl_spec);
+use ACSL::Common qw(is_acsl_spec is_contract);
 use Local::List::Util qw(difference);
 use namespace::autoclean;
 
@@ -62,6 +62,13 @@ sub add_spec
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
    undef
+}
+
+# 1 $spec_id
+# 2 $spec_code
+sub can_detach_specification
+{
+   is_contract($_[1])
 }
 
 sub detach_specification

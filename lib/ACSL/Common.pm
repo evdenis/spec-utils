@@ -14,7 +14,6 @@ our @EXPORT_OK = qw(is_acsl_spec
                     is_contract
                     is_invariant
                     is_assert
-                    can_detach_specification
                     prepare_tags);
 
 sub is_acsl_spec ($)
@@ -113,11 +112,6 @@ sub is_invariant
 sub is_assert
 {
    $_[0] =~ $acsl_assert
-}
-
-sub can_detach_specification
-{
-   return !(is_contract($_[0]) || is_assert($_[0]) || is_invariant($_[0]));
 }
 
 sub prepare_tags
