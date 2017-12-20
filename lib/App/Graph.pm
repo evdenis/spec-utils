@@ -127,7 +127,7 @@ sub run
    if ($args->{preprocessed}) {
       $source = read_file($args->{preprocessed}, scalar_ref => 1);
    } else {
-      $source = (preprocess_module_sources_nocomments($args->{kernel_dir}, $args->{module_dir}, $args->{mname} ["#define SPECIFICATION 1\n"]))[1];
+      $source = (preprocess_module_sources_nocomments($args->{kernel_dir}, $args->{module_dir}, $args->{mname}, ["#define SPECIFICATION 1\n"]))[1];
    }
    adapt($$source, attributes => 1, comments => 1);
 
