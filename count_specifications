@@ -34,8 +34,6 @@ my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#defi
 adapt($$source, comments => \@comments);
 my $set = C::AcslcommentSet->parse(\@comments, 'module');
 
-use Data::Printer;
-p $set;
 
 my $count = 0;
 foreach (@{$set->set}) {
