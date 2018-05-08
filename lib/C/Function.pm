@@ -14,51 +14,50 @@ use re '/aa';
 extends 'C::Entity';
 
 has 'declaration' => (
-   is => 'ro',
+   is  => 'ro',
    isa => 'Str'
 );
 
 has 'forward_declaration' => (
-   is => 'rw',
-   isa => 'ArrayRef[Str]',
-   lazy => 1,
+   is       => 'rw',
+   isa      => 'ArrayRef[Str]',
+   lazy     => 1,
    init_arg => undef,
-   default => sub { [] },
-   traits => ['Array'],
-   handles => {
-      add_fw_decl => 'push'
-   }
+   default  => sub {[]},
+   traits   => ['Array'],
+   handles  => {add_fw_decl => 'push'}
 );
 
 has 'spec_ids' => (
-   isa => 'ArrayRef[Int]',
-   is => 'rw',
-   lazy => 1,
+   isa      => 'ArrayRef[Int]',
+   is       => 'rw',
+   lazy     => 1,
    init_arg => undef,
-   builder => '_build_specs'
+   builder  => '_build_specs'
 );
 
 has 'calls' => (
-   isa => 'ArrayRef[Str]',
-   is => 'ro',
-   lazy => 1,
+   isa      => 'ArrayRef[Str]',
+   is       => 'ro',
+   lazy     => 1,
    init_arg => undef,
-   builder => '_build_calls'
+   builder  => '_build_calls'
 );
 
 has [qw/ret args body/] => (
-   is => 'ro',
-   isa => 'Str',
+   is       => 'ro',
+   isa      => 'Str',
    required => 1
 );
 
-sub _build_calls {
-   parse_calls($_[0]->code)
+sub _build_calls
+{
+   parse_calls($_[0]->code);
 }
 
 sub _build_specs
 {
-   [ $_[0]->code =~ m/$comment_t{pattern}/g ]
+   [$_[0]->code =~ m/$comment_t{pattern}/g]
 }
 
 sub get_code_tags
@@ -101,7 +100,7 @@ sub clean_comments
 {
    $_[0]->code(filter_comments_dup($_[0]->code));
 
-   undef
+   undef;
 }
 
 sub add_spec
@@ -111,15 +110,15 @@ sub add_spec
 
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
-   undef
+   undef;
 }
 
 # 1 spec_id
 # 2 spec_code
 sub can_detach_specification
 {
-   my $code = $_[0]->code;
-   my $br = index($code, '(');
+   my $code      = $_[0]->code;
+   my $br        = index($code, '(');
    my $spec_decl = substr($code, 0, $br);
 
    if (index($spec_decl, $comment_t{L} . $_[1] . $comment_t{R}) != -1) {
@@ -132,14 +131,14 @@ sub can_detach_specification
 
 sub detach_specification
 {
-   my $code = $_[0]->code;
+   my $code    = $_[0]->code;
    my $spec_id = $_[1];
    $code =~ s/\Q$comment_t{L}\E${spec_id}\Q$comment_t{R}\E\s*+//;
    $_[0]->code($code);
 
    # remove id from spec_ids
-   my @ids = @{ $_[0]->spec_ids };
-   @ids = grep { $_ != $spec_id } @ids;
+   my @ids = @{$_[0]->spec_ids};
+   @ids = grep {$_ != $spec_id} @ids;
    $_[0]->spec_ids(\@ids);
 }
 
@@ -149,7 +148,7 @@ sub to_string
    my $code     = $_[0]->code;
    my $comments = $_[1];
    #my $remove_fields = $_[2];
-   my $full     = $_[3];
+   my $full = $_[3];
 
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
@@ -159,8 +158,8 @@ sub to_string
       if (is_acsl_spec($comments->[$_])) {
          my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
          $code = substr($code, $pos)
-            if $pos < $prior;
-         goto FW_DECL
+           if $pos < $prior;
+         goto FW_DECL;
       }
    }
    # remove all comments since there is no specification binded to function
@@ -168,11 +167,11 @@ sub to_string
    # meaning
    $code =~ s/^${s}++//;
 
-FW_DECL:
+ FW_DECL:
 
    unless ($full) {
       $prior = rindex(substr($code, 0, index($code, '{')), ')') + 1;
-      $code  = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
+      $code = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
    } else {
       my $fw_decl = $_[0]->forward_declaration;
       if (@$fw_decl) {
@@ -182,7 +181,6 @@ FW_DECL:
 
    $str .= $code;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

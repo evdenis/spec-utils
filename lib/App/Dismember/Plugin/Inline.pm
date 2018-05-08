@@ -39,7 +39,6 @@ Plugin::Inline - плагин для включения указанных да�
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -54,15 +53,21 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-inline-file or --plugin-inline-text should be provided.\n",
-               -exitval => 1 })
-      unless @inline || @text;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-inline-file or --plugin-inline-text should be provided.\n",
+         -exitval => 1
+      }
+   ) unless @inline || @text;
 
    my %inline;
    foreach (@inline) {
@@ -71,20 +76,20 @@ sub process_options
          my ($pos, $area, $path) = ($1, $2, $3);
          if ($area =~ m/\A\d\Z/) {
             if ($area > 0 && $area < @Kernel::Module::Graph::out_order + 1) {
-               $area = $Kernel::Module::Graph::out_order[$area - 1]
+               $area = $Kernel::Module::Graph::out_order[$area - 1];
             } else {
-               die "There is no such area $area\n"
+               die "There is no such area $area\n";
             }
          } elsif (!exists $Kernel::Module::Graph::out_file{$area}) {
-            die "There is no such area $area\n"
+            die "There is no such area $area\n";
          }
          unless (-r $path) {
-            die "Can't read file $path\n"
+            die "Can't read file $path\n";
          }
 
-         push @{ $inline{$area}{$pos} }, $path
+         push @{$inline{$area}{$pos}}, $path;
       } else {
-         die "Can't parse inline id '$_'\n"
+         die "Can't parse inline id '$_'\n";
       }
    }
    my %text;
@@ -94,29 +99,28 @@ sub process_options
          my ($pos, $area, $str) = ($1, $2, $3);
          if ($area =~ m/\A\d\Z/) {
             if ($area > 0 && $area < @Kernel::Module::Graph::out_order + 1) {
-               $area = $Kernel::Module::Graph::out_order[$area - 1]
+               $area = $Kernel::Module::Graph::out_order[$area - 1];
             } else {
-               die "There is no such area $area\n"
+               die "There is no such area $area\n";
             }
          } elsif (!exists $Kernel::Module::Graph::out_file{$area}) {
-            die "There is no such area $area\n"
+            die "There is no such area $area\n";
          }
 
-         push @{ $text{$area}{$pos} }, $str
+         push @{$text{$area}{$pos}}, $str;
       } else {
-         die "Can't parse inline id '$_'\n"
+         die "Can't parse inline id '$_'\n";
       }
    }
 
-
    $config->{'inline'} = \%inline;
 
-   bless { inline => \%inline, text => \%text }, $self
+   bless {inline => \%inline, text => \%text}, $self;
 }
 
 sub level
 {
-   raw_data => 80
+   raw_data => 80;
 }
 
 sub action
@@ -124,44 +128,37 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{output} && exists $opts->{output_dir};
+     unless exists $opts->{output} && exists $opts->{output_dir};
 
    foreach my $area (keys %{$self->{inline}}) {
       foreach (@{$self->{inline}{$area}{begin}}) {
          my $name = basename $_;
          print "plugin: inline: $area: begin: '$name'\n";
 
-         $opts->{'output'}{$area} = "\n//INLINE $name BEGIN\n\n" .
-                                       read_file($_) .
-                                    "\n//INLINE $name END\n\n" .
-                                    $opts->{'output'}{$area};
+         $opts->{'output'}{$area} =
+           "\n//INLINE $name BEGIN\n\n" . read_file($_) . "\n//INLINE $name END\n\n" . $opts->{'output'}{$area};
       }
       foreach (@{$self->{inline}{$area}{end}}) {
          my $name = basename $_;
          print "plugin: inline: $area: end: '$name'\n";
 
-         $opts->{'output'}{$area} = $opts->{'output'}{$area} .
-                                    "\n\n//INLINE $name BEGIN\n\n" .
-                                       read_file($_) .
-                                    "\n//INLINE $name END\n";
+         $opts->{'output'}{$area} =
+           $opts->{'output'}{$area} . "\n\n//INLINE $name BEGIN\n\n" . read_file($_) . "\n//INLINE $name END\n";
       }
    }
 
    foreach my $area (keys %{$self->{text}}) {
       foreach (@{$self->{text}{$area}{begin}}) {
          print "plugin: inline: $area: begin: $_\n";
-         $opts->{'output'}{$area} = "$_\n" .
-                                    $opts->{'output'}{$area};
+         $opts->{'output'}{$area} = "$_\n" . $opts->{'output'}{$area};
       }
       foreach (@{$self->{text}{$area}{end}}) {
          print "plugin: inline: $area: end: $_\n";
-         $opts->{'output'}{$area} = $opts->{'output'}{$area} .
-                                    "$_\n";
+         $opts->{'output'}{$area} = $opts->{'output'}{$area} . "$_\n";
       }
    }
 
-   undef
+   undef;
 }
-
 
 1;

@@ -11,69 +11,69 @@ use RE::Common qw($varname);
 use Local::List::Util qw(uniq any);
 use C::Util::Transformation qw(:RE);
 
-our @EXPORT_OK = qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields _get_structure_wo_field_names);
+our @EXPORT_OK =
+  qw(parse_structures parse_calls _argname _argname_exists _get_structure_fields _get_structure_wo_field_names);
 
 our @keywords = qw(
-auto
-break
-case
-char
-const
-continue
-default
-do
-double
-else
-enum
-extern
-float
-for
-goto
-if
-inline
-int
-long
-register
-restrict
-return
-short
-signed
-sizeof
-static
-struct
-switch
-typedef
-union
-unsigned
-void
-volatile
-while
-_Alignas
-_Alignof
-_Atomic
-_Bool
-_Complex
-_Generic
-_Imaginary
-_Noreturn
-_Static_assert
-_Thread_local
+  auto
+  break
+  case
+  char
+  const
+  continue
+  default
+  do
+  double
+  else
+  enum
+  extern
+  float
+  for
+  goto
+  if
+  inline
+  int
+  long
+  register
+  restrict
+  return
+  short
+  signed
+  sizeof
+  static
+  struct
+  switch
+  typedef
+  union
+  unsigned
+  void
+  volatile
+  while
+  _Alignas
+  _Alignof
+  _Atomic
+  _Bool
+  _Complex
+  _Generic
+  _Imaginary
+  _Noreturn
+  _Static_assert
+  _Thread_local
 );
 
 #additional filtration keywords. kernel related
 push @keywords, qw(
-typeof
-__attribute__
-__typeof__
-asm
-__section__
-section
-alias
-aligned
+  typeof
+  __attribute__
+  __typeof__
+  asm
+  __section__
+  section
+  alias
+  aligned
 );
 
 #__builtin_.+
-
 
 sub _argname_exists
 {
@@ -83,14 +83,14 @@ sub _argname_exists
       @result = ($1);
       my ($begin, $end) = ($+[0], rindex($_[0], ')'));
 
-      foreach(split(/,/, substr($_[0], $begin, $end - $begin))) {
+      foreach (split(/,/, substr($_[0], $begin, $end - $begin))) {
          next if m/\A${s}*+\z/;
          my $name = _argname($_);
 
-         push @result, $name if $name
+         push @result, $name if $name;
       }
 
-      return @result
+      return @result;
    }
 
    my $name_ex = qr/($varname)(?:${h}*+(?:\[[^\]]+\]|:${h}*+\d+))?/;
@@ -100,29 +100,28 @@ sub _argname_exists
       push @result, $1 while ($tail =~ m/($varname)/g);
 
       if ($_[0] =~ m/${name_ex}${h}*+,/) {
-         unshift @result, $1
+         unshift @result, $1;
       } else {
-         warn "Could't parse first line of field $_[0]\n"
+         warn "Could't parse first line of field $_[0]\n";
       }
 
       return @result;
    } elsif ($_[0] =~ m/${name_ex}${h}*+\Z/) {
-      return $1 ne 'void'? ($1) : (); #just in case
+      return $1 ne 'void' ? ($1) : ();    #just in case
    }
 
-   ()
+   ();
 }
 
 sub _argname
 {
    if (index($_[0], '(') != -1) {
-      return _argname_exists($_[0])
+      return _argname_exists($_[0]);
    } else {
-      my @a = $_[0] =~ m/$varname/g;
+      my @a  = $_[0] =~ m/$varname/g;
       my $i  = 1;
       my $us = 0;
       my $l  = 0;
-
 
       foreach (@a) {
          if ($l) {
@@ -131,22 +130,23 @@ sub _argname
          }
 
          if ($us) {
-            ++$i if  $_ eq 'char'  ||
-                     $_ eq 'short' ||
-                     $_ eq 'int'   ||
-                     $_ eq 'long';
-           $us = 0;
+            ++$i
+              if $_ eq 'char'
+              || $_ eq 'short'
+              || $_ eq 'int'
+              || $_ eq 'long';
+            $us = 0;
          }
 
-
-         ++$i  if $_ eq 'struct'   ||
-                  $_ eq 'union'    ||
-                  $_ eq 'enum'     ||
-                  $_ eq 'const'    ||
-                  $_ eq 'volatile';
+         ++$i
+           if $_ eq 'struct'
+           || $_ eq 'union'
+           || $_ eq 'enum'
+           || $_ eq 'const'
+           || $_ eq 'volatile';
 
          $us = 1 if $_ eq 'signed' || $_ eq 'unsigned';
-         $l  = 1 if $_ eq 'long';
+         $l = 1 if $_ eq 'long';
       }
 
       ++$i if $us;
@@ -155,7 +155,7 @@ sub _argname
       return $a[$#a] if @a > $i;
    }
 
-   ()
+   ();
 }
 
 sub _get_structure_fields
@@ -165,13 +165,13 @@ sub _get_structure_fields
    $code = substr($code, $begin, $end - $begin);
 
    my @fields;
-   foreach(split(/;/, $code)) {
+   foreach (split(/;/, $code)) {
       next if m/\A${s}*+\z/;
 
-      push @fields, _argname_exists($_)
+      push @fields, _argname_exists($_);
    }
 
-   \@fields
+   \@fields;
 }
 
 sub _get_structure_wo_field_names
@@ -184,17 +184,17 @@ sub _get_structure_wo_field_names
       next if $line =~ m/\A${s}*+\z/;
 
       my $rline = reverse $line;
-      foreach (map { scalar reverse $_ } _argname_exists($line)) {
-         $rline =~ s/\b\Q$_\E\b//
+      foreach (map {scalar reverse $_} _argname_exists($line)) {
+         $rline =~ s/\b\Q$_\E\b//;
       }
       $line = reverse $rline;
 
-      $repl .= $line
+      $repl .= $line;
    }
 
    substr($code, $begin, $end - $begin - 1, $repl);
 
-   $code
+   $code;
 }
 
 sub parse_structures
@@ -203,7 +203,7 @@ sub parse_structures
 
    @s = uniq(@s);
 
-   \@s
+   \@s;
 }
 
 sub parse_calls
@@ -211,14 +211,14 @@ sub parse_calls
    my @calls;
 
    while (
-      $_[0] =~
-         m/
+      $_[0] =~ m/
             \b(?<fname>$varname)
             ${s}*+
             (?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))
             (?!${s}*+(?:\{|\()) # исключает функции которые ни разу не вызываются
          /gx
-   ) {
+     )
+   {
       # Просматриваем ещё раз аргументы вызова прошлой функции.
       # Там могут быть ещё вызовы.
       # -1 - первая скобка после имени не учитывается.
@@ -231,10 +231,10 @@ sub parse_calls
    }
 
    #filter
-   @calls = grep { ! any($_, \@keywords) } @calls;
+   @calls = grep {!any($_, \@keywords)} @calls;
    @calls = uniq(@calls);
 
-   \@calls
+   \@calls;
 }
 
 1;

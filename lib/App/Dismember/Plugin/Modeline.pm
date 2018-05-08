@@ -34,7 +34,6 @@ Plugin::Modeline - плагин для добавления строки modelin
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -47,26 +46,32 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-modeline-string should be provided.\n",
-               -exitval => 1 })
-      unless $modeline;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-modeline-string should be provided.\n",
+         -exitval => 1
+      }
+   ) unless $modeline;
 
    chomp $modeline;
 
    $config->{'modeline'} = $modeline;
 
-   bless { modeline => $modeline, single => $config->{single} }, $self
+   bless {modeline => $modeline, single => $config->{single}}, $self;
 }
 
 sub level
 {
-   pre_output => 99
+   pre_output => 99;
 }
 
 sub action
@@ -74,21 +79,18 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{output};
+     unless exists $opts->{output};
 
    print "plugin: modeline: adding modeline to files\n";
    unless ($self->{single}) {
       foreach (keys %{$opts->{output}}) {
-         $opts->{output}{$_} = $opts->{output}{$_} .
-                                 "\n\n/* $self->{modeline} */";
+         $opts->{output}{$_} = $opts->{output}{$_} . "\n\n/* $self->{modeline} */";
       }
    } else {
-         $opts->{output}{module_c} = $opts->{output}{module_c} .
-                                     "\n\n/* $self->{modeline} */";
+      $opts->{output}{module_c} = $opts->{output}{module_c} . "\n\n/* $self->{modeline} */";
    }
 
-   undef
+   undef;
 }
-
 
 1;

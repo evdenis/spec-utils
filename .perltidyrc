@@ -1,12 +1,10 @@
---perl-best-practices
---nostandard-output
---nostandard-error-output
+--character-encoding=utf8
 --backup-and-modify-in-place
 --backup-file-extension=.tidyrc
 --maximum-line-length=120
 --indent-columns=3
 --starting-indentation-level=0
---closing-token-indentation=1
+--closing-token-indentation=0
 --cuddled-else
 --cuddled-blocks
 --paren-tightness=2

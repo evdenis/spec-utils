@@ -40,7 +40,6 @@ Plugin::Include - плагин для добавления директивы #i
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -55,15 +54,21 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-include-file should be provided.\n",
-               -exitval => 1 })
-      unless @include;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-include-file should be provided.\n",
+         -exitval => 1
+      }
+   ) unless @include;
 
    my %include;
    foreach (@include) {
@@ -72,31 +77,31 @@ sub process_options
          my ($area, $path) = ($1, $2);
          if ($area =~ m/\A\d\Z/) {
             if ($area > 0 && $area < @Kernel::Module::Graph::out_order + 1) {
-               $area = $Kernel::Module::Graph::out_order[$area - 1]
+               $area = $Kernel::Module::Graph::out_order[$area - 1];
             } else {
-               die "There is no such area $area\n"
+               die "There is no such area $area\n";
             }
          } elsif (!exists $Kernel::Module::Graph::out_file{$area}) {
-            die "There is no such area $area\n"
+            die "There is no such area $area\n";
          }
          unless (-r $path) {
-            die "Can't read file $path\n"
+            die "Can't read file $path\n";
          }
 
-         push @{ $include{$area} }, $path
+         push @{$include{$area}}, $path;
       } else {
-         die "Can't parse include id '$_'\n"
+         die "Can't parse include id '$_'\n";
       }
    }
 
    $config->{'include'} = \%include;
 
-   bless { include => \%include, base_dir => $config->{output_dir}, link => $link }, $self
+   bless {include => \%include, base_dir => $config->{output_dir}, link => $link}, $self;
 }
 
 sub level
 {
-   raw_data => 90
+   raw_data => 90;
 }
 
 sub action
@@ -104,13 +109,13 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{output} && exists $opts->{output_dir};
+     unless exists $opts->{output} && exists $opts->{output_dir};
 
    foreach my $area (keys %{$self->{include}}) {
       foreach (@{$self->{include}{$area}}) {
          my $include = basename $_;
-         my $old = abs_path $_;
-         my $new = catfile($opts->{output_dir}, $include);
+         my $old     = abs_path $_;
+         my $new     = catfile($opts->{output_dir}, $include);
          if ($self->{link}) {
             symlink $old, $new;
             print "plugin: include: link $old -> $new\n";
@@ -119,13 +124,11 @@ sub action
             print "plugin: include: copy $old -> $new\n";
          }
 
-         $opts->{'output'}{$area} = qq(#include "$include"\n\n) .
-                                 $opts->{'output'}{$area};
+         $opts->{'output'}{$area} = qq(#include "$include"\n\n) . $opts->{'output'}{$area};
       }
    }
 
-   undef
+   undef;
 }
-
 
 1;

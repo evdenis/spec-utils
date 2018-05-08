@@ -5,7 +5,6 @@ use strict;
 
 use lib::abs '../lib';
 
-
 package TS {
 
    use MooseX::App::Simple qw(Color);
@@ -14,74 +13,74 @@ package TS {
    use C::Util::Transformation;
 
    option 'preprocess' => (
-      is  => 'ro',
-      isa => 'Bool',
-      cmd_aliases => [qw(p)],
+      is            => 'ro',
+      isa           => 'Bool',
+      cmd_aliases   => [qw(p)],
       documentation => 'switches on full preprocessing of module sources'
    );
 
    option 'kernel' => (
-      is         => 'ro',
-      isa        => 'Str',
-      required   => 1,
-      cmd_env    => 'CURRENT_KERNEL',
-      cmd_aliases => [qw(k kdir)],
+      is            => 'ro',
+      isa           => 'Str',
+      required      => 1,
+      cmd_env       => 'CURRENT_KERNEL',
+      cmd_aliases   => [qw(k kdir)],
       documentation => 'kernel directory'
    );
 
    option 'module' => (
-      is         => 'ro',
-      isa        => 'Str',
-      required   => 1,
-      cmd_env    => 'CURRENT_PROJECT',
-      cmd_aliases => [qw(m mdir)],
+      is            => 'ro',
+      isa           => 'Str',
+      required      => 1,
+      cmd_env       => 'CURRENT_PROJECT',
+      cmd_aliases   => [qw(m mdir)],
       documentation => 'module directory'
    );
 
    option 'mname' => (
-      is         => 'ro',
-      isa        => 'Str',
-      required   => 0,
-      cmd_aliases => [qw(mn)],
+      is            => 'ro',
+      isa           => 'Str',
+      required      => 0,
+      cmd_aliases   => [qw(mn)],
       documentation => 'module name (e.g. fat vfat msdos)'
    );
 
    option 'strings' => (
-      is         => 'ro',
-      isa        => 'Bool',
-      default    => 0,
+      is            => 'ro',
+      isa           => 'Bool',
+      default       => 0,
       documentation => 'remove strings; default: off'
    );
 
    option 'comments' => (
-      is         => 'ro',
-      isa        => 'Bool',
-      default    => 1,
+      is            => 'ro',
+      isa           => 'Bool',
+      default       => 1,
       documentation => 'remove comments; default: on'
    );
 
    option 'macro' => (
-      is         => 'ro',
-      isa        => 'Bool',
-      default    => 0,
+      is            => 'ro',
+      isa           => 'Bool',
+      default       => 0,
       documentation => 'remove macro; default: off'
    );
 
    option 'attributes' => (
-      is         => 'ro',
-      isa        => 'Bool',
-      default    => 1,
+      is            => 'ro',
+      isa           => 'Bool',
+      default       => 1,
       documentation => 'remove attributes; default: on'
    );
 
-
-   sub run {
+   sub run
+   {
       my ($self) = @_;
 
       die "Please, provide valid path to kernel.\n"
-         unless -d $self->kernel;
+        unless -d $self->kernel;
       die "Please, provide valid path to module.\n"
-         unless -d $self->module;
+        unless -d $self->module;
 
       my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
       my $source = ($func->($self->kernel, $self->module, $self->mname, ["#define SPECIFICATION 1\n"]))[1];
@@ -92,7 +91,7 @@ package TS {
          adapt($$source, %param);
       }
 
-      print $$source
+      print $$source;
    }
 
    1;

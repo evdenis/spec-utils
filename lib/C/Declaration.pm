@@ -13,16 +13,16 @@ use re '/aa';
 extends 'C::Entity';
 
 has 'spec_ids' => (
-   isa => 'ArrayRef[Int]',
-   is => 'rw',
-   lazy => 1,
+   isa      => 'ArrayRef[Int]',
+   is       => 'rw',
+   lazy     => 1,
    init_arg => undef,
-   builder => '_build_specs'
+   builder  => '_build_specs'
 );
 
 sub _build_specs
 {
-   [ $_[0]->code =~ m/$comment_t{pattern}/g ]
+   [$_[0]->code =~ m/$comment_t{pattern}/g]
 }
 
 sub get_code_tags
@@ -34,7 +34,7 @@ sub get_code_tags
    $code = substr($code, $begin, $end - $begin);
 
    my @args;
-   foreach(split(/,/, $code)) {
+   foreach (split(/,/, $code)) {
       next if m/\A${s}*+\z/;
       my @names = _argname($_);
 
@@ -44,14 +44,14 @@ sub get_code_tags
    my $filter = $self->get_code_ids();
    push @$filter, @args;
 
-   prepare_tags($self->code, $filter)
+   prepare_tags($self->code, $filter);
 }
 
 sub clean_comments
 {
    $_[0]->code(filter_comments_dup($_[0]->code));
 
-   undef
+   undef;
 }
 
 sub add_spec
@@ -61,32 +61,32 @@ sub add_spec
 
    $_[0]->code("/*@\n" . $_[1] . "\n*/\n" . $code);
 
-   undef
+   undef;
 }
 
 # 1 $spec_id
 # 2 $spec_code
 sub can_detach_specification
 {
-   !is_contract($_[2])
+   !is_contract($_[2]);
 }
 
 sub detach_specification
 {
-   my $code = $_[0]->code;
+   my $code    = $_[0]->code;
    my $spec_id = $_[1];
    $code =~ s/\Q$comment_t{L}\E${spec_id}\Q$comment_t{R}\E\s*+//;
    $_[0]->code($code);
 
    # remove id from spec_ids
-   my @ids = @{ $_[0]->spec_ids };
-   @ids = grep { $_ != $spec_id } @ids;
+   my @ids = @{$_[0]->spec_ids};
+   @ids = grep {$_ != $spec_id} @ids;
    $_[0]->spec_ids(\@ids);
 }
 
 sub to_string
 {
-   my $code = $_[0]->code;
+   my $code     = $_[0]->code;
    my $comments = $_[1];
    #$code =~ s!\A${s}*+\K(static\h++inline)!extern /*$1*/!;
 
@@ -95,15 +95,15 @@ sub to_string
       if (is_acsl_spec($comments->[$_])) {
          my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
          $code = substr($code, $pos);
-         goto FW_DECL
+         goto FW_DECL;
       }
    }
    # remove all comments since there is no specification binded to declaration
    $code =~ s/^${s}++//;
 
-FW_DECL:
+ FW_DECL:
 
-   $code
+   $code;
 }
 
 __PACKAGE__->meta->make_immutable;

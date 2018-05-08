@@ -28,10 +28,10 @@ sub resolve_macro_macro ($$$)
    #      $g->delete_edge($obj[1]->id, $obj[0]->id)
    #   }
    #}
-   
+
    $graph->delete_edge($obj[0]->id, $obj[1]->id);
 
-   1
+   1;
 }
 
 sub resolve_structure_structure ($$$)
@@ -49,34 +49,34 @@ sub resolve_structure_structure ($$$)
    #multiple fields 'struct test; struct test *;' possible
    if ($obj[1]->code !~ m/$ctype[0]${s}++$name[0]\b${s}*+[^*]/) {
       $graph->delete_edge($obj[0]->id, $obj[1]->id);
-      return 1
+      return 1;
    }
    if ($graph->has_edge($obj[1]->id, $obj[0]->id)) {
       if ($obj[0]->code !~ m/$ctype[1]${s}++$name[1]\b${s}*+[^*]/) {
          $graph->delete_edge($obj[1]->id, $obj[0]->id);
-         return 1
+         return 1;
       }
    }
 
-   0
+   0;
 }
 
 sub resolve_function_function
 {
    my ($graph, @obj) = @_;
-   my @ids = ($obj[0]->id, $obj[1]->id);
-   my @rids = reverse @ids;
-   my $redge = $graph->has_edge(@rids);
+   my @ids        = ($obj[0]->id, $obj[1]->id);
+   my @rids       = reverse @ids;
+   my $redge      = $graph->has_edge(@rids);
    my $spec_edge  = $graph->get_edge_attribute(@ids, 'spec_edge');
    my $rspec_edge = $graph->get_edge_attribute(@rids, 'spec_edge');
 
-   if ($redge) { # Если есть обратная дуга
+   if ($redge) {    # Если есть обратная дуга
       if ($spec_edge) {
          # Можно без проблем разъединить, но не будет выводиться последней
          $graph->delete_edge(@ids);
          return 1;
-      } else {  # Если это не спецификационная связь
-         if (!$rspec_edge) { # Если обратная не спецификационная
+      } else {      # Если это не спецификационная связь
+         if (!$rspec_edge) {    # Если обратная не спецификационная
             $obj[1]->add_fw_decl($obj[0]->declaration);
             $graph->delete_edge(@ids);
          } else {
@@ -86,7 +86,7 @@ sub resolve_function_function
          return 1;
       }
    } else {
-      if (!$spec_edge) { # Можно разорвать если цикл
+      if (!$spec_edge) {        # Можно разорвать если цикл
          $obj[1]->add_fw_decl($obj[0]->declaration);
          $graph->delete_edge(@ids);
          return 1;
@@ -96,7 +96,7 @@ sub resolve_function_function
       }
    }
 
-   0
+   0;
 }
 
 sub resolve_structure_typedef ($$$)
@@ -113,10 +113,10 @@ sub resolve_structure_typedef ($$$)
       {
          no strict 'refs';
 
-         if (defined &{ $sub }) {
-            goto &{ $sub }
+         if (defined &{$sub}) {
+            goto &{$sub};
          } else {
-            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
+            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n";
          }
       }
 
@@ -131,30 +131,30 @@ sub resolve_acslcomment_acslcomment ($$$)
    if ($graph->has_edge(reverse @id)) {
       if ($obj[0]->replacement_id < $obj[1]->replacement_id) {
          $graph->delete_edge(@id);
-      }# else {
-      #   $graph->delete_edge(reverse @id);
-      #}
+      }    # else {
+           #   $graph->delete_edge(reverse @id);
+           #}
       return 1;
    }
-   
-   0
+
+   0;
 }
 
 sub resolve_typedef_structure
 {
-   0
+   0;
 }
 
 sub resolve_function_declaration
 {
    my ($graph, @obj) = @_;
-   $graph->delete_edge($obj[0]->id, $obj[1]->id); # specification edge
-   1
+   $graph->delete_edge($obj[0]->id, $obj[1]->id);    # specification edge
+   1;
 }
 
 sub resolve_declaration_macro
 {
-   0
+   0;
 }
 
 sub resolve_typedef_typedef
@@ -172,32 +172,32 @@ sub resolve_typedef_typedef
       {
          no strict 'refs';
 
-         if (defined &{ $sub }) {
-            goto &{ $sub }
+         if (defined &{$sub}) {
+            goto &{$sub};
          } else {
-            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
+            warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n";
          }
       }
    }
 
-   0
+   0;
 }
 
 sub resolve_function_macro
 {
    my ($graph, @obj) = @_;
    $graph->delete_edge($obj[0]->id, $obj[1]->id);
-   1
+   1;
 }
 
 sub resolve_macro_function
 {
-   0
+   0;
 }
 
 sub resolve_function_global
 {
-   0
+   0;
 }
 
 sub resolve_global_function
@@ -209,7 +209,7 @@ sub resolve_global_function
    }
    $obj[1]->add_fw_decl($global_decl);
    $graph->delete_edge($obj[0]->id, $obj[1]->id);
-   1
+   1;
 }
 
 sub resolve
@@ -217,9 +217,9 @@ sub resolve
    my ($graph, @cycle) = @_;
 
    if (@cycle == 1) {
-      $graph->delete_edge(@cycle[0,0])
+      $graph->delete_edge(@cycle[0, 0]);
    } else {
-      my @objs = map { $graph->get_vertex_attribute($_, 'object') } @cycle;
+      my @objs = map {$graph->get_vertex_attribute($_, 'object')} @cycle;
       my @obj_pairs;
       {
          my $prev = $objs[-1];
@@ -230,22 +230,22 @@ sub resolve
       }
 
       my $ok = 0;
-LOOP: foreach (@obj_pairs) {
+    LOOP: foreach (@obj_pairs) {
          my @t = map blessed $_, @$_;
 
-         my $trans = sub { lc(substr($_[0], 3)) };
+         my $trans = sub {lc(substr($_[0], 3))};
          my $sub = join('_', ('resolve', $trans->($t[0]), $trans->($t[1])));
 
          {
             no strict 'refs';
 
-            if (defined &{ $sub }) {
-               if (&{ $sub }($graph, @$_)) {
+            if (defined &{$sub}) {
+               if (&{$sub}($graph, @$_)) {
                   $ok = 1;
-                  last LOOP
+                  last LOOP;
                }
             } else {
-               warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n"
+               warn "Function $sub in " . __PACKAGE__ . " package doesn't exist. Skipping the call.\n";
             }
          }
       }
@@ -256,7 +256,7 @@ LOOP: foreach (@obj_pairs) {
          #use Data::Printer;
          #p @objs;
          #exit;
-         $graph->delete_edge(@cycle[0,-1])
+         $graph->delete_edge(@cycle[0, -1]);
       }
    }
 }

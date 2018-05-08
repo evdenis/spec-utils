@@ -35,7 +35,6 @@ Plugin::Rewrite - плагин для переписывания определ�
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -50,34 +49,40 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-rewrite-id should be provided.\n",
-               -exitval => 1 })
-      unless @rewrite;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-rewrite-id should be provided.\n",
+         -exitval => 1
+      }
+   ) unless @rewrite;
 
    my %rewrite;
    foreach (@rewrite) {
       chomp;
       if (m/\A([a-zA-Z_]\w+)\^(.*)\Z/) {
-         $rewrite{$1} = $2
+         $rewrite{$1} = $2;
       } else {
-         die "Can't parse rewrite id '$_'\n"
+         die "Can't parse rewrite id '$_'\n";
       }
    }
 
    $config->{'rewrite'} = \%rewrite;
 
-   bless { rewrite => \%rewrite, reduced => $reduced }, $self
+   bless {rewrite => \%rewrite, reduced => $reduced}, $self;
 }
 
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 10
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 10;
 }
 
 sub action
@@ -85,25 +90,24 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{'graph'};
+     unless exists $opts->{'graph'};
 
    my $g = $opts->{'graph'};
 
-NEXT:   foreach my $id (keys %{$self->{rewrite}}) {
+ NEXT: foreach my $id (keys %{$self->{rewrite}}) {
       print "plugin: rewrite: rewriting $id\n";
 
-      foreach($g->vertices) {
+      foreach ($g->vertices) {
          if ($g->get_vertex_attribute($_, 'object')->name eq $id) {
             $g->get_vertex_attribute($_, 'object')->code($self->{rewrite}{$id});
             next NEXT;
          }
       }
 
-      warn "plugin: rewrite: vertex $id doesn't exist in graph\n"
+      warn "plugin: rewrite: vertex $id doesn't exist in graph\n";
    }
 
-   undef
+   undef;
 }
-
 
 1;

@@ -10,16 +10,20 @@ use Exporter qw(import);
 
 our @EXPORT_OK = qw(find_all merge merge_all);
 
-
 sub find_all ($$)
 {
-   my $dir = shift;
+   my $dir  = shift;
    my $mask = shift;
    my @files;
 
-   finddepth({ wanted => sub { push @files, realpath($File::Find::name) if m/${mask}/ } }, realpath($dir));
+   finddepth(
+      {
+         wanted => sub {push @files, realpath($File::Find::name) if m/${mask}/}
+      },
+      realpath($dir)
+   );
 
-   @files
+   @files;
 }
 
 sub merge (@)
@@ -27,12 +31,12 @@ sub merge (@)
    my $code;
    $code .= read_file($_, err_mode => 'carp') foreach @_;
 
-   $code
+   $code;
 }
 
 sub merge_all ($$)
 {
-   merge find_all($_[0], $_[1])
+   merge find_all($_[0], $_[1]);
 }
 
 1;

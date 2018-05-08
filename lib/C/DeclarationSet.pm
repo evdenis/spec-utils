@@ -12,11 +12,9 @@ use C::Declaration;
 use namespace::autoclean;
 
 extends 'C::Set';
-with    'C::Parse';
+with 'C::Parse';
 
-has '+set' => (
-   isa => 'ArrayRef[C::Declaration]',
-);
+has '+set' => (isa => 'ArrayRef[C::Declaration]',);
 
 sub parse
 {
@@ -24,9 +22,10 @@ sub parse
    my %declarations;
 
    #my $ret  = qr/(?<ret>[\w\s\*$C::Util::Transformation::special_symbols]+)/;
-   my $ret  = qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
-   my $name = qr/(?<name>$varname)/;
-   my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+   my $ret =
+     qr/(?<ret>[\w$C::Util::Transformation::special_symbols][\w\s\*$C::Util::Transformation::special_symbols]+)/;
+   my $name  = qr/(?<name>$varname)/;
+   my $args  = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $fbody = qr'(?>(?<fbody>\{(?:(?>[^\{\}]+)|(?&fbody))*\}))';
    my $kbody = qr/(?:;|$fbody)/;
    my $mbody = qr/(?:;|$fbody(*SKIP)(*FAIL))/;
@@ -41,7 +40,7 @@ sub parse
       if ($code =~ m/\A\s*+(${s}++)/) {
          my $spec = '';
          if ($+[1] > 0) {
-            $spec = substr($code, $-[1], $+[1] - $-[1])
+            $spec = substr($code, $-[1], $+[1] - $-[1]);
          }
          $code = $spec . normalize(substr($code, $+[1]));
       } else {
@@ -49,13 +48,12 @@ sub parse
       }
 
       unless (exists $declarations{$name}) {
-         $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $area)
+         $declarations{$name} = C::Declaration->new(name => $name, code => $code, area => $area);
       }
    }
 
    return $self->new(set => [values %declarations]);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

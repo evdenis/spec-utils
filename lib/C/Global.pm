@@ -20,27 +20,26 @@ has 'initializer' => (
 );
 
 has 'type' => (
-   is => 'rw',
-   isa => 'Str',
+   is       => 'rw',
+   isa      => 'Str',
    required => 1
 );
 
 has 'modifier' => (
-   is => 'rw',
+   is  => 'rw',
    isa => 'Maybe[Str]'
 );
 
 has 'extern' => (
-   is => 'ro',
-   isa => 'Bool',
-   lazy => 1,
+   is      => 'ro',
+   isa     => 'Bool',
+   lazy    => 1,
    builder => '_is_extern'
 );
 
-
 sub _build_initialized
 {
-   index($_[0]->code, '=') != -1
+   index($_[0]->code, '=') != -1;
 }
 
 sub _build_initializer
@@ -59,7 +58,7 @@ sub to_string
    #   #$code =~ s/^static/extern/; Do we really need it?
    #}
 
-   $code
+   $code;
 }
 
 sub _is_extern
@@ -72,7 +71,6 @@ sub _is_extern
       return 0;
    }
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

@@ -14,7 +14,7 @@ our @EXPORT_OK = qw(find_config load_config merge_config_keys update_config_keys
 
 sub find_config
 {
-   my $r = undef;
+   my $r     = undef;
    my $pname = $_[0] // basename $0;
    my @paths = (
       catfile($FindBin::Bin, ".${pname}.cfg"),
@@ -33,19 +33,19 @@ sub find_config
    foreach (@paths) {
       if (-r $_) {
          $r = $_;
-         last
+         last;
       }
    }
 
-   $r
+   $r;
 }
 
 sub load_config
 {
    if ($_[0] && -r $_[0]) {
-      LoadFile( $_[0] )
+      LoadFile($_[0]);
    } else {
-      undef
+      undef;
    }
 }
 
@@ -53,20 +53,20 @@ sub merge_config_keys
 {
    foreach (keys %{$_[1]}) {
       unless (exists $_[0]->{$_}) {
-         $_[0]->{$_} = $_[1]->{$_}
+         $_[0]->{$_} = $_[1]->{$_};
       } else {
-         croak "Duplicate key $_ in configurations\n"
+         croak "Duplicate key $_ in configurations\n";
       }
    }
-   undef
+   undef;
 }
 
 sub update_config_keys
 {
    foreach (keys %{$_[1]}) {
-      $_[0]->{$_} = $_[1]->{$_}
+      $_[0]->{$_} = $_[1]->{$_};
    }
-   undef
+   undef;
 }
 
 1;

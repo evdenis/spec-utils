@@ -9,12 +9,9 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
-with    'C::Parse';
+with 'C::Parse';
 
-has '+set' => (
-   isa => 'ArrayRef[C::Enum]',
-);
-
+has '+set' => (isa => 'ArrayRef[C::Enum]',);
 
 sub parse
 {
@@ -23,8 +20,9 @@ sub parse
    my %enums;
 
    my $name = qr!(?<ename>$varname)!;
-   
-   while ( ${$_[0]} =~ m/^${h}*+
+
+   while (
+      ${$_[0]} =~ m/^${h}*+
          enum
          ${s}++
             (?:$name)?
@@ -40,26 +38,22 @@ sub parse
             \}
             )
          )${s}*+;
-      /gmpx) {
-      my $code = ${^MATCH};
+      /gmpx
+     )
+   {
+      my $code  = ${^MATCH};
       my $ename = $+{ename};
-      my $id = $ename || norm(substr($code,0,256));
+      my $id    = $ename || norm(substr($code, 0, 256));
 
       if (exists $enums{$id} && (norm($enums{$id}{code}) ne norm($code))) {
          warn "Redefinition of enum " . ($ename ? $ename : $id) . "\n";
       }
-      $enums{$id} = { name => $ename, code => $code };
+      $enums{$id} = {name => $ename, code => $code};
    }
 
-   return $self->new(set => [
-           map { C::Enum->new(
-               name => $enums{$_}{name},
-               code => $enums{$_}{code},
-               area => $area) } keys %enums
-       ]
-   );
+   return $self->new(
+      set => [map {C::Enum->new(name => $enums{$_}{name}, code => $enums{$_}{code}, area => $area)} keys %enums]);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

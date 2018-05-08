@@ -10,7 +10,6 @@ use Exporter qw(import);
 
 our @EXPORT_OK = qw(check_kernel_dir check_kernel_files_readable autodetect_kernel_directory);
 
-
 sub check_kernel_dir ($)
 {
    my $res = 0;
@@ -18,26 +17,25 @@ sub check_kernel_dir ($)
 
    return 0 unless $_[0];
    return $kerneldir_cache{$_[0]}
-      if exists $kerneldir_cache{$_[0]};
+     if exists $kerneldir_cache{$_[0]};
 
-
-   if ( -d $_[0] ) {
+   if (-d $_[0]) {
       opendir my $kdir, $_[0] or goto OUT;
-         my @files = readdir $kdir;
+      my @files = readdir $kdir;
       closedir $kdir;
 
       #Check for standard files
       foreach (qw(Kconfig Makefile drivers include arch kernel security)) {
          goto OUT
-            unless any($_, \@files);
+           unless any($_, \@files);
       }
 
       $res = 1;
    }
 
-OUT:
+ OUT:
    $kerneldir_cache{$_[0]} = $res;
-   $res
+   $res;
 }
 
 sub check_kernel_files_readable ($@)
@@ -45,25 +43,25 @@ sub check_kernel_files_readable ($@)
    my ($dir, @files) = @_;
 
    if (check_kernel_dir($_[0])) {
-      foreach(@files) {
+      foreach (@files) {
          return 0
-            unless -r catfile($dir, $_)
+           unless -r catfile($dir, $_);
       }
 
-      return 1
+      return 1;
    }
 
-   0
+   0;
 }
 
 sub autodetect_kernel_directory
 {
-   foreach (@{ $_{dirs} }, '.', $ENV{CURRENT_KERNEL}, 'linux', 'linux-stable', 'kernel', 'kernel-stable') {
+   foreach (@{$_{dirs}}, '.', $ENV{CURRENT_KERNEL}, 'linux', 'linux-stable', 'kernel', 'kernel-stable') {
       return $_
-         if check_kernel_files_readable($_, @{ $_{files} })
+        if check_kernel_files_readable($_, @{$_{files}});
    }
 
-   undef
+   undef;
 }
 
 1;

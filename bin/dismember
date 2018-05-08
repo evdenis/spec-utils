@@ -32,9 +32,9 @@ use Local::Terminal qw(window_size);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Kernel::Module qw(parse_sources);
 use Kernel::Module::Graph qw(
-   build_sources_graph
-   get_predecessors_subgraph
-   output_sources_graph
+  build_sources_graph
+  get_predecessors_subgraph
+  output_sources_graph
 );
 
 BEGIN {
@@ -188,49 +188,46 @@ dismember - программа для выборки из общего набо�
 
 =cut
 
-
 my @functions;
 
 #cache options
-my $cache = 0;
+my $cache                = 0;
 my $renew_cache_and_exit = 0;
-my @cache_dir  = (catdir($ENV{HOME}, '.cache', 'dismember'), catdir($FindBin::Bin, '.cache'));
-my @cache_file = (undef, 'kernel.cache', 'kernel_module.cache');
+my @cache_dir            = (catdir($ENV{HOME}, '.cache', 'dismember'), catdir($FindBin::Bin, '.cache'));
+my @cache_file           = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my %config;
 my $config_file;
 my $config_direct = 0;
-GetOptions(
-   'config=s' => sub { $config_file = $_[1], $config_direct = 1 },
-) or pod2usage(1);
+GetOptions('config=s' => sub {$config_file = $_[1], $config_direct = 1},)
+  or pod2usage(1);
 
-$config{all}                 = 0;
-$config{single}              = 0;
-$config{double}              = 0;
-$config{merge}               = 0;
-$config{'remove-fields'}     = 0;
-$config{module}              = $ENV{CURRENT_PROJECT} // '.';
-$config{kernel}              = undef;
-$config{mname}               = undef;
-$config{'output-dir'}        = 'result';
-$config{'output-file'}       = undef;
-$config{editor}              = 0;
-$config{plugin}              = [];
-$config{full}                = 0;
-$config{done}                = undef;
-$config{asmodule}            = 0;
-$config{fullkernel}          = 0;
-
+$config{all}             = 0;
+$config{single}          = 0;
+$config{double}          = 0;
+$config{merge}           = 0;
+$config{'remove-fields'} = 0;
+$config{module}          = $ENV{CURRENT_PROJECT} // '.';
+$config{kernel}          = undef;
+$config{mname}           = undef;
+$config{'output-dir'}    = 'result';
+$config{'output-file'}   = undef;
+$config{editor}          = 0;
+$config{plugin}          = [];
+$config{full}            = 0;
+$config{done}            = undef;
+$config{asmodule}        = 0;
+$config{fullkernel}      = 0;
 
 my $config_exists = 0;
-if (! $config_file || ! -r $config_file) {
+if (!$config_file || !-r $config_file) {
    if ($config_direct) {
-      die "Can't open config file $config_file.\n"
-   } elsif (defined ($config_file = find_config())) {
-      $config_exists = 1
+      die "Can't open config file $config_file.\n";
+   } elsif (defined($config_file = find_config())) {
+      $config_exists = 1;
    }
 } else {
-   $config_exists = 1
+   $config_exists = 1;
 }
 
 if ($config_exists) {
@@ -244,50 +241,50 @@ if ($config_exists) {
       if (m/\A([\w-]++)\h*+=\h*+(.*?)\h*\Z/) {
          if (exists $config{$1}) {
             if (ref $config{$1} eq 'ARRAY') {
-               push @{$config{$1}}, $2
+               push @{$config{$1}}, $2;
             } else {
-               $config{$1} = $2
+               $config{$1} = $2;
             }
          } else {
             unshift @ARGV, "--$1=$2";
          }
       } else {
-         warn "Wrong config format in line $.: '$_'\n"
+         warn "Wrong config format in line $.: '$_'\n";
       }
    }
    close($conf);
 }
 
-my $help = 0;
+my $help         = 0;
 my $list_plugins = 0;
 my @args_plugins;
 GetOptions(
-   'all|a!'                =>  \$config{all},
-   'done|d=s'              =>  \$config{done},
-   'functions|f=s{1,}'     =>  \@functions,
-   'module|m=s'            =>  \$config{module},
-   'kernel|k=s'            =>  \$config{kernel},
-   'mname=s'               =>  \$config{mname},
-   'cache|c:2'             =>  \$cache,
-   'renew-cache'           =>  \$renew_cache_and_exit,
-   'single|s!'             =>  \$config{single},
-   'double'                =>  sub { $config{double} = 1; $config{single} = 0; },
-   'merge!'                =>  \$config{merge},
-   'full'                  =>  \$config{full},
-   'asmodule'              =>  \$config{asmodule},
-   'remove-fields|r!'      =>  \$config{'remove-fields'},
-   'output-file|o=s'       =>  \$config{'output-file'},
-   'output-dir=s'          =>  \$config{'output-dir'},
-   'editor|e!'             =>  \$config{editor},
-   'plugin=s@'             =>  \@args_plugins,
-   'list-plugins'          =>  \$list_plugins,
-   'help|h'                =>  \$help
+   'all|a!'            => \$config{all},
+   'done|d=s'          => \$config{done},
+   'functions|f=s{1,}' => \@functions,
+   'module|m=s'        => \$config{module},
+   'kernel|k=s'        => \$config{kernel},
+   'mname=s'           => \$config{mname},
+   'cache|c:2'         => \$cache,
+   'renew-cache'       => \$renew_cache_and_exit,
+   'single|s!'         => \$config{single},
+   'double'            => sub {$config{double} = 1; $config{single} = 0;},
+   'merge!'            => \$config{merge},
+   'full'              => \$config{full},
+   'asmodule'          => \$config{asmodule},
+   'remove-fields|r!'  => \$config{'remove-fields'},
+   'output-file|o=s'   => \$config{'output-file'},
+   'output-dir=s'      => \$config{'output-dir'},
+   'editor|e!'         => \$config{editor},
+   'plugin=s@'         => \@args_plugins,
+   'list-plugins'      => \$list_plugins,
+   'help|h'            => \$help
 ) or pod2usage(1);
 $cache = 0
-   if $renew_cache_and_exit;
+  if $renew_cache_and_exit;
 @functions = split(/,/, join(',', @functions));
 $config{functions} = \@functions;
-$config{plugin} = [ split(/,/, join(',', @{$config{plugin}})) ];
+$config{plugin} = [split(/,/, join(',', @{$config{plugin}}))];
 push @{$config{plugin}}, @args_plugins;
 
 if ($config{'output-file'}) {
@@ -295,34 +292,33 @@ if ($config{'output-file'}) {
    $config{single} = 1;
    $config{merge}  = 1;
    (undef, $config{'output-dir'}, $config{'output-file'}) =
-       splitpath($config{'output-file'});
+     splitpath($config{'output-file'});
    unless ($config{'output-dir'}) {
-      $config{'output-dir'} = '.'
+      $config{'output-dir'} = '.';
    }
 }
 
 if ($config{asmodule}) {
-   $config{all}         = 1;
-   $config{merge}       = 1;
-   $config{full}        = 1;
-   $config{fullkernel}  = 1;
+   $config{all}        = 1;
+   $config{merge}      = 1;
+   $config{full}       = 1;
+   $config{fullkernel} = 1;
 }
 
 pod2usage({-verbose => 2, -exitval => 0})
-    if $help;
+  if $help;
 
 if ($list_plugins) {
-   my @plugins =  map {lc(substr($_, rindex($_, ':') + 1))}
-                  Module::Loader->new(max_depth => 1)
-                                ->search('App::Dismember::Plugin');
+   my @plugins =
+     map {lc(substr($_, rindex($_, ':') + 1))} Module::Loader->new(max_depth => 1)->search('App::Dismember::Plugin');
    print join("\n", @plugins) . "\n";
    exit 0;
 }
 
 $config{kernel} //= autodetect_kernel_directory();
 
-pod2usage({ -msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2 })
-    unless check_kernel_dir($config{kernel});
+pod2usage({-msg => "You should provide proper kernel directory with --kernel option\n", -exitval => 2})
+  unless check_kernel_dir($config{kernel});
 
 $config{kernel} = realpath $config{kernel};
 $config{module} = realpath $config{module};
@@ -330,13 +326,13 @@ $config{module} = realpath $config{module};
 ### KERNEL DIRECTORY: $config{kernel}
 ### MODULE DIRECTORY: $config{module}
 
-pod2usage({ -msg => "File $config{done} is not readable.\n", -exitval => 2 })
-    if $config{done} && ! -r $config{done};
+pod2usage({-msg => "File $config{done} is not readable.\n", -exitval => 2})
+  if $config{done} && !-r $config{done};
 
 my @plugins;
 my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5);
 if (@{$config{plugin}}) {
-   my $loader  = Module::Loader->new(max_depth => 1);
+   my $loader = Module::Loader->new(max_depth => 1);
    my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
    foreach my $p (@{$config{plugin}}) {
       if (any {$p eq $_} keys %pmap) {
@@ -345,8 +341,8 @@ if (@{$config{plugin}}) {
          $loader->load($plugin);
 
          foreach (qw/level action process_options/) {
-            unless (eval { $plugin->can($_) }) {
-               die "plugin $p $plugin: doesn't have method '$_'\n"
+            unless (eval {$plugin->can($_)}) {
+               die "plugin $p $plugin: doesn't have method '$_'\n";
             }
          }
 
@@ -356,19 +352,19 @@ if (@{$config{plugin}}) {
          my %lvl = $obj->level;
          foreach (keys %lvl) {
             unless (defined $lvl{$_}) {
-               die "plugin $p: level priority is not specified\n"
+               die "plugin $p: level priority is not specified\n";
             }
             unless (exists $level{$_}) {
-               die "plugin $p: unknown level\n"
+               die "plugin $p: unknown level\n";
             }
             unless ($lvl{$_} >= 0 && $lvl{$_} < 100) {
-               die "plugin $p: only priority levels 0..99 supported\n"
+               die "plugin $p: only priority levels 0..99 supported\n";
             }
          }
 
          push @plugins, $obj;
       } else {
-         die "There is no plugin: $p\n"
+         die "There is no plugin: $p\n";
       }
    }
 }
@@ -379,28 +375,28 @@ foreach my $p (@plugins) {
    foreach (keys %l) {
       my $pr = $l{$_};
       if (exists $schedule{$_}{$pr}) {
-         die "Can't use plugin " . (ref $p) . " and " . (ref $schedule{$_}{$pr}) . " combined.\n"
+         die "Can't use plugin " . (ref $p) . " and " . (ref $schedule{$_}{$pr}) . " combined.\n";
       }
       $schedule{$_}{$pr} = $p;
    }
 }
 foreach my $l (keys %schedule) {
-   $schedule{$l} = [ map {$schedule{$l}{$_}} sort keys %{$schedule{$l}} ]
+   $schedule{$l} = [map {$schedule{$l}{$_}} sort keys %{$schedule{$l}}];
 }
 
-pod2usage({ -msg => "You should provide at least one function name.\n", -exitval => 2 })
-    unless @functions || $config{all} || $config{done} || $renew_cache_and_exit;
-pod2usage({ -msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2 })
-    if @functions && $config{all};
-pod2usage({ -msg => "Can't use --done flag with --functions simultaneously.\n", -exitval => 2 })
-    if @functions && $config{done};
-pod2usage({ -msg => "Can't use --all flag with --done simultaneously.\n", -exitval => 2 })
-    if $config{done} && $config{all};
-pod2usage({ -msg => "Can't use --single flag with --double simultaneously.\n", -exitval => 2 })
-    if $config{single} && $config{double};
+pod2usage({-msg => "You should provide at least one function name.\n", -exitval => 2})
+  unless @functions || $config{all} || $config{done} || $renew_cache_and_exit;
+pod2usage({-msg => "Can't use --all flag with --functions simultaneously.\n", -exitval => 2})
+  if @functions && $config{all};
+pod2usage({-msg => "Can't use --done flag with --functions simultaneously.\n", -exitval => 2})
+  if @functions && $config{done};
+pod2usage({-msg => "Can't use --all flag with --done simultaneously.\n", -exitval => 2})
+  if $config{done} && $config{all};
+pod2usage({-msg => "Can't use --single flag with --double simultaneously.\n", -exitval => 2})
+  if $config{single} && $config{double};
 
 if (@ARGV) {
-   pod2usage({ -msg => "Unknown options: " . join("\n", @ARGV) . "\n", -exitval => 2 })
+   pod2usage({-msg => "Unknown options: " . join("\n", @ARGV) . "\n", -exitval => 2});
 }
 
 # after these check we can handle $config{done}
@@ -408,15 +404,16 @@ if ($config{done}) {
    ### CONFIG FILE: $config{done}
    my $conf = load_config $config{done};
    die "Can't read $config{done} file.\n"
-      unless $conf;
+     unless $conf;
    die "File $config{done} has improper format.\n"
-      unless check_status_format($conf);
+     unless check_status_format($conf);
    push @functions, uniq @{$conf->{done}};
 }
 
-if ($#functions == 0 &&
-    ($config{single} || $config{double}) &&
-    !defined($config{'output-file'})) {
+if (  $#functions == 0
+   && ($config{single} || $config{double})
+   && !defined($config{'output-file'}))
+{
    my $out = "$functions[0].c";
    print "Generated output file name: $out\n";
    $config{'output-file'} = $out;
@@ -427,11 +424,11 @@ sub create_directory
    unless (make_path($_[0])) {
       unless (-e $_[0]) {
          warn("Can't create directory $_[0]: $!\n");
-         return 1
+         return 1;
       }
    }
 
-   0
+   0;
 }
 
 create_directory $config{'output-dir'};
@@ -440,50 +437,46 @@ create_directory $config{'output-dir'};
    my $c = 0;
    foreach my $dir (@cache_dir) {
       unless (create_directory($dir)) {
-         @cache_file = map { defined $_ ? catfile($dir, $_) : $_ } @cache_file;
+         @cache_file = map {defined $_ ? catfile($dir, $_) : $_} @cache_file;
          $c = 1;
-         last
+         last;
       }
    }
    die "Can't create directory for cache.\n"
-      unless $c
+     unless $c
 }
 
 $cache = 2 if $cache > 2;
-$cache = 0 if $cache && ! -r $cache_file[$cache];
+$cache = 0 if $cache && !-r $cache_file[$cache];
 
 ### CACHE OPTIONS:
 ###   use:   $cache
 ###   file:  @cache_file
 goto CACHED_GRAPH
-   if $cache == 2;
+  if $cache == 2;
 
 ### PARSING SOURCES...
-my %sources = parse_sources($config{kernel}, $config{module}, $config{mname},
-                 ["#define SPECIFICATION 1\n"],
-                 !$cache,
-                 $config{fullkernel});
+my %sources = parse_sources($config{kernel}, $config{module}, $config{mname}, ["#define SPECIFICATION 1\n"],
+   !$cache, $config{fullkernel});
 die "Can't find functions in module files\n"
-    unless $sources{module}{function};
+  unless $sources{module}{function};
 
 ### BUILDING SOURCES GRAPH...
 my $g = build_sources_graph(\%sources, {cache => {use => $cache, file => $cache_file[1]}});
-$g->set_graph_attribute('comments', $sources{comments});
+$g->set_graph_attribute('comments',       $sources{comments});
 $g->set_graph_attribute('module_strings', $sources{module_strings});
 $g->set_graph_attribute('kernel_strings', $sources{kernel_strings});
-$g->set_graph_attribute('index', $sources{module}{function}->index);
-
+$g->set_graph_attribute('index',          $sources{module}{function}->index);
 
 CACHED_GRAPH:
 if ($cache == 2) {
-   $g = retrieve($cache_file[2])
+   $g = retrieve($cache_file[2]);
 } else {
    store($g, $cache_file[2]);
 
    exit 0
-      if $renew_cache_and_exit;
+     if $renew_cache_and_exit;
 }
-
 
 print "\n";
 
@@ -497,17 +490,16 @@ sub call_plugins
          try {
             $plugin->action(\%opts)
          } catch {
-            when (/^FAIL:/) { die $_ };
-            default { $res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n" }
+            when (/^FAIL:/) {die $_}
+            default {$res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n"}
          };
       }
    }
 
-   $res
+   $res;
 }
 
 call_plugins level => 'full_graph', graph => $g;
-
 
 my $indx = $g->get_graph_attribute('index');
 
@@ -521,15 +513,15 @@ sub generate_merged_dirname
       my $pf = 'merged_';
 
       if ($asmodule) {
-         $pf = 'fullmodule'
+         $pf = 'fullmodule';
       } elsif ($done) {
-         $pf .= 'done'
+         $pf .= 'done';
       } elsif ($all) {
-         $pf .= 'all'
+         $pf .= 'all';
       } else {
          $pf .= join('-', sort(@$functions));
       }
-      return  $pf;
+      return $pf;
    }
 }
 
@@ -537,15 +529,12 @@ sub generate_files
 {
    my ($graph, @functions) = @_;
    @functions = sort @functions;
-   my @ids = map { $indx->{$_} // $_ } @functions;
+   my @ids = map {$indx->{$_} // $_} @functions;
    my $fd;
 
    unless ($config{'output-file'}) {
       $fd = catdir $config{'output-dir'},
-               generate_merged_dirname(\@functions,
-                  $config{all},
-                  $config{done},
-                  $config{asmodule});
+        generate_merged_dirname(\@functions, $config{all}, $config{done}, $config{asmodule});
       create_directory $fd;
    } else {
       $fd = $config{'output-dir'};
@@ -553,8 +542,8 @@ sub generate_files
 
    my $rgraph = get_predecessors_subgraph($graph, @ids);
    call_plugins
-      level => 'reduced_graph',
-      graph => $rgraph;
+     level => 'reduced_graph',
+     graph => $rgraph;
 
    #use Graph::Writer::Dot;
    #my @v = map {my $o = $rgraph->get_vertex_attribute($_, 'object'); $o->name} $rgraph->vertices;
@@ -571,17 +560,20 @@ sub generate_files
       }
    }
 
-   my @files =
-   output_sources_graph($rgraph, \@ids, $fd, $filename,
-                                 $config{single} ? 1 : $config{double} ? 2 : 0,
-                                 $config{'remove-fields'},
-                                 $config{fullkernel},
-                                 $config{full},
-                                 sub {
-                                    call_plugins function => \@functions, graph => $rgraph, @_
-                                 }
-                        );
-   my $cfile = (grep {rindex($_,'.c') != -1} @files)[0];
+   my @files = output_sources_graph(
+      $rgraph,
+      \@ids,
+      $fd,
+      $filename,
+      $config{single} ? 1 : $config{double} ? 2 : 0,
+      $config{'remove-fields'},
+      $config{fullkernel},
+      $config{full},
+      sub {
+         call_plugins function => \@functions, graph => $rgraph, @_;
+      }
+   );
+   my $cfile = (grep {rindex($_, '.c') != -1} @files)[0];
    print "OUTPUT: $cfile\n\n";
 
    my $res = {dir => $fd};
@@ -593,15 +585,15 @@ my @all_output_files;
 {
    my $i = 1;
    my (undef, $col) = window_size();
-   my $msg = "GENERATING SUBGRAPH FOR FUNCTION: ";
+   my $msg   = "GENERATING SUBGRAPH FOR FUNCTION: ";
    my $total = 0;
 
    unless ($config{all}) {
       # Arguments check
       @functions = grep {
-            if (exists $indx->{$_}) { 1 }
-            else { warn "Function $_ doesn't exist in module.\n"; 0 }
-         } @functions;
+         if   (exists $indx->{$_}) {1}
+         else                      {warn "Function $_ doesn't exist in module.\n"; 0}
+      } @functions;
       die "There is no valid functions.\n" unless @functions;
       $total = @functions;
       my $reserved_colons = length($msg) + length($total) + 3;
@@ -615,61 +607,62 @@ my @all_output_files;
             push @all_output_files, $output;
          }
       } else {
-            my $spaces = $col - $reserved_colons - length('merged') - 1;
-            print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
-            my $output = generate_files $g, @functions;
-            call_plugins level => 'post_output', %$output;
-            push @all_output_files, $output;
+         my $spaces = $col - $reserved_colons - length('merged') - 1;
+         print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
+         my $output = generate_files $g, @functions;
+         call_plugins level => 'post_output', %$output;
+         push @all_output_files, $output;
       }
    } else {
       $total = keys %$indx;
       my $reserved_colons = length($msg) + length($total) + 3;
       if ($config{merge}) {
-            my $spaces = $col - $reserved_colons - length('merged') - 1;
-            print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
-            my @vertices = keys %$indx;
-            if ($config{asmodule}) {
-               my @module;
-               foreach ($g->vertices) {
-                  my $o = $g->get_vertex_attribute($_, 'object');
-                  if (blessed($o) eq 'C::Global') {
-                     if ($o->type eq '--MODULE--') {
-                        push @module, $o->id;
-                     }
+         my $spaces = $col - $reserved_colons - length('merged') - 1;
+         print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
+         my @vertices = keys %$indx;
+         if ($config{asmodule}) {
+            my @module;
+            foreach ($g->vertices) {
+               my $o = $g->get_vertex_attribute($_, 'object');
+               if (blessed($o) eq 'C::Global') {
+                  if ($o->type eq '--MODULE--') {
+                     push @module, $o->id;
                   }
                }
-               push @vertices, @module;
             }
-            my $output = generate_files $g, @vertices;
-            call_plugins level => 'post_output', %$output;
-            push @all_output_files, $output;
+            push @vertices, @module;
+         }
+         my $output = generate_files $g, @vertices;
+         call_plugins level => 'post_output', %$output;
+         push @all_output_files, $output;
       } else {
-         my %rindx = reverse %$indx;
+         my %rindx    = reverse %$indx;
          my $subgraph = Graph::Directed->new(
-                           edges    => [ map {
-                                                grep {
-                                                   exists $rindx{$_->[1]}
-                                                } $g->edges_from($_)
-                                         } values %$indx ],
-                           vertices => [ values %$indx ]
-                        );
-         my %vertices = map { ($_ => 0) } $subgraph->vertices;
+            edges => [
+               map {
+                  grep {exists $rindx{$_->[1]}}
+                    $g->edges_from($_)
+               } values %$indx
+            ],
+            vertices => [values %$indx]
+         );
+         my %vertices = map {($_ => 0)} $subgraph->vertices;
 
          while ($subgraph->has_a_cycle) {
             my @cycle = $subgraph->find_a_cycle();
             if (@cycle == 1) {
-               $subgraph->delete_edge(@cycle[0,0])
+               $subgraph->delete_edge(@cycle[0, 0]);
             } else {
-               $subgraph->delete_edge(@cycle[0,1])
+               $subgraph->delete_edge(@cycle[0, 1]);
             }
          }
 
-         my %vd  = map { ($_, $subgraph->in_degree($_)) } keys %vertices;
+         my %vd = map {($_, $subgraph->in_degree($_))} keys %vertices;
          my @all_failed;
          while (%vertices) {
             my @zv;
 
-            foreach(keys %vertices) {
+            foreach (keys %vertices) {
                push @zv, $_ if 0 == $vd{$_};
             }
 
@@ -684,11 +677,11 @@ my @all_output_files;
             my @fail;
             foreach (sort @zv) {
                my $function = $rindx{$_};
-               my $spaces = $col - $reserved_colons - length($function) - length($i);
+               my $spaces   = $col - $reserved_colons - length($function) - length($i);
                print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
                my $output = generate_files $g, $function;
                if (call_plugins(level => 'post_output', %$output)) {
-                  push @fail, $_
+                  push @fail, $_;
                }
                push @all_output_files, $output;
             }
@@ -707,7 +700,6 @@ my @all_output_files;
    }
 }
 
-
 if ($config{editor}) {
    if (which($ENV{EDITOR})) {
       my @exec = ($ENV{EDITOR});
@@ -719,7 +711,7 @@ if ($config{editor}) {
       if ($#exec > 0) {
          my $pid = fork();
          die "can't fork: $!"
-            unless defined $pid;
+           unless defined $pid;
          if ($pid) {
             print "$pid\n";
             exit 0;
@@ -728,9 +720,9 @@ if ($config{editor}) {
          setsid();
          exec(@exec);
       } else {
-         warn "EDITOR will not be started since there is no files to work with.\n"
+         warn "EDITOR will not be started since there is no files to work with.\n";
       }
    } else {
-      die "Can't find application from EDITOR env variable.\n"
+      die "Can't find application from EDITOR env variable.\n";
    }
 }

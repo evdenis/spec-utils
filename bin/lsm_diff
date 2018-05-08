@@ -27,7 +27,6 @@ BEGIN {
    }
 }
 
-
 my $sec_hooks_file = 'sec-hooks.c';
 
 my $kdir;
@@ -37,56 +36,58 @@ my $output = '';
 my $csvout = 0;
 
 GetOptions(
-   'kernel|k=s'    => sub { if (check_kernel_files_readable($_[1], 'Makefile')) { $kdir = $_[1] } else { die(qq(Incorrect path to kernel: "$_[1]"\n)) } },
+   'kernel|k=s' => sub {
+      if (check_kernel_files_readable($_[1], 'Makefile')) {$kdir = $_[1]}
+      else                                                {die(qq(Incorrect path to kernel: "$_[1]"\n))}
+   },
    'module|m=s'    => \$mdir,
    'file|f=s'      => \$sec_hooks_file,
    'output|o=s'    => \$output,
    'csv-output|c!' => \$csvout,
 ) or die "Incorrect usage!\n";
 
-
 die(qq(Incorrect path to module: "$mdir"\n))
-   if $mdir && !( -d $mdir );
+  if $mdir && !(-d $mdir);
 
 $kdir //= autodetect_kernel_directory(files => [qw/Makefile/]);
 
 die "Can't find path to linux kernel sources directory.\n"
-   unless $kdir;
+  unless $kdir;
 
 unless ($mdir) {
-   if ( -r $sec_hooks_file) {
+   if (-r $sec_hooks_file) {
       $mdir = '.';
-   } elsif ( defined $ENV{CURRENT_PROJECT} && -r catfile($ENV{CURRENT_PROJECT}, $sec_hooks_file) ) {
+   } elsif (defined $ENV{CURRENT_PROJECT} && -r catfile($ENV{CURRENT_PROJECT}, $sec_hooks_file)) {
       $mdir = $ENV{CURRENT_PROJECT};
    }
 }
 
 die "Can't find path to module sources directory.\n"
-   unless $mdir;
+  unless $mdir;
 
 my $mh_path = catfile($mdir, $sec_hooks_file);
 die "Can't read file $mh_path\n"
-    unless -r $mh_path;
+  unless -r $mh_path;
 
 my $kernel_version = do {
    open my $MK, '<', "$kdir/Makefile";
-   join('.', map { <$MK> =~ m/=\s*(\d+)/ } (1 .. 3))
+   join('.', map {<$MK> =~ m/=\s*(\d+)/} (1 .. 3));
 };
 
 my $kernel_header;
 my $parse_structure_defition_ops_fields;
 my $v_to_n = sub {$_[0] =~ s/\.//gr};
 if ($v_to_n->($kernel_version) >= $v_to_n->('4.1.0')) {
-   $kernel_header = catfile(qw(include linux lsm_hooks.h));
+   $kernel_header                       = catfile(qw(include linux lsm_hooks.h));
    $parse_structure_defition_ops_fields = \&parse_structure_defition_ops_fields_410;
 } else {
-   $kernel_header = catfile(qw(include linux security.h));
+   $kernel_header                       = catfile(qw(include linux security.h));
    $parse_structure_defition_ops_fields = \&parse_structure_defition_ops_fields_before_410;
 }
 
 my $kh_path = catfile($kdir, $kernel_header);
 die "Can't read kernel header $kh_path\n"
-   unless -r $kh_path;
+  unless -r $kh_path;
 
 ### KERNEL: $kdir
 ### KERNEL VERSION: $kernel_version
@@ -94,48 +95,64 @@ die "Can't read kernel header $kh_path\n"
 ### MODULE LSM HOOKS FILE: $sec_hooks_file
 ### KERNEL LSM HOOKS FILE: $kernel_header
 
-
 my $sec_file   = read_file($kh_path);
 my $hooks_file = read_file($mh_path);
 
 adapt($sec_file,   comments => 1);
 adapt($hooks_file, comments => 1);
 
-sub argname {
+sub argname
+{
    $_[0] =~ m/(\w+)$/;
    return $1 ne 'void' ? $1 : '';
 }
 
-sub argtype {
+sub argtype
+{
    $_[0] =~ m/^(.*?)(?=\s*\w+$)/;
    return $1 eq '' ? 'void' : $1;
 }
 
-sub parse_structure_defition_ops_fields_410 {
+sub parse_structure_defition_ops_fields_410
+{
    my $conf = $_[1];
-   map { $_ = normalize($_); if (m/LSM_HOOK_INIT\((\w++),\h*(\w++)\)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /^/, $_[0];
+   map {
+      $_ = normalize($_);
+      if (m/LSM_HOOK_INIT\((\w++),\h*(\w++)\)/) {$1 => +{init => $2, conf => $conf}}
+      else                                      {()}
+   } split /^/, $_[0];
 }
 
-sub parse_structure_defition_ops_fields_before_410 {
+sub parse_structure_defition_ops_fields_before_410
+{
    my $conf = $_[1];
-   map { $_ = normalize($_); if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{ init => $2, conf => $conf }} else { () } } split /,/, $_[0];
+   map {
+      $_ = normalize($_);
+      if (m/\.(\w+)\s*=\s*(\w+)/) {$1 => +{init => $2, conf => $conf}}
+      else                        {()}
+   } split /,/, $_[0];
 }
 
-sub parse_structure_declaration_ops_fields {
+sub parse_structure_declaration_ops_fields
+{
    my $conf = $_[1];
    my @fields = map normalize($_), split(/;/, $_[0]);
 
    # filter non-functions
-   @fields = grep { m/\(\*\w+\)\s*\(/ } @fields;
+   @fields = grep {m/\(\*\w+\)\s*\(/} @fields;
 
-   map { m/\(\*(\w+)\)\s*\((.*?)\)$/; $1 => +{ args => $2, conf => $conf } } @fields;
+   map {m/\(\*(\w+)\)\s*\((.*?)\)$/; $1 => +{args => $2, conf => $conf}} @fields;
 }
 
-sub parse_security_operations_structure {
+sub parse_security_operations_structure
+{
    my $handler = $_[1];
    my %structure;
 
-   if ($_[0] =~ m/^\h*(?:struct|union)\s++security_(?:operations|list_options|hook_list)(?:\s++[\w\[\]]+\s*=)?\s*(?<br>\{(?:(?>[^\{\}]+)|(?&br))+\})/m) {
+   if ($_[0] =~
+m/^\h*(?:struct|union)\s++security_(?:operations|list_options|hook_list)(?:\s++[\w\[\]]+\s*=)?\s*(?<br>\{(?:(?>[^\{\}]+)|(?&br))+\})/m
+     )
+   {
       my @lines = split /\n/, $1;
       my $buf = '';
       my @ifdefs;
@@ -144,31 +161,31 @@ sub parse_security_operations_structure {
       foreach (@lines) {
          next if $_ =~ m/^\s*\n$/;
          if ($_ =~ m/^\s*\#\s*if\s+(?<cond>.+)$/) {
-            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            %structure = (%structure, $handler->($buf, join(' && ', @ifdefs)));
             $buf = '';
             push @ifdefs, normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*ifdef\s+(?<cond>\w+)\s*$/) {
-            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            %structure = (%structure, $handler->($buf, join(' && ', @ifdefs)));
             $buf = '';
             push @ifdefs, normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*ifndef\s+(?<cond>\w+)\s*$/) {
-            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            %structure = (%structure, $handler->($buf, join(' && ', @ifdefs)));
             $buf = '';
             push @ifdefs, '! ' . normalize($+{cond});
             next;
          }
          if ($_ =~ m/^\s*\#\s*else/) {
-            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            %structure = (%structure, $handler->($buf, join(' && ', @ifdefs)));
             $buf = '';
             push @ifdefs, '! ' . pop(@ifdefs);
             next;
          }
          if ($_ =~ m/^\s*\#\s*endif/) {
-            %structure = (%structure, $handler->($buf, join( ' && ', @ifdefs)));
+            %structure = (%structure, $handler->($buf, join(' && ', @ifdefs)));
             $buf = '';
             pop @ifdefs;
             next;
@@ -183,7 +200,7 @@ sub parse_security_operations_structure {
    return %structure;
 }
 
-my %str_kernel = parse_security_operations_structure $sec_file, \&parse_structure_declaration_ops_fields;
+my %str_kernel = parse_security_operations_structure $sec_file,   \&parse_structure_declaration_ops_fields;
 my %str_module = parse_security_operations_structure $hooks_file, $parse_structure_defition_ops_fields;
 
 foreach (keys %str_kernel) {
@@ -193,7 +210,6 @@ foreach (keys %str_kernel) {
    }
 }
 
-
 my $columns = ['Idx', 'Указатель на функцию', 'Функция', 'Аргументы', 'Конфигурация ядра', 'Конфигурация модуля'];
 my $obj;
 my $addfunc;
@@ -202,7 +218,7 @@ my $retfunc;
 unless ($csvout) {
    my $t1 = Text::ANSITable->new;
    $t1->border_style('Default::bold');
-   if ( IO::Interactive::is_interactive() && !$output ) {
+   if (IO::Interactive::is_interactive() && !$output) {
       $t1->color_theme('Default::default_gradation');
    } else {
       $t1->color_theme('Default::no_color');
@@ -210,31 +226,32 @@ unless ($csvout) {
 
    $t1->columns($columns);
 
-   $t1->set_column_style('Idx',                  pad  => 0);
-   $t1->set_column_style('Указатель на функцию', align  => 'left');
-   $t1->set_column_style('Функция',              align  => 'middle');
-   $t1->set_column_style('Аргументы',            align  => 'middle');
-   $t1->set_column_style('Конфигурация ядра',    align  => 'middle');
-   $t1->set_column_style('Конфигурация модуля',  align  => 'middle');
+   $t1->set_column_style('Idx',                  pad   => 0);
+   $t1->set_column_style('Указатель на функцию', align => 'left');
+   $t1->set_column_style('Функция',              align => 'middle');
+   $t1->set_column_style('Аргументы',            align => 'middle');
+   $t1->set_column_style('Конфигурация ядра',    align => 'middle');
+   $t1->set_column_style('Конфигурация модуля',  align => 'middle');
 
    #$t1->column_filter(sub { $_ ne'Аргументы' });
-   $obj = \$t1;
-   $addfunc = sub { Text::ANSITable::add_row($_[0], $_[1]); Text::ANSITable::add_row_separator($_[0], $_[1]); };
-   $retfunc = sub { $_[0] . "\n" .  Text::ANSITable::draw($_[1]); };
+   $obj     = \$t1;
+   $addfunc = sub {Text::ANSITable::add_row($_[0], $_[1]); Text::ANSITable::add_row_separator($_[0], $_[1]);};
+   $retfunc = sub {$_[0] . "\n" . Text::ANSITable::draw($_[1]);};
 } else {
    my $csv = Class::CSV->new(
       fields         => $columns,
       line_separator => "\r\n",
       csv_xs_options => {
-         sep_char          => ';',
+         sep_char => ';',
       },
    );
 
-   $obj = \$csv;
+   $obj     = \$csv;
    $addfunc = \&Class::CSV::add_line;
-   $retfunc = sub { $_[0] . "\r\n" . join(';', map { '"' . $_ . '"' } @$columns) . "\r\n" . Class::CSV::string($_[1]); };
+   $retfunc = sub {
+      $_[0] . "\r\n" . join(';', map {'"' . $_ . '"'} @$columns) . "\r\n" . Class::CSV::string($_[1]);
+   };
 }
-
 
 my $counter = 1;
 
@@ -244,13 +261,12 @@ foreach (reverse sort {defined $str_kernel{$a}{module} <=> defined $str_kernel{$
    my $kconf = $str_kernel{$_}{conf};
    my $mconf = defined $str_kernel{$_}{module} ? $str_kernel{$_}{module}{conf} : undef;
    my $line  = [$counter++, $_, $init, $args, $kconf, $mconf];
-   $addfunc->($$obj, $line)
+   $addfunc->($$obj, $line);
 }
-
 
 my $str = $retfunc->(qq("Таблица функций в security_operations (версия ядра $kernel_version)"), $$obj);
 if ($output) {
-   write_file($output, { binmode => ':utf8' }, $str);
+   write_file($output, {binmode => ':utf8'}, $str);
 } else {
    print $str;
 }
@@ -262,19 +278,18 @@ if (keys %str_module) {
    unless ($csvout) {
       my $t2 = Text::ANSITable->new;
       $t2->border_style('Default::bold');
-      if ( IO::Interactive::is_interactive() && !$output ) {
+      if (IO::Interactive::is_interactive() && !$output) {
          $t2->color_theme('Default::default_gradation');
       } else {
          $t2->color_theme('Default::no_color');
       }
 
-
       $t2->columns($columns);
 
-      $t2->set_column_style('Idx',                  pad  => 0);
-      $t2->set_column_style('Указатель на функцию', align  => 'left');
-      $t2->set_column_style('Функция',              align  => 'middle');
-      $t2->set_column_style('Конфигурация модуля',  align  => 'middle');
+      $t2->set_column_style('Idx',                  pad   => 0);
+      $t2->set_column_style('Указатель на функцию', align => 'left');
+      $t2->set_column_style('Функция',              align => 'middle');
+      $t2->set_column_style('Конфигурация модуля',  align => 'middle');
 
       $obj = \$t2;
    } else {
@@ -282,27 +297,27 @@ if (keys %str_module) {
          fields         => $columns,
          line_separator => "\r\n",
          csv_xs_options => {
-            sep_char          => ';',
+            sep_char => ';',
          },
       );
 
       $obj = \$csv;
    }
 
-
    $counter = 1;
 
    foreach (keys %str_module) {
       my $init  = $str_module{$_}{init};
       my $mconf = $str_module{$_}{conf};
-      my $line = [$counter++, $_, $init, $mconf];
+      my $line  = [$counter++, $_, $init, $mconf];
 
       $addfunc->($$obj, $line);
    }
 
-   $str = "\r\n" . $retfunc->(qq("Таблица функций, отсутствующих в security_operations (версия ядра $kernel_version)"), $$obj);
+   $str = "\r\n"
+     . $retfunc->(qq("Таблица функций, отсутствующих в security_operations (версия ядра $kernel_version)"), $$obj);
    if ($output) {
-      write_file($output, { binmode => ':utf8', append => 1 }, $str);
+      write_file($output, {binmode => ':utf8', append => 1}, $str);
    } else {
       print "\r\n" . $str;
    }

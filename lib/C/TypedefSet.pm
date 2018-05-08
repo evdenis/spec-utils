@@ -9,11 +9,9 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
-with    'C::Parse';
+with 'C::Parse';
 
-has '+set' => (
-   isa => 'ArrayRef[C::Typedef]',
-);
+has '+set' => (isa => 'ArrayRef[C::Typedef]',);
 
 sub parse
 {
@@ -23,7 +21,8 @@ sub parse
 
    my $name = qr/(?:[\*\s]+)?(?<name>$varname)\b${s}*+(?:\[[^\]]*\])?/;
 
-   while (${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
+   while (
+      ${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
          (?:
             (?:(?:(?:struct|union|enum)${s}*+(?:$varname)?${s}*+(?<crec>\{(?:(?>[^\{\}]+)|(?&crec))+\}))(?:${s}*+PARSEC_PACKED)?${s}*+($name))
             |
@@ -31,7 +30,8 @@ sub parse
             |
             (?:(?:.*?)${s}*+(?:$name))
          )${s}*+;
-      /gmpx)
+      /gmpx
+     )
    {
       my $name = $+{name};
       my $code = ${^MATCH};
@@ -42,12 +42,8 @@ sub parse
       $typedefs{$name} = $code;
    }
 
-   return $self->new(set => [
-           map { C::Typedef->new(name => $_, code => $typedefs{$_}, area => $area) } keys %typedefs
-       ]
-   );
+   return $self->new(set => [map {C::Typedef->new(name => $_, code => $typedefs{$_}, area => $area)} keys %typedefs]);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

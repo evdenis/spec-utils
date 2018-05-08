@@ -81,44 +81,52 @@ stapgen - Создаёт systemtap скрипт на основе исходно
 
 =cut
 
-
 my $kernel;
-my $verbose = 0;
-my $caller_lev = 0;
-my $caller_set = 0;
+my $verbose         = 0;
+my $caller_lev      = 0;
+my $caller_set      = 0;
 my $trace_functions = 0;
-my $trace_syscalls = 1;
-my $help = 0;
+my $trace_syscalls  = 1;
+my $help            = 0;
 
 GetOptions(
-   'kernel|k=s'   => sub { if (check_kernel_files_readable($_[1], CAPABILITY_C)) { $kernel = $_[1] } else { die('Incorrect path to kernel (required files ' . CAPABILITY_C . "): '$_[1]'\n") } },
-   'verbose|v+'   => \$verbose,
-   'caller|c'     => sub { unless ($caller_set) { $caller_set = 1; $caller_lev = 1 } else { ++$caller_lev } },
+   'kernel|k=s' => sub {
+      if (check_kernel_files_readable($_[1], CAPABILITY_C)) {$kernel = $_[1]}
+      else {die('Incorrect path to kernel (required files ' . CAPABILITY_C . "): '$_[1]'\n")}
+   },
+   'verbose|v+' => \$verbose,
+   'caller|c'   => sub {
+      unless ($caller_set) {$caller_set = 1; $caller_lev = 1}
+      else                 {++$caller_lev}
+   },
    'syscalls|s!'  => \$trace_syscalls,
    'functions|f!' => \$trace_functions,
    'help|h'       => \$help
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0})
-   if $help;
+  if $help;
 
 $kernel //= autodetect_kernel_directory(files => [CAPABILITY_C]);
 
-pod2usage({ -msg => "Can't find path to linux kernel sources directory (required files " . CAPABILITY_C . ").\n", -exitval => 2 })
-   unless $kernel;
+pod2usage(
+   {
+      -msg     => "Can't find path to linux kernel sources directory (required files " . CAPABILITY_C . ").\n",
+      -exitval => 2
+   }
+) unless $kernel;
 
 sub generate_caller_func
 {
-   my $level  = $_[0];
+   my $level      = $_[0];
    my $ret_header = qq!function caller:string() {\n\treturn sprintf(!;
    my $ret_footer = qq!)\n}\n!;
 
-   my $printf_string = '';
+   my $printf_string    = '';
    my $printf_arguments = '';
 
-
    for (my $i = 1; $i <= $level; ++$i) {
-      $printf_string .= '->%s';
+      $printf_string    .= '->%s';
       $printf_arguments .= ", symname(stack($i))";
    }
    return $ret_header . qq("$printf_string") . $printf_arguments . $ret_footer;
@@ -129,14 +137,14 @@ my %configuration;
 my $security_c = read_file(catfile($kernel, CAPABILITY_C));
 
 if ($security_c =~ m/security_fixup_ops\s*\(\s*struct\s+security_operations\s*\*ops\s*\)\s*\{([^}]+)\}/m) {
-	my $contents = $1;
-	while ($contents =~ s/#ifdef\s+(?<conf>\w+)\s+(?<funcs>[^\#]+)\s*#endif//m) {
-		my $conf = $+{conf};
-		$configuration{ $conf } = [ map { "cap_$_" } ($+{funcs} =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
-	}
-	$configuration{'DEFAULT'} = [ map { "cap_$_" } ($contents =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
+   my $contents = $1;
+   while ($contents =~ s/#ifdef\s+(?<conf>\w+)\s+(?<funcs>[^\#]+)\s*#endif//m) {
+      my $conf = $+{conf};
+      $configuration{$conf} = [map {"cap_$_"} ($+{funcs} =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
+   }
+   $configuration{'DEFAULT'} = [map {"cap_$_"} ($contents =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
 } else {
-	die("Can't find security_fixup_ops.\n");
+   die("Can't find security_fixup_ops.\n");
 }
 
 my $global = <<'GLOBAL';
@@ -147,15 +155,14 @@ probe begin {
 }
 GLOBAL
 
-
 my $params;
 
 if ($verbose == 0) {
    $params = '$$parms';
 } elsif ($verbose == 1) {
-   $params = '$$parms$'
+   $params = '$$parms$';
 } else {
-   $params = '$$parms$$'
+   $params = '$$parms$$';
 }
 
 my $callback_macro = <<CBM;
@@ -173,18 +180,14 @@ my $callback_macro = <<CBM;
 %)
 CBM
 
-my $header =   "\n" .
-               $global . "\n\n" .
-               generate_caller_func($caller_lev) . "\n" .
-               $callback_macro;
-
+my $header = "\n" . $global . "\n\n" . generate_caller_func($caller_lev) . "\n" . $callback_macro;
 
 my $body = '';
 
 foreach (keys %configuration) {
    my $acc = "probe";
 
-   foreach (@{ $configuration{$_} }) {
+   foreach (@{$configuration{$_}}) {
       $acc .= qq!\tkernel.function("${_}"),\n!;
    }
    $acc =~ s/,(?=\n$)//;
@@ -198,7 +201,6 @@ foreach (keys %configuration) {
 
    $body .= $acc;
 }
-
 
 my $syscall_probe = <<PROBE;
 probe syscall.* {
@@ -251,9 +253,8 @@ PROBE
 
 my $footer = '';
 
-$footer .= ($syscall_probe . "\n" . $syscall_return_probe . "\n")           if $trace_syscalls;
-$footer .= ($process_functions .	"\n" . $process_functions_return . "\n")   if $trace_functions;
-
+$footer .= ($syscall_probe . "\n" . $syscall_return_probe . "\n")         if $trace_syscalls;
+$footer .= ($process_functions . "\n" . $process_functions_return . "\n") if $trace_functions;
 
 #print $header . "\n\n" . $body . "\n\n" . $footer;
 print $header . "\n\n" . $body . "\n" . $footer;

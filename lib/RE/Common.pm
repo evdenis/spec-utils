@@ -9,8 +9,7 @@ use Exporter qw/import/;
 
 our @EXPORT_OK = qw/$varname $acsl_varname $acsl_contract $acsl_invariant $acsl_assert/;
 
-
-our $varname = qr/[a-zA-Z_]\w*+/;
+our $varname      = qr/[a-zA-Z_]\w*+/;
 our $acsl_varname = qr/(:?\\?|\b)[a-zA-Z_]\w*+/;
 
 #

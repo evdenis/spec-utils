@@ -9,39 +9,38 @@ use Exporter qw(import);
 use Carp;
 use Local::List::Util qw(uniq);
 
-
-our @EXPORT = qw(adapt);
+our @EXPORT    = qw(adapt);
 our @EXPORT_OK = qw(
-         restore
-         restore_comments
-         restore_attributes
-         restore_strings
-         restore_macro
-         filter
-         filter_dup
-         filter_comments
-         filter_comments_dup
-         norm
+  restore
+  restore_comments
+  restore_attributes
+  restore_strings
+  restore_macro
+  filter
+  filter_dup
+  filter_comments
+  filter_comments_dup
+  norm
 
-         %comment_t
-         %attribute_t
-         %string_t
-         %macro_t
+  %comment_t
+  %attribute_t
+  %string_t
+  %macro_t
 
-         $s $h
+  $s $h
 );
 our %EXPORT_TAGS = (TYPES => [qw(%comment_t %attribute_t %string_t %macro_t)], RE => [qw($s $h)]);
 
 #TODO: md5 hash
 
-our %comment_t   = ( L => '$', R => '$' );
-our %attribute_t = ( L => '$', R => '`' );
-our %string_t    = ( L => '$', R => '#' );
-our %macro_t     = ( L => '$', R => '@' );
+our %comment_t   = (L => '$', R => '$');
+our %attribute_t = (L => '$', R => '`');
+our %string_t    = (L => '$', R => '#');
+our %macro_t     = (L => '$', R => '@');
 
 {
    foreach my $i (\%comment_t, \%attribute_t, \%string_t, \%macro_t) {
-      $i->{pattern} = qr/\Q$i->{L}\E(\d++)\Q$i->{R}\E/
+      $i->{pattern} = qr/\Q$i->{L}\E(\d++)\Q$i->{R}\E/;
    }
 }
 
@@ -56,56 +55,62 @@ our ($s, $h, $replacement, $special_symbols) = (undef, undef, undef, '');
       push @right, $_->{R};
    }
 
-   @left  = uniq(@left);
-   @right = uniq(@right);
+   @left            = uniq(@left);
+   @right           = uniq(@right);
    $special_symbols = join('', uniq(@left, @right));
 
    $replacement = '[' . join('', @left) . ']' . '\d++' . '[' . join('', @right) . ']';
    $replacement = qr/$replacement/;
-   $s = qr/(?:\s++|${replacement})/;
-   $h = qr/(?:[ \t]++|${replacement})/;
+   $s           = qr/(?:\s++|${replacement})/;
+   $h           = qr/(?:[ \t]++|${replacement})/;
 }
-
 
 sub generic_remove
 {
    #my $code    = shift; #$_[0]
    my $pattern = $_[1];
    my $t       = $_[2];
-   my $opts    = ( ref $_[3] eq 'HASH' ) ? $_[3] : { @_[3..$#_] };
+   my $opts    = (ref $_[3] eq 'HASH') ? $_[3] : {@_[3 .. $#_]};
 
-   my $save    = $opts->{save};
-   my $sub     = $opts->{sub};
+   my $save = $opts->{save};
+   my $sub  = $opts->{sub};
 
    my $res = undef;
 
    if ($save) {
       if ($sub) {
-         $_[0] =~ s/$pattern/$sub->($save, \%+)/ge
+         $_[0] =~ s/$pattern/$sub->($save, \%+)/ge;
       } else {
-         $_[0] =~ s/$pattern/push @$save, ${^MATCH}; "$t->{L}$#$save$t->{R}"/gpe
+         $_[0] =~ s/$pattern/push @$save, ${^MATCH}; "$t->{L}$#$save$t->{R}"/gpe;
       }
       #push @$save, $t->{pattern} Storable can't save REGEXP's
    } else {
       if ($sub) {
-         $_[0] =~ s/$pattern/$sub->(\%+)/ge
+         $_[0] =~ s/$pattern/$sub->(\%+)/ge;
       } else {
-         $_[0] =~ s/$pattern//g
+         $_[0] =~ s/$pattern//g;
       }
    }
 
-   $res
+   $res;
 }
 
 sub remove_comments
 {
    my $sub = undef;
-   my $pattern = qr!/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n)|(?<other>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.[^/"'\\]*)!sp;
+   my $pattern =
+qr!/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n)|(?<other>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.[^/"'\\]*)!sp;
 
    if (defined $_[1]) {
-      $sub  = sub { if (defined $_[1]->{other}) { ${^MATCH} } else { push @{$_[0]}, ${^MATCH}; "$comment_t{L}$#{$_[0]}$comment_t{R}" } }
+      $sub = sub {
+         if   (defined $_[1]->{other}) {${^MATCH}}
+         else                          {push @{$_[0]}, ${^MATCH}; "$comment_t{L}$#{$_[0]}$comment_t{R}"}
+        }
    } else {
-      $sub  = sub { if (defined $_[0]->{other}) { ${^MATCH} } else {''} }
+      $sub = sub {
+         if   (defined $_[0]->{other}) {${^MATCH}}
+         else                          {''}
+        }
    }
 
    generic_remove(
@@ -113,19 +118,26 @@ sub remove_comments
       $pattern,
       \%comment_t,
       save => $_[1],
-      sub  => $sub 
-   )
+      sub  => $sub
+   );
 }
 
 sub remove_strings
 {
    my $sub = undef;
-   my $pattern = qr!(?<other>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n))|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<other>.[^/"'\\]*)!sp;
+   my $pattern =
+qr!(?<other>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n))|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<other>.[^/"'\\]*)!sp;
 
    if (defined $_[1]) {
-      $sub  = sub { if (defined $_[1]->{other}) { ${^MATCH} } else { push @{$_[0]}, ${^MATCH}; "$string_t{L}$#{$_[0]}$string_t{R}" } }
+      $sub = sub {
+         if   (defined $_[1]->{other}) {${^MATCH}}
+         else                          {push @{$_[0]}, ${^MATCH}; "$string_t{L}$#{$_[0]}$string_t{R}"}
+        }
    } else {
-      $sub  = sub { if (defined $_[0]->{other}) { ${^MATCH} } else {''} }
+      $sub = sub {
+         if   (defined $_[0]->{other}) {${^MATCH}}
+         else                          {''}
+        }
    }
 
    generic_remove(
@@ -133,18 +145,14 @@ sub remove_strings
       $pattern,
       \%string_t,
       save => $_[1],
-      sub  => $sub 
-   )
+      sub  => $sub
+   );
 }
 
 sub remove_attributes
 {
-   generic_remove(
-      $_[0],
-      qr/__attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/,
-      \%attribute_t,
-      save => $_[1]
-   )
+   generic_remove($_[0], qr/__attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/,
+      \%attribute_t, save => $_[1]);
 }
 
 sub remove_macro
@@ -187,24 +195,24 @@ sub remove_macro
       /mx,
       \%macro_t,
       save => $_[1]
-   )
+   );
 }
 
 sub adapt
 {
-   my $opts = ( ref $_[1] eq 'HASH' ) ? $_[1] : { @_[1..$#_] };
+   my $opts = (ref $_[1] eq 'HASH') ? $_[1] : {@_[1 .. $#_]};
 
    return undef
-      unless $_[0];
+     unless $_[0];
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
    my $tmpl = sub {
       if ($_[0]) {
          if (ref $_[0] eq 'ARRAY') {
-            $_[1]->($_[2], $_[0])
+            $_[1]->($_[2], $_[0]);
          } else {
-            $_[1]->($_[2])
+            $_[1]->($_[2]);
          }
       }
    };
@@ -214,9 +222,8 @@ sub adapt
    $tmpl->($opts->{macro},      \&remove_macro,      $_[0]);
    $tmpl->($opts->{attributes}, \&remove_attributes, $_[0]);
 
-   undef
+   undef;
 }
-
 
 #TODO: return value? delete elements of array?
 sub generic_restore
@@ -246,50 +253,49 @@ sub restore_macro
 
 sub restore
 {
-   my $opts = ( ref $_[1] eq 'HASH' ) ? $_[1] : { @_[1..$#_] };
+   my $opts = (ref $_[1] eq 'HASH') ? $_[1] : {@_[1 .. $#_]};
 
    return undef
-      unless $_[0];
+     unless $_[0];
 
    croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
 
    #The order matters.
    restore_attributes($_[0], $opts->{attributes}) if $opts->{attributes};
-   restore_macro     ($_[0], $opts->{macro})      if $opts->{macro};
-   restore_strings   ($_[0], $opts->{strings})    if $opts->{strings};
-   restore_comments  ($_[0], $opts->{comments})   if $opts->{comments};
+   restore_macro($_[0], $opts->{macro}) if $opts->{macro};
+   restore_strings($_[0], $opts->{strings}) if $opts->{strings};
+   restore_comments($_[0], $opts->{comments}) if $opts->{comments};
 
-   undef
+   undef;
 }
 
 sub filter_comments ($)
 {
    $_[0] =~ s/$comment_t{pattern}//g;
 
-   undef
+   undef;
 }
 
 sub filter_comments_dup ($)
 {
-   $_[0] =~ s/$comment_t{pattern}//gr
+   $_[0] =~ s/$comment_t{pattern}//gr;
 }
-
 
 sub filter ($)
 {
    $_[0] =~ s/$replacement//g;
 
-   undef
+   undef;
 }
 
 sub filter_dup ($)
 {
-   $_[0] =~ s/$replacement//gr
+   $_[0] =~ s/$replacement//gr;
 }
 
 sub norm ($)
 {
-   $_[0] =~ s/${s}++//rg
+   $_[0] =~ s/${s}++//rg;
 }
 
 1;

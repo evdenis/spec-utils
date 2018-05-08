@@ -9,11 +9,9 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
-with    'C::Parse';
+with 'C::Parse';
 
-has '+set' => (
-   isa => 'ArrayRef[C::Structure]',
-);
+has '+set' => (isa => 'ArrayRef[C::Structure]',);
 
 sub parse
 {
@@ -22,8 +20,9 @@ sub parse
    my %structures;
 
    my $name = qr!(?<sname>$varname)!;
-   
-   while ( ${$_[0]} =~ m/^${h}*+
+
+   while (
+      ${$_[0]} =~ m/^${h}*+
          (struct|union)
          ${s}++
             $name
@@ -39,25 +38,26 @@ sub parse
             \}
             )
          )${s}*+(?:(?:__attribute__\h*+\(\(\h*+)?(?:__)?packed(:?\h*+\)\))?)?${s}*+;
-      /gmpx) {
+      /gmpx
+     )
+   {
       my $name = $+{sname};
       my $code = ${^MATCH};
       my $type = $1;
 
       warn("Repeated defenition of structure $name\n")
-         if (exists $structures{$name} && (norm($structures{$name}{code}) ne norm($code)));
+        if (exists $structures{$name} && (norm($structures{$name}{code}) ne norm($code)));
 
       $structures{$name} = C::Structure->new(
-                                 name => $name,
-                                 code => $code,
-                                 type => $type,
-                                 area => $area
-                           );
+         name => $name,
+         code => $code,
+         type => $type,
+         area => $area
+      );
    }
 
    return $self->new(set => [values %structures]);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

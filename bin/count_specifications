@@ -13,27 +13,25 @@ use C::AcslcommentSet;
 use Kernel::Module qw/preprocess_module_sources/;
 use C::Util::Transformation;
 
-
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 my $exact_module = undef;
 
 GetOptions(
-    "kernel|k=s"        => \$kernel,
-    "module|m=s"        => \$module,
-    "mname=s"           => \$exact_module
+   "kernel|k=s" => \$kernel,
+   "module|m=s" => \$module,
+   "mname=s"    => \$exact_module
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
-    unless -d $kernel;
+  unless -d $kernel;
 die "Please, provide valid path to module.\n"
-    unless -d $module;
+  unless -d $module;
 
 #BEGIN OF A PROGRAM
 my @comments;
 my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
 adapt($$source, comments => \@comments);
 my $set = C::AcslcommentSet->parse(\@comments, 'module');
-
 
 my $count = 0;
 foreach (@{$set->set}) {

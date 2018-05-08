@@ -35,7 +35,6 @@ Plugin::Filter - плагин для исключения из вывода ст
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -50,24 +49,30 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-filter-name should be provided.\n",
-               -exitval => 1 })
-      unless @filter;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-filter-name should be provided.\n",
+         -exitval => 1
+      }
+   ) unless @filter;
 
    $config->{'filter'} = \@filter;
 
-   bless { filter => \@filter, reduced => $reduced }, $self
+   bless {filter => \@filter, reduced => $reduced}, $self;
 }
 
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 0
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 0;
 }
 
 sub action
@@ -75,25 +80,24 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{'graph'};
+     unless exists $opts->{'graph'};
 
    my $g = $opts->{'graph'};
 
-FILTER:   foreach my $name (@{$self->{filter}}) {
+ FILTER: foreach my $name (@{$self->{filter}}) {
       print "plugin: filter: removing $name from graph\n";
 
-      foreach($g->vertices) {
+      foreach ($g->vertices) {
          if ($g->get_vertex_attribute($_, 'object')->name eq $name) {
-            $g->delete_vertex($_); # delete only one vertex! Dependants will be filtered out later.
+            $g->delete_vertex($_);    # delete only one vertex! Dependants will be filtered out later.
             next FILTER;
          }
       }
 
-      warn "plugin: filter: vertex $name doesn't exist in graph\n"
+      warn "plugin: filter: vertex $name doesn't exist in graph\n";
    }
 
-   undef
+   undef;
 }
-
 
 1;

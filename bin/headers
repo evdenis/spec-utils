@@ -27,7 +27,6 @@ BEGIN {
    }
 }
 
-
 =encoding utf8
 
 =pod
@@ -103,50 +102,49 @@ headers - Отображает на карте граф подключений �
 
 my $dot_exists = 0;
 unless (which('dot')) {
-   warn "Please, install graphviz package. This program requires dot to operate properly.\n"
+   warn "Please, install graphviz package. This program requires dot to operate properly.\n";
 } else {
    $dot_exists = 1;
 }
 
-
-my $help = 0;
+my $help     = 0;
 my $detailed = 0;
 my $view;
 my $keep_dot;
-my @dir = ($ENV{CURRENT_PROJECT} // '.');
-my $format = 'svg';
+my @dir       = ($ENV{CURRENT_PROJECT} // '.');
+my $format    = 'svg';
 my $open_with = 'xdg-open';
 my $fname;
 
 if (defined $ENV{DISPLAY}) {
    $keep_dot = 0;
-   $view = 1;
+   $view     = 1;
 } else {
    $keep_dot = 1;
-   $view = 0;
+   $view     = 0;
 }
 
 GetOptions(
-   'output|o=s'    =>  \$fname,
-   'view|v!'       =>  \$view,
-   'keep-dot|k!'   =>  \$keep_dot,
-   'detailed|d!'   =>  \$detailed,
-   'format|f=s'    =>  \$format,
-   'open-with|w=s' =>  \$open_with,
-   'help|h'        =>  \$help
+   'output|o=s'    => \$fname,
+   'view|v!'       => \$view,
+   'keep-dot|k!'   => \$keep_dot,
+   'detailed|d!'   => \$detailed,
+   'format|f=s'    => \$format,
+   'open-with|w=s' => \$open_with,
+   'help|h'        => \$help
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
 
 unless ($dot_exists) {
-   $view = 0;
+   $view     = 0;
    $keep_dot = 1;
 }
 
 @dir = @ARGV if @ARGV;
 foreach (@dir) {
-   pod2usage({ -msg => "Not a directory: $_\n", -exitval => 2 })
-      unless -d $_;
+   pod2usage({-msg => "Not a directory: $_\n", -exitval => 2})
+     unless -d $_;
 }
 
 exit 0 if !$fname && !$keep_dot && !$view;
@@ -159,19 +157,16 @@ sub generate_wanted
 {
    my %headers;
 
-   return
-      sub {
-         $headers{realpath($File::Find::name)} =
-                  {
-                     dir  => realpath($File::Find::topdir),
-                     name => substr($File::Find::name, length($File::Find::topdir) + 1),
-                     file => read_file($File::Find::name, array_ref => 1)
-                  }
-               if $_ =~ /\.h\Z/
-      },
-      sub {
-         \%headers
-      }
+   return sub {
+      $headers{realpath($File::Find::name)} = {
+         dir  => realpath($File::Find::topdir),
+         name => substr($File::Find::name, length($File::Find::topdir) + 1),
+         file => read_file($File::Find::name, array_ref => 1)
+        }
+        if $_ =~ /\.h\Z/;
+   }, sub {
+      \%headers;
+     }
 }
 
 my ($wanted, $get_result) = generate_wanted();
@@ -179,47 +174,44 @@ my ($wanted, $get_result) = generate_wanted();
 find($wanted, @dir);
 
 my $headers = &$get_result();
-my $g = Graph::Directed->new();
+my $g       = Graph::Directed->new();
 foreach my $v (values %$headers) {
    my $cwd = (splitpath($v->{name}))[1];
 
    $g->add_vertex($v->{name});
 
-   foreach ( map { /\A\h*+#\h*+include\h*+[<"]([^">]++)[">]/ ? $1 : () } @{ $v->{file} } ) {
+   foreach (map {/\A\h*+#\h*+include\h*+[<"]([^">]++)[">]/ ? $1 : ()} @{$v->{file}}) {
       my $h = do {
-         my @dir = ($v->{dir}, grep { $_ ne $v->{dir} } @dir);
+         my @dir = ($v->{dir}, grep {$_ ne $v->{dir}} @dir);
          my @path = ($cwd // (), $_);
          my $f;
 
          foreach (@dir) {
             $f = realpath(catfile($_, @path));
-            last if $f and -f $f and $headers->{$f}
+            last if $f and -f $f and $headers->{$f};
          }
 
-         $f
+         $f;
       };
 
-
       if ($h && exists $headers->{$h}) {
-         $g->add_edge($headers->{$h}{name}, $v->{name})
+         $g->add_edge($headers->{$h}{name}, $v->{name});
       } elsif ($detailed) {
          $g->add_edge($_, $v->{name});
 
-         $g->set_edge_attribute($_, $v->{name}, style => 'dashed' );
-         $g->set_vertex_attribute($_, alien => 1);
-         $g->set_vertex_attribute($_, style => 'filled');
+         $g->set_edge_attribute($_, $v->{name}, style => 'dashed');
+         $g->set_vertex_attribute($_, alien     => 1);
+         $g->set_vertex_attribute($_, style     => 'filled');
          $g->set_vertex_attribute($_, fillcolor => 'lightgrey');
       }
    }
 }
 
-
-$g->set_vertex_attribute($_, shape => 'box')
-   foreach $g->successorless_vertices();
+$g->set_vertex_attribute($_, shape => 'box') foreach $g->successorless_vertices();
 
 foreach ($g->predecessorless_vertices()) {
    $g->set_vertex_attribute($_, shape => 'octagon')
-      unless $g->has_vertex_attribute($_, 'alien')
+     unless $g->has_vertex_attribute($_, 'alien');
 }
 
 unless ($fname) {
@@ -227,7 +219,7 @@ unless ($fname) {
 }
 
 my $fname_dot = "$fname.dot";
-my $output = "$fname.$format";
+my $output    = "$fname.$format";
 Graph::Writer::Dot->new()->write_graph($g, $fname_dot);
 
 if ($view) {
@@ -236,9 +228,9 @@ if ($view) {
 }
 
 unless ($keep_dot) {
-   unlink $fname_dot
+   unlink $fname_dot;
 } else {
-   say "Dot file: $fname_dot"
+   say "Dot file: $fname_dot";
 }
 
 if ($view) {

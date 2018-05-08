@@ -32,7 +32,6 @@ Plugin::StubSpec - плагин для добавления спецификац
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -44,17 +43,20 @@ sub process_options
       'plugin-stubspec-help'     => \$help,
    ) or die("Error in command line arguments\n");
 
-   pod2usage({ -input   => pod_where({-inc => 1}, __PACKAGE__),
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => pod_where({-inc => 1}, __PACKAGE__),
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   bless { reduced => $reduced }, $self
+   bless {reduced => $reduced}, $self;
 }
 
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 99
+   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 99;
 }
 
 my %processed_objects;
@@ -64,24 +66,24 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      unless exists $opts->{'graph'};
+     unless exists $opts->{'graph'};
 
    my $g = $opts->{'graph'};
 
    print "plugin: stub_spec: adding meaningless specifications\n";
 
    foreach ($g->vertices) {
-      my $o = $g->get_vertex_attribute($_, 'object');
+      my $o    = $g->get_vertex_attribute($_, 'object');
       my $area = $o->area;
       my $type = blessed($o);
 
       if ($area eq 'kernel') {
          unless ($type eq 'C::Declaration') {
-            next
+            next;
          }
       } else {
          unless ($type eq 'C::Function') {
-            next
+            next;
          }
       }
 
@@ -93,8 +95,7 @@ sub action
       }
    }
 
-   undef
+   undef;
 }
-
 
 1;

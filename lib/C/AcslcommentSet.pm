@@ -10,13 +10,9 @@ use namespace::autoclean;
 use re '/aa';
 
 extends 'C::Set';
-with    'C::Parse';
+with 'C::Parse';
 
-
-has '+set' => (
-   isa => 'ArrayRef[C::Acslcomment]'
-);
-
+has '+set' => (isa => 'ArrayRef[C::Acslcomment]');
 
 sub parse
 {
@@ -24,18 +20,20 @@ sub parse
    my $area = $_[1];
    my @acsl_comments;
 
-   while(my ($i, $c) = each @{$_[0]}) {
+   while (my ($i, $c) = each @{$_[0]}) {
       if (is_acsl_spec($c)) {
-         push @acsl_comments, C::Acslcomment->new(name => "acsl_spec_$i",
-                                                  code => $c,
-                                                  replacement_id => $i,
-                                                  area => $area);
+         push @acsl_comments,
+           C::Acslcomment->new(
+            name           => "acsl_spec_$i",
+            code           => $c,
+            replacement_id => $i,
+            area           => $area
+           );
       }
    }
 
    return $self->new(set => \@acsl_comments);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

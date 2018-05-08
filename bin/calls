@@ -44,7 +44,7 @@ my $kdir      = $ENV{CURRENT_KERNEL};
 my $moduledir = $ENV{CURRENT_PROJECT};
 my $preprocessed;
 
-my $kernel_sw = 1;
+my $kernel_sw  = 1;
 my $modules_sw = 1;
 my $unknown_sw = 0;
 
@@ -63,28 +63,28 @@ my $output = '';
 my $csvout = 0;
 
 my $only_functions = 0;
-my $only_macro = 0;
+my $only_macro     = 0;
 
 GetOptions(
-   'kernel|k=s'       =>  \$kdir,
-   'module|m=s'       =>  \$moduledir,
-   'preprocessed|p=s' =>  \$preprocessed,
-   'kernel-data!'     =>  \$kernel_sw,
-   'module-data!'     =>  \$modules_sw,
-   'unknown-data|u!'  =>  \$unknown_sw,
-   'only-names!'      =>  \$only_names,
-   'modulename|n=s'   =>  \$modulename,
-   'progressbar|b!'   =>  \$progressbar,
-   'columns|c=s'      =>  \$columns,
-   'status:s'         =>  \$specs,
-   'output|o=s'       =>  \$output,
-   'csv-output|v!'    =>  \$csvout,
-   'only-functions!'  =>  \$only_functions,
-   'only-macro!'      =>  \$only_macro,
-#   'full-path|f!'    =>  \$full_path;
-   '1' => sub { $kernel_sw = 1; $modules_sw = 0; $unknown_sw = 0; },
-   '2' => sub { $kernel_sw = 0; $modules_sw = 1; $unknown_sw = 0; },
-   '3' => sub { $kernel_sw = 0; $modules_sw = 0; $unknown_sw = 1; }
+   'kernel|k=s'       => \$kdir,
+   'module|m=s'       => \$moduledir,
+   'preprocessed|p=s' => \$preprocessed,
+   'kernel-data!'     => \$kernel_sw,
+   'module-data!'     => \$modules_sw,
+   'unknown-data|u!'  => \$unknown_sw,
+   'only-names!'      => \$only_names,
+   'modulename|n=s'   => \$modulename,
+   'progressbar|b!'   => \$progressbar,
+   'columns|c=s'      => \$columns,
+   'status:s'         => \$specs,
+   'output|o=s'       => \$output,
+   'csv-output|v!'    => \$csvout,
+   'only-functions!'  => \$only_functions,
+   'only-macro!'      => \$only_macro,
+   #   'full-path|f!'    =>  \$full_path;
+   '1' => sub {$kernel_sw = 1; $modules_sw = 0; $unknown_sw = 0;},
+   '2' => sub {$kernel_sw = 0; $modules_sw = 1; $unknown_sw = 0;},
+   '3' => sub {$kernel_sw = 0; $modules_sw = 0; $unknown_sw = 1;}
 ) or die "Incorrect usage!\n";
 
 exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
@@ -97,7 +97,7 @@ $specs ||= find_config();
 my $mdir_subdir_kdir = 0;
 if (index(abs_path($moduledir), abs_path($kdir)) != -1) {
    $mdir_subdir_kdir = 1;
-   warn "Warning: '$moduledir' is a part of a kernel sources '$kdir'.\n"
+   warn "Warning: '$moduledir' is a part of a kernel sources '$kdir'.\n";
 }
 
 unless (defined $modulename) {
@@ -109,12 +109,13 @@ unless (defined $modulename) {
 ### MODULE DIRECTORY: $moduledir
 ### PREPROCESSED SOURCES: $preprocessed
 
-sub get_list_of_kernel_functions {
-   if ( -r "$kdir/System.map" ) {
+sub get_list_of_kernel_functions
+{
+   if (-r "$kdir/System.map") {
       my @map = read_file("$kdir/System.map");
 
-      @map = grep { m/^[0-9a-fA-F]+\s+[tT]/ } @map;
-      return sort map { m/(\S++)\s*+$/; $1 } @map;
+      @map = grep {m/^[0-9a-fA-F]+\s+[tT]/} @map;
+      return sort map {m/(\S++)\s*+$/; $1} @map;
    } else {
       warn "Can't find '$kdir/System.map'\n";
       return ();
@@ -127,12 +128,14 @@ sub find_modules
 
    unless (@modules) {
 
-      sub parse_makefile {
-         my (@dirs,@modules);
+      sub parse_makefile
+      {
+         my (@dirs, @modules);
          my $rootdir = dirname($_[0]);
-         my $make = read_file($_[0]);
+         my $make    = read_file($_[0]);
 
-         while ( $make =~ m/
+         while (
+            $make =~ m/
                         (?:obj-|subdir-)(?:(?:\$\(\w+\))|[ynm]?)
                         \s*
                         [:+]?=
@@ -146,10 +149,13 @@ sub find_modules
                            .+
                         )
                         $
-                        /gmx ) {
+                        /gmx
+           )
+         {
             my $list = $+{modules};
 
-            $list =~ s!\b([[:alnum:]_-]+\.o)\b!if ( -f "$rootdir/$1") {push @modules, "$rootdir/$1"} else {print STDERR "Can't find '$rootdir/$1'.\n"};''!ge;
+            $list =~
+s!\b([[:alnum:]_-]+\.o)\b!if ( -f "$rootdir/$1") {push @modules, "$rootdir/$1"} else {print STDERR "Can't find '$rootdir/$1'.\n"};''!ge;
 
             $list =~ s!\b(\S+)\b!if ( -d "$rootdir/$1") {push @dirs, "$rootdir/$1";''} else {$1}!ge;
 
@@ -157,7 +163,7 @@ sub find_modules
                warn "'$_[0]' parse error: '$list'\n";
             }
          }
-         return (\@dirs,\@modules);
+         return (\@dirs, \@modules);
       }
 
       my @dirs = ($moduledir);
@@ -166,17 +172,17 @@ sub find_modules
          my $root = shift @dirs;
          my $makefile;
 
-         if ( -r "$root/Makefile" ) {
-            $makefile =  "$root/Makefile";
-         } elsif ( -r "$root/Kbuild" ) {
-            $makefile =  "$root/Kbuild";
+         if (-r "$root/Makefile") {
+            $makefile = "$root/Makefile";
+         } elsif (-r "$root/Kbuild") {
+            $makefile = "$root/Kbuild";
          } else {
             print STDERR "Files '$root/Makefile' and '$root/Kbuild' doesn't exist.\n";
             next;
          }
 
          my ($ret_dirs, $ret_modules) = parse_makefile($makefile, $root);
-         push @dirs, @$ret_dirs;
+         push @dirs,    @$ret_dirs;
          push @modules, @$ret_modules;
 
          @dirs = uniq(@dirs);
@@ -186,18 +192,22 @@ sub find_modules
    return \@modules;
 }
 
-sub get_list_of_module_functions {
+sub get_list_of_module_functions
+{
    my @ret = ();
    if (-r $_[0]) {
-      @ret = sort map { m/(\S++)\s*+$/; $1 } grep { m/^[0-9a-fA-F]+\s+[tT]/ } qx/nm $_[0]/;
+      @ret = sort
+        map {m/(\S++)\s*+$/; $1}
+        grep {m/^[0-9a-fA-F]+\s+[tT]/} qx/nm $_[0]/;
    } else {
-      warn "File '$_[0]' is not readable.\n"
+      warn "File '$_[0]' is not readable.\n";
    }
    return \@ret;
 }
 
-sub get_list_of_modules_functions {
-   my @modules = @{ find_modules() };
+sub get_list_of_modules_functions
+{
+   my @modules = @{find_modules()};
 
    if (@modules) {
       my %mf;
@@ -205,7 +215,7 @@ sub get_list_of_modules_functions {
       foreach (@modules) {
          m!/([^/]+)\.k?o!;
          my $key = $1;
-         $mf{$key}{'path'} = $_;
+         $mf{$key}{'path'}  = $_;
          $mf{$key}{'funcs'} = get_list_of_module_functions($_);
       }
       return %mf;
@@ -215,14 +225,13 @@ sub get_list_of_modules_functions {
    }
 }
 
-
-sub collect_macro {
+sub collect_macro
+{
    my ($file, $name) = @_;
    my @ret;
    #FIXME: Maybe only match
    unless (defined $name) {
-      $file =~
-            s/
+      $file =~ s/
                \#[ \t]*define
                [ \t]+
                (?<mdecl>
@@ -232,13 +241,15 @@ sub collect_macro {
             /push @ret, $+{mname};''/megx;
       return \@ret;
    } else {
-      if ($file =~
-            m/
+      if (
+         $file =~ m/
                \#[ \t]*define
                [ \t]+
                $name
                \([\w\s,\.]*\)      # arguments. non-argument macros are possible
-            /mgx) {
+            /mgx
+        )
+      {
          return 1;
       }
 
@@ -246,20 +257,23 @@ sub collect_macro {
    }
 }
 
-sub collect_extern {
+sub collect_extern
+{
    my @ret;
    pos($_[0]) = 0;
    $_[0] =~ s/extern\s+(?!inline)(?:(?<extern>[^;]+);)/push @ret, $+{extern};''/meg;
    pos($_[0]) = 0;
-   push @ret, $+{extern} for $_[0] =~ m/extern\s+(?=inline)(?<extern>[^\(]+(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))+\)))/mg;
+   push @ret, $+{extern}
+     for $_[0] =~ m/extern\s+(?=inline)(?<extern>[^\(]+(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))+\)))/mg;
 
    return \@ret;
 }
 
-sub check_module_function {
+sub check_module_function
+{
    pos($_[0]) = 0;
-   if ($_[0] =~
-      m/
+   if (
+      $_[0] =~ m/
       (?<fdecl>
          (?<decl>
             [\w \t\s\\\*\(\)\,]+
@@ -302,21 +316,24 @@ sub check_module_function {
          )
       )
       /gmx
-   ) {
-         return 1;
+     )
+   {
+      return 1;
    }
 
    return 0;
 }
 
-sub get_grep_cmdline {
+sub get_grep_cmdline
+{
    state @cmdline;
 
    unless (@cmdline) {
       $cmdline[0] = q(grep);
       $cmdline[1] = qq(--include='$_[0]');
       push @cmdline, q(--exclude-dir=') . "$kdir/$_" . q(') for ('Documentation', 'samples', 'scripts', 'tools');
-      push @cmdline, q(--exclude-dir=') . "$_" . q(') for grep { -d "$kdir/arch/$_" && ($_ ne 'x86' && $_ ne 'x86_64') } read_dir("$kdir/arch");
+      push @cmdline, q(--exclude-dir=') . "$_" . q(')
+        for grep {-d "$kdir/arch/$_" && ($_ ne 'x86' && $_ ne 'x86_64')} read_dir("$kdir/arch");
       push @cmdline, q(--exclude-dir=') . abs_path($moduledir) . q(') if $mdir_subdir_kdir;
       push @cmdline, q(-lrPe);
       push @cmdline, qq('$_[1]');
@@ -329,7 +346,8 @@ sub get_grep_cmdline {
    return join(' ', @cmdline);
 }
 
-sub check_kernel_macro {
+sub check_kernel_macro
+{
    my ($kdir, $name) = @_;
 
    my $cmd = get_grep_cmdline('*.h', 'define[ \t]+' . $name . '\(');
@@ -345,7 +363,8 @@ sub check_kernel_macro {
    return 0;
 }
 
-sub check_kernel_function {
+sub check_kernel_function
+{
    my ($kdir, $name, $check_export) = @_;
 
    #FIXME maybe sort?
@@ -375,11 +394,11 @@ if (defined $specs) {
       $specs_column = 1;
 
       my $specs = LoadFile($specs);
-      foreach my $a (keys %{ $specs }) {
-         foreach my $s (keys %{ $specs->{$a} }) {
+      foreach my $a (keys %{$specs}) {
+         foreach my $s (keys %{$specs->{$a}}) {
             my $st = ($s =~ /\A\w+\Z/) ? uc(substr($s, 0, 1)) : $s;
-            foreach (@{ $specs->{$a}{$s} }) {
-               $specs_status{$_} = $st
+            foreach (@{$specs->{$a}{$s}}) {
+               $specs_status{$_} = $st;
             }
          }
       }
@@ -387,8 +406,7 @@ if (defined $specs) {
    } else {
       warn "Can't open '$specs' file. Status column omitted.\n";
    }
-} 
-
+}
 
 ### READING SOURCES...
 my $source;
@@ -402,18 +420,17 @@ die("Can't find *.[ch] files.\n") unless $source;
 adapt($source, comments => 1, strings => 1);
 my @macro;
 unless (defined $preprocessed) {
-   @macro = @{ collect_macro($source) };
+   @macro = @{collect_macro($source)};
    adapt($source, macro => 1);
 }
 #my @extern = @{ collect_extern($source) };
-my $extern = join(";\n", @{ collect_extern($source) });
+my $extern = join(";\n", @{collect_extern($source)});
 
-my @calls = @{ parse_calls($source) };
-
+my @calls = @{parse_calls($source)};
 
 #stat
 my %status;
-@calls = grep { ! $status{$_}[0]++ } @calls;
+@calls = grep {!$status{$_}[0]++} @calls;
 
 ### GETTING LIST OF KERNEL FUNCTIONS...
 my @kernel_functions = get_list_of_kernel_functions();
@@ -421,19 +438,26 @@ my @kernel_functions = get_list_of_kernel_functions();
 my %modules_functions = get_list_of_modules_functions();
 
 ### SEARCH IN PROGRESS
-my $max = keys %status;
-my $progress = Term::ProgressBar->new({name => 'Status', count => $max, remove => 1, silent => !$progressbar});
+my $max      = keys %status;
+my $progress = Term::ProgressBar->new(
+   {
+      name   => 'Status',
+      count  => $max,
+      remove => 1,
+      silent => !$progressbar
+   }
+);
 $progress->minor(0);
 my $next_update = 0;
-my $i = 0;
+my $i           = 0;
 
 foreach my $fname (keys %status) {
-   my $own = 'UNKNOWN';
+   my $own  = 'UNKNOWN';
    my $type = '';
 
    #binary
    if ($fname ~~ @kernel_functions) {
-      $own = 'kernel';
+      $own  = 'kernel';
       $type = 'kF';
    }
    foreach my $mname (keys %modules_functions) {
@@ -455,19 +479,19 @@ foreach my $fname (keys %status) {
       #module check
       #say "$fname";
       if (!defined $preprocessed && $fname ~~ @macro) {
-            $own = $modulename;
-            $type = 'mM';
-      #} elsif ($extern =~ m/\b$fname\s*\(/ || check_module_function($source, $fname)) {
+         $own  = $modulename;
+         $type = 'mM';
+         #} elsif ($extern =~ m/\b$fname\s*\(/ || check_module_function($source, $fname)) {
       } elsif (check_module_function($source, $fname)) {
-         $own = $modulename;
+         $own  = $modulename;
          $type = 'mF';
       } else {
          #kernel check
          if (check_kernel_macro($kdir, $fname)) {
-            $own = 'kernel';
+            $own  = 'kernel';
             $type = 'kM';
          } elsif (check_kernel_function($kdir, $fname, !@kernel_functions)) {
-            $own = 'kernel';
+            $own  = 'kernel';
             $type = 'kF';
          }
       }
@@ -486,7 +510,7 @@ $progress->update($max) if defined $next_update && $max >= $next_update;
 #We can do filtration by means of ANSITable.
 #But it is more preferable to do it here.
 foreach (keys %status) {
-   my ($num, $own, $type) = @{ $status{$_} };
+   my ($num, $own, $type) = @{$status{$_}};
 
    if ($own eq 'UNKNOWN') {
       delete $status{$_} unless $unknown_sw;
@@ -506,13 +530,12 @@ foreach (keys %status) {
 if (%specs_status) {
    foreach (keys %status) {
       if (defined $specs_status{$_}) {
-         $status{$_} =  [@{ $status{$_} }, $specs_status{$_}];
+         $status{$_} = [@{$status{$_}}, $specs_status{$_}];
       } else {
-         $status{$_} =  [@{ $status{$_} }, ''];
+         $status{$_} = [@{$status{$_}}, ''];
       }
    }
 }
-
 
 my $column_names = ['Idx', 'Function', 'Calls', 'Module', 'Type', 'Status'];
 my $obj;
@@ -522,59 +545,70 @@ my $retfunc;
 unless ($csvout) {
    my $t = Text::ANSITable->new;
    $t->border_style('Default::bold');
-   if ( IO::Interactive::is_interactive() && !$output ) {
+   if (IO::Interactive::is_interactive() && !$output) {
       $t->color_theme('Default::default_gradation');
    } else {
       $t->color_theme('Default::no_color');
    }
 
    $t->columns($column_names);
-   $t->set_column_style('Idx',        pad  => 0);
-   $t->set_column_style('Function', align  => 'left');
-   $t->set_column_style('Calls',    align  => 'right', pad  => 0);
-   $t->set_column_style('Module',   align  => 'middle');
-   $t->set_column_style('Type',     align  => 'middle', pad  => 0);
-   $t->set_column_style('Status',   align  => 'middle');
+   $t->set_column_style('Idx',      pad   => 0);
+   $t->set_column_style('Function', align => 'left');
+   $t->set_column_style('Calls',    align => 'right', pad => 0);
+   $t->set_column_style('Module',   align => 'middle');
+   $t->set_column_style('Type',     align => 'middle', pad => 0);
+   $t->set_column_style('Status',   align => 'middle');
 
-   $t->column_filter(sub { if ($_[0] ne 'Status') { index($columns, lc substr($_[0], 0, 1)) != -1 } else { (index($columns, 's') != -1) && $specs_column } });
+   $t->column_filter(
+      sub {
+         if ($_[0] ne 'Status') {index($columns, lc substr($_[0], 0, 1)) != -1}
+         else                   {(index($columns, 's') != -1) && $specs_column}
+      }
+   );
 
-   $obj = \$t;
+   $obj     = \$t;
    $addfunc = \&Text::ANSITable::add_row;
    $retfunc = \&Text::ANSITable::draw;
 } else {
 
    my @ind;
    foreach (0 .. scalar @$column_names - 1) {
-      if (@{ $column_names }[$_] ne 'Status') {
-         push @ind, $_ if index($columns, lc substr(@{ $column_names }[$_], 0, 1)) != -1;
+      if (@{$column_names}[$_] ne 'Status') {
+         push @ind, $_ if index($columns, lc substr(@{$column_names}[$_], 0, 1)) != -1;
       } else {
          push @ind, $_ if (index($columns, 's') != -1) && $specs_column;
       }
    }
 
    my $csv = Class::CSV->new(
-      fields         => [ @{ $column_names }[@ind] ],
+      fields         => [@{$column_names}[@ind]],
       line_separator => "\r\n",
-      csv_xs_options => {
-         sep_char          => ';',
-      },
+      csv_xs_options => {sep_char => ';',},
    );
 
-   $obj = \$csv;
+   $obj     = \$csv;
    $addfunc = sub {
-                  Class::CSV::add_line($_[0], [ @{$_[1]}[@ind] ]);
-              };
-   $retfunc = sub { join(';', @{ $column_names }[@ind]) . "\r\n" . Class::CSV::string($_[0]); };
+      Class::CSV::add_line($_[0], [@{$_[1]}[@ind]]);
+   };
+   $retfunc = sub {join(';', @{$column_names}[@ind]) . "\r\n" . Class::CSV::string($_[0]);};
 }
 
 my $counter = 1;
-foreach (sort { my $cmp = $status{$b}[0] <=> $status{$a}[0]; unless ($cmp) { return $a cmp $b; } else { return $cmp; } } keys %status) {
-   $addfunc->($$obj, [$counter++, $_, @{ $status{$_} }]);
+
+foreach (
+   sort {
+      my $cmp = $status{$b}[0] <=> $status{$a}[0];
+      unless ($cmp) {return $a cmp $b;}
+      else          {return $cmp;}
+   } keys %status
+  )
+{
+   $addfunc->($$obj, [$counter++, $_, @{$status{$_}}]);
 }
 
 my $str = $retfunc->($$obj);
 if ($output) {
-   write_file($output, { binmode => ':utf8' }, $str);
+   write_file($output, {binmode => ':utf8'}, $str);
 } else {
    print $str;
 }

@@ -35,7 +35,6 @@ BEGIN {
    }
 }
 
-
 =encoding utf8
 
 =pod
@@ -107,16 +106,15 @@ merge - Переложение спецификаций с одной верси
 
 =cut
 
-
 my $help = 0;
 # '' need for -d checking
 my $module_dir = $ENV{CURRENT_PROJECT} // '';
-my $specs_dir = '.';
-my $strict = 1;
-my $kdiff = 0;
-my $tr_wh = 0;
-my $verbose = 0;
-my $manual = 1;
+my $specs_dir  = '.';
+my $strict     = 1;
+my $kdiff      = 0;
+my $tr_wh      = 0;
+my $verbose    = 0;
+my $manual     = 1;
 my @skip;
 
 GetOptions(
@@ -126,7 +124,7 @@ GetOptions(
    'strict!'      => \$strict,
    'kdiff|k!'     => \$kdiff,
    'manual|m!'    => \$manual,
-   'rtw|r!'       => \$tr_wh, # remove trailing whitespaces
+   'rtw|r!'       => \$tr_wh,        # remove trailing whitespaces
    'verbose|v+'   => \$verbose,
    'help|h'       => \$help,
 ) or pod2usage(1);
@@ -136,11 +134,10 @@ if (@ARGV) {
    pod2usage(1);
 }
 
-@skip = split(/,/,join(',',@skip));
+@skip = split(/,/, join(',', @skip));
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({-msg => "Wrong arguments.\n", -exitval => 2 }) unless -d $module_dir && -d $specs_dir;
-
+pod2usage({-msg => "Wrong arguments.\n", -exitval => 2}) unless -d $module_dir && -d $specs_dir;
 
 my (undef, $col) = window_size();
 my $delimeter = '-' x $col;
@@ -148,7 +145,6 @@ my $delimeter = '-' x $col;
 #Global variables from C::Util::Transformation
 my $comment_re = $comment_t{pattern};
 my $macro_re   = $macro_t{pattern};
-
 
 sub call_meld
 {
@@ -160,49 +156,50 @@ sub call_meld
       my (undef, $name) = tempfile(TEMPLATE => $template[$i], SUFFIX => '.c');
       push @f, $name;
 
-      write_file($name, @{$_[$i]})
+      write_file($name, @{$_[$i]});
    }
 
    my $ret;
    if ($kdiff) {
-      $ret = system('kdiff3', @f)
+      $ret = system('kdiff3', @f);
    } else {
-      $ret = system('meld', @f)
+      $ret = system('meld', @f);
    }
 
    @{$_[1]} = read_file($f[1])
-      unless $ret;
+     unless $ret;
 
    unlink $f[$_] for 0 .. $#_;
 
-   $ret
+   $ret;
 }
 
 # dir
 # returns hash ref
 sub fetch_module_sources
 {
-   my @module  = find_all_files($_[0]);
+   my @module = find_all_files($_[0]);
 
    return {}
-      unless @module;
+     unless @module;
 
    my %module;
    foreach my $f (@module) {
       $module{$f}{code} = read_file($f);
-      adapt($module{$f}{code},
-            comments => \@{ $module{$f}{c} },
-            macro    => \@{ $module{$f}{m} }
+      adapt(
+         $module{$f}{code},
+         comments => \@{$module{$f}{c}},
+         macro    => \@{$module{$f}{m}}
       );
 
       my %i;
-      foreach (0 .. $#{ $module{$f}{c} }) {
-         $i{$_} = 1 if is_acsl_spec(@{ $module{$f}{c} }[$_])
+      foreach (0 .. $#{$module{$f}{c}}) {
+         $i{$_} = 1 if is_acsl_spec(@{$module{$f}{c}}[$_]);
       }
       $module{$f}{i} = \%i;
    }
 
-   %module
+   %module;
 }
 
 sub fetch_specifications
@@ -210,18 +207,19 @@ sub fetch_specifications
    my $code = merge_all_files_simple($_[0]);
 
    return {}
-      unless $code;
+     unless $code;
 
-   adapt($code,
-         comments => \my @comments,
-         macro    => \my @macro
+   adapt(
+      $code,
+      comments => \my @comments,
+      macro    => \my @macro
    );
 
    (
       specs    => \$code,
       comments => \@comments,
       macro    => \@macro
-   )
+   );
 }
 
 sub restore_specs_only ($$$)
@@ -229,16 +227,16 @@ sub restore_specs_only ($$$)
    if (wantarray) {
       my @res;
       $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {push @res, $1; $_[1]->[$1]} else {${^MATCH}}/egp;
-      return @res
+      return @res;
    } else {
       $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {$_[1]->[$1]} else {${^MATCH}}/egp;
-      return undef
+      return undef;
    }
 }
 
 sub restore_comments_only ($$$)
 {
-   $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {${^MATCH}} else {$_[1]->[$1]}/egp
+   $_[0] =~ s/$comment_re/if (exists $_[2]->{$1}) {${^MATCH}} else {$_[1]->[$1]}/egp;
 }
 
 sub get_comments_ids ($)
@@ -247,7 +245,7 @@ sub get_comments_ids ($)
 
    push @res, $1 while $_[0] =~ m/$comment_re/g;
 
-   @res
+   @res;
 }
 
 sub get_specs_ids ($$)
@@ -256,10 +254,10 @@ sub get_specs_ids ($$)
 
    while ($_[0] =~ m/$comment_re/g) {
       push @res, $1
-         if exists $_[1]->{$1};
+        if exists $_[1]->{$1};
    }
 
-   @res
+   @res;
 }
 
 sub contains_specs
@@ -267,11 +265,11 @@ sub contains_specs
    if ($_[0]) {
       while ($_[0] =~ m/$comment_re/g) {
          return 1
-            if exists $_[1]->{$1}
+           if exists $_[1]->{$1};
       }
    }
 
-   0
+   0;
 }
 
 sub check_functions_compliance
@@ -279,18 +277,18 @@ sub check_functions_compliance
    my $res = 0;
 
    if (ne_spaces(filter_dup($_[0]->{args}), filter_dup($_[1]->{args}))) {
-      $res = 1
+      $res = 1;
    }
 
    if (ne_spaces(filter_dup($_[0]->{ret}), filter_dup($_[1]->{ret}))) {
-      $res = 2
+      $res = 2;
    }
 
-   $res
+   $res;
 }
 
-
 my %index;
+
 sub upd_merge_index
 {
    # $file $begin $len $code
@@ -302,7 +300,7 @@ sub move_specs
 {
    my ($cm, $spec, $sp_index) = @_;
    my $fret = $cm->{ret};
-   my ($begin, $len) = @{ $cm->{ret_idx} };
+   my ($begin, $len) = @{$cm->{ret_idx}};
 
    my @interval;
    my $continue = 0;
@@ -312,9 +310,9 @@ sub move_specs
       my ($b, $e) = ($-[0], $+[0]);
       if (exists $sp_index->{$1}) {
          $cb = $b
-            unless $continue;
+           unless $continue;
 
-         $ce = $e + 1;
+         $ce       = $e + 1;
          $continue = 1;
       } else {
          push @interval, [$cb, $ce];
@@ -322,7 +320,7 @@ sub move_specs
       }
    }
    push @interval, [$cb, $ce]
-      if $continue;
+     if $continue;
 
    my $offset = 0;
    foreach (@interval) {
@@ -345,41 +343,39 @@ sub move_pre_function_specs
       push @exclude_specs, restore_specs_only($spec, $_[1], $_[2]);
       filter $spec;
       next
-         if is_blank $spec;
+        if is_blank $spec;
       $spec = trim $spec;
       $spec .= "\n";
 
       move_specs($_[3], $spec, $_[4]);
    }
 
-   @exclude_specs
+   @exclude_specs;
 }
-
 
 ### Fetching specifications from dir: $specs_dir
 my %specs = fetch_specifications($specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
-   unless %specs;
+  unless %specs;
 
 ### Fetching module sources from dir: $module_dir
 my %module = fetch_module_sources($module_dir);
 die(RED . "Can't find module sources." . RESET . "\n")
-   unless %module;
+  unless %module;
 
 $specs{specs} = preprocess_directives_noincl($specs{specs});
 
-my @comments = @{ $specs{comments} };
-my @macro    = @{ $specs{macro}    };
-my $code     = ${ $specs{specs}    };
-
+my @comments = @{$specs{comments}};
+my @macro    = @{$specs{macro}};
+my $code     = ${$specs{specs}};
 
 my %acsl_specs;
 ### detecting specifications
-foreach(0 .. $#comments) {
+foreach (0 .. $#comments) {
    if (is_acsl_spec($comments[$_])) {
       $acsl_specs{$_} = 1;
       $comments[$_] =~ s/\s+$//mg
-         if $tr_wh;
+        if $tr_wh;
    }
 }
 
@@ -387,31 +383,31 @@ my %s;
 my %m;
 {
    my $special_chars = join('', uniq(@comment_t{qw/L R/}));
-   my $ret  = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
-   my $name = qr/(?<name>$varname)/;
-   my $args = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
-   my $body = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
-   my $func_re = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
+   my $ret           = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
+   my $name          = qr/(?<name>$varname)/;
+   my $args          = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
+   my $body          = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
+   my $func_re       = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
 
    while ($code =~ m/$func_re/g) {
       my $name = $+{name};
       my @specs_ids = get_specs_ids($+{ret}, \%acsl_specs);
       push @specs_ids, get_specs_ids($+{body}, \%acsl_specs)
-         if exists $+{body};
+        if exists $+{body};
 
       if (@specs_ids) {
          if (exists $s{$name}) {
             delete @acsl_specs{@specs_ids};
             print BLUE . "Specifications for function $name have been already parsed: ignoring." . RESET . "\n";
             if ($verbose > 1) {
-               print join("\n", map { $comments[$_] } sort { $a <=> $b } @specs_ids) . "\n"
+               print join("\n", map {$comments[$_]} sort {$a <=> $b} @specs_ids) . "\n";
             }
          } else {
             $s{$name}{ret}  = $+{ret};
             $s{$name}{args} = $+{args};
 
             $s{$name}{body} = $+{body}
-               if exists $+{body};
+              if exists $+{body};
          }
       }
    }
@@ -429,44 +425,42 @@ my %m;
                   $m{$name}{body} = $+{body};
                } else {
                   next
-                     unless contains_specs $+{ret}, $module{$_}{i}
+                    unless contains_specs $+{ret}, $module{$_}{i};
                }
 
                $m{$name}{file} = $_;
 
-               $m{$name}{ret_idx}  = [$-[1], $+[1] - $-[1]];
-               $m{$name}{ret}  = $+{ret};
-               $m{$name}{args} = $+{args};
+               $m{$name}{ret_idx} = [$-[1], $+[1] - $-[1]];
+               $m{$name}{ret}     = $+{ret};
+               $m{$name}{args}    = $+{args};
             }
          }
       }
    }
 }
 
-
 foreach (keys %s) {
    next unless exists $m{$_};
 
-   my $cs = $s{$_};
-   my $cm = $m{$_};
+   my $cs   = $s{$_};
+   my $cm   = $m{$_};
    my $file = $cm->{file};
 
    #additional checks
    if ($strict) {
       if (my $c = check_functions_compliance($cs, $cm)) {
          if ($c == 1) {
-            warn "$file: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+            warn "$file: " . RED . 'arguments' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
          } elsif ($c == 2) {
-            warn "$file: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n"
+            warn "$file: " . RED . 'return type' . RESET . " of function " . GREEN . $_ . RESET . " doesn't match.\n";
          }
          next;
       }
    }
 
-
    restore_comments_only($cs->{ret}, \@comments, \%acsl_specs);
    my @exclude_specs =
-      move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $module{$file}{i});
+     move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $module{$file}{i});
 
    if ($cs->{body}) {
       my $fbody_saved = $cs->{body};
@@ -482,14 +476,14 @@ foreach (keys %s) {
       my @code;
 
       my $cant_resolve = 0;
-      my $only_blank = 1;
+      my $only_blank   = 1;
 
       traverse_sequences(
          $old_code,
          $new_code,
          {
-            MATCH     => sub { push @code, @$new_code[$_[1]] },
-            DISCARD_A => sub { push @code, @$old_code[$_[0]] },
+            MATCH     => sub {push @code, @$new_code[$_[1]]},
+            DISCARD_A => sub {push @code, @$old_code[$_[0]]},
             DISCARD_B => sub {
                my $line = @$new_code[$_[1]];
                if ($line =~ m/^(?:\s++|$comment_re)*$/) {
@@ -503,7 +497,9 @@ foreach (keys %s) {
                }
             }
          },
-         sub { $_[0] =~ s/\s++|$comment_re//gr }
+         sub {
+            $_[0] =~ s/\s++|$comment_re//gr;
+         }
       );
       $only_blank &&= !$cant_resolve;
 
@@ -536,15 +532,22 @@ foreach (keys %s) {
          unshift @$code,     $function;
 
          if (call_meld($old_code, $code, $new_code)) {
-            warn "Problems calling " . RED . ($kdiff ? 'kdiff3' : 'meld') . RESET .
-               ". Note, that changes in function '" . GREEN . $_ . RESET . "' will be merged anyway.\n"
+            warn "Problems calling "
+              . RED
+              . ($kdiff ? 'kdiff3' : 'meld')
+              . RESET
+              . ". Note, that changes in function '"
+              . GREEN
+              . $_
+              . RESET
+              . "' will be merged anyway.\n";
          }
 
          my $check = shift @$code;
          warn "Changes in string '" . GREEN . substr($check, 0, -1) . RESET . "' will not be merged.\n"
-            if $check ne $function;
+           if $check ne $function;
       }
-      upd_merge_index($file, @{ $cm->{body_idx} }, join('', @$code));
+      upd_merge_index($file, @{$cm->{body_idx}}, join('', @$code));
    }
 
    delete @acsl_specs{@exclude_specs};
@@ -552,7 +555,7 @@ foreach (keys %s) {
 
 foreach my $file (keys %index) {
    my $offset = 0;
-   foreach my $pos (sort { $a <=> $b } keys %{$index{$file}}) {
+   foreach my $pos (sort {$a <=> $b} keys %{$index{$file}}) {
       substr($module{$file}{code}, $pos + $offset, $index{$file}{$pos}{length}, $index{$file}{$pos}{code});
       $offset += length($index{$file}{$pos}{code}) - $index{$file}{$pos}{length};
    }
@@ -563,37 +566,36 @@ foreach my $f (keys %module) {
    write_file($f, $module{$f}{code});
 }
 
-
 ### Non-transferred specifications analysis
 {
    my %non_transferred_hash;
    foreach (keys %acsl_specs) {
-      $non_transferred_hash{md5_hex(remove_spaces($comments[$_]))} = $_
+      $non_transferred_hash{md5_hex(remove_spaces($comments[$_]))} = $_;
    }
 
    my %existed_hash;
    foreach my $file (keys %module) {
       foreach my $id (keys %{$module{$file}{i}}) {
-         $existed_hash{md5_hex(remove_spaces($module{$file}{c}[$id]))} = undef
+         $existed_hash{md5_hex(remove_spaces($module{$file}{c}[$id]))} = undef;
       }
    }
 
    my @eq;
    foreach (keys %non_transferred_hash) {
       push @eq, $non_transferred_hash{$_}
-         if exists $existed_hash{$_}
+        if exists $existed_hash{$_};
    }
 
    delete @acsl_specs{@eq};
    if ($verbose) {
       print BLUE . "Following specifications already exists in code. Ignoring.\n" . RESET;
-      print join("\n" . BLUE . $delimeter . RESET, map { $comments[$_] } sort { $a <=> $b } @eq) . "\n";
+      print join("\n" . BLUE . $delimeter . RESET, map {$comments[$_]} sort {$a <=> $b} @eq) . "\n";
       print "\n\n";
    }
 }
 
 if (keys %acsl_specs) {
    warn RED, "Can't merge following specifications:" . RESET . "\n\n";
-   warn join("\n" . RED . $delimeter . RESET, map { $comments[$_] } sort { $a <=> $b } keys %acsl_specs) . "\n";
+   warn join("\n" . RED . $delimeter . RESET, map {$comments[$_]} sort {$a <=> $b} keys %acsl_specs) . "\n";
 }
 

@@ -35,7 +35,6 @@ Plugin::Exec - плагин для запуска программы после 
 
 =cut
 
-
 sub process_options
 {
    my ($self, $config) = @_;
@@ -50,28 +49,34 @@ sub process_options
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
-   pod2usage({ -input   => $input,
-               -verbose => 2,
-               -exitval => 0 })
-       if $help;
+   pod2usage(
+      {
+         -input   => $input,
+         -verbose => 2,
+         -exitval => 0
+      }
+   ) if $help;
 
-   pod2usage({ -input => $input,
-               -msg => "Option --plugin-exec-file should be provided.\n",
-               -exitval => 1 })
-      unless $file;
+   pod2usage(
+      {
+         -input   => $input,
+         -msg     => "Option --plugin-exec-file should be provided.\n",
+         -exitval => 1
+      }
+   ) unless $file;
 
    unless (-f $file && -r _ && -x _) {
-      die "FAIL: Can't access file $file.\n"
+      die "FAIL: Can't access file $file.\n";
    }
 
    $config->{'exec-file'} = $file;
 
-   bless { file => $file, wait => $wait }, $self
+   bless {file => $file, wait => $wait}, $self;
 }
 
 sub level
 {
-   post_output => 99
+   post_output => 99;
 }
 
 sub action
@@ -79,27 +84,27 @@ sub action
    my ($self, $opts) = @_;
 
    return undef
-      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
+     if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
 
    my $pid = fork();
    die "FAIL: can't fork $!"
-      unless defined $pid;
+     unless defined $pid;
 
    unless ($pid) {
       my %args;
       foreach (keys %$opts) {
          unless (ref $opts->{$_}) {
-            $args{'--' . $_} = $opts->{$_}
+            $args{'--' . $_} = $opts->{$_};
          }
       }
       my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
       $args{'--file'} = $cfile;
       print "EXEC: $self->{file} @{[%args]}\n";
 
-      open (STDIN,  '</dev/null');
+      open(STDIN, '</dev/null');
       unless ($self->{wait}) {
-         open (STDOUT, '>/dev/null');
-         open (STDERR, '>&STDOUT');
+         open(STDOUT, '>/dev/null');
+         open(STDERR, '>&STDOUT');
       }
       exec($self->{file}, %args);
    }
@@ -107,12 +112,11 @@ sub action
    if ($self->{wait}) {
       waitpid $pid, 0;
       if ($?) {
-         die "EXEC: $self->{file} failed with code $?\n"
+         die "EXEC: $self->{file} failed with code $?\n";
       }
    }
 
-   undef
+   undef;
 }
-
 
 1;

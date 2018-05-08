@@ -31,11 +31,10 @@ BEGIN {
    }
 }
 
-
 my $module_dir;
 my $kernel_dir;
-my $direct   = 1;
-my $indirect = 1;
+my $direct       = 1;
+my $indirect     = 1;
 my $exact_module = undef;
 
 GetOptions(
@@ -53,12 +52,11 @@ die("Nothing to search for.\n") if !$direct && !$indirect;
 ### KERNEL DIRECTORY: $kernel_dir
 ### MODULE DIRECTORY: $module_dir
 
-
 #Initializing the library
 Kernel::Module::Graph::init(reverse => 1);
 
-
-my $source = (preprocess_module_sources_nocomments($kernel_dir, $module_dir, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
+my $source =
+  (preprocess_module_sources_nocomments($kernel_dir, $module_dir, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
 adapt($$source, attributes => 1);
 
 #funcs init
@@ -69,17 +67,15 @@ my $graph = build_sources_graph(\%sources);
 my @dot;
 while ($graph->has_a_cycle) {
    my @cycle = $graph->find_a_cycle;
-   my $g = Graph::Directed->new(edges =>
-         [ grep { any($_->[0], \@cycle) && any($_->[1], \@cycle) } $graph->edges ]
-   );
+   my $g = Graph::Directed->new(edges => [grep {any($_->[0], \@cycle) && any($_->[1], \@cycle)} $graph->edges]);
 
    my $allow = 0;
    my @edge;
    if (@cycle > 1) {
-      @edge = @cycle[0,1];
+      @edge = @cycle[0, 1];
       $allow = $indirect;
    } else {
-      @edge = @cycle[0,0];
+      @edge = @cycle[0, 0];
       $allow = $direct;
    }
 
@@ -87,16 +83,21 @@ while ($graph->has_a_cycle) {
       push @dot, '';
       open my $fh, '>', \$dot[-1];
       {
-      local $SIG{__WARN__} = sub {};
+         local $SIG{__WARN__} = sub { };
          Graph::Writer::Dot->new()->write_graph(
-            Graph::Directed->new(edges =>,
-               [ map {
-                       [ $graph->get_vertex_attribute($_->[0], 'object')->name,
-                         $graph->get_vertex_attribute($_->[1], 'object')->name
-                       ]
-                     } $g->edges
-               ]),
-            $fh);
+            Graph::Directed->new(
+               edges =>,
+               [
+                  map {
+                     [
+                        $graph->get_vertex_attribute($_->[0], 'object')->name,
+                        $graph->get_vertex_attribute($_->[1], 'object')->name
+                     ]
+                  } $g->edges
+               ]
+            ),
+            $fh
+         );
       }
       close $fh;
    }

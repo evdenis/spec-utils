@@ -21,25 +21,25 @@ has 'replacement_id' => (
 );
 
 has 'get_code_ids' => (
-   is => 'ro',
-   isa => 'ArrayRef[Str]',
-   lazy => 1,
-   builder => '_build_code_ids',
+   is       => 'ro',
+   isa      => 'ArrayRef[Str]',
+   lazy     => 1,
+   builder  => '_build_code_ids',
    init_arg => undef
 );
 
 has 'function_spec' => (
-   isa => 'Int',
-   is => 'rw',
-   default => 0,
+   isa      => 'Int',
+   is       => 'rw',
+   default  => 0,
    init_arg => undef
 );
 
 has 'number_of_lines' => (
-   isa => 'Int',
-   is => 'ro',
-   lazy => 1,
-   builder => '_count_lines',
+   isa      => 'Int',
+   is       => 'ro',
+   lazy     => 1,
+   builder  => '_count_lines',
    init_arg => undef
 );
 
@@ -76,18 +76,17 @@ sub _count_lines
 
 sub get_code_tags
 {
-   prepare_tags($_[0]->code, $_[0]->get_code_ids())
+   prepare_tags($_[0]->code, $_[0]->get_code_ids());
 }
 
 sub to_string
 {
    if ($_[0]->function_spec) {
-      undef
+      undef;
    } else {
-      $_[0]->code
+      $_[0]->code;
    }
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

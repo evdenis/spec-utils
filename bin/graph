@@ -27,7 +27,6 @@ BEGIN {
    }
 }
 
-
 =encoding utf8
 
 =pod
@@ -252,7 +251,7 @@ graph - построить граф вызовов функций модуля �
 
 my $dot_exists = 0;
 unless (which('dot')) {
-   warn "Please, install graphviz package. This program requires dot to operate properly.\n"
+   warn "Please, install graphviz package. This program requires dot to operate properly.\n";
 } else {
    $dot_exists = 1;
 }
@@ -269,7 +268,7 @@ $args{done}             = 1;
 $args{display_done}     = 1;
 $args{priority}         = 1;
 $args{issues}           = 0;
-$args{statistics}       = 1; # Always print level statistics
+$args{statistics}       = 1;                               # Always print level statistics
 $args{mark_anyway}      = 0;
 $args{view}             = 1;
 $args{async}            = 1;
@@ -289,39 +288,39 @@ my $priority = find_config('priority');
 my $status   = find_config('status');
 my $issues   = find_config('issues');
 
-my @cache_dir       = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
+my @cache_dir = (catdir($ENV{HOME}, '.cache', 'graph'), catdir($FindBin::Bin, '.cache'));
 my $help = 0;
 
 GetOptions(
-   'functions|f=s{1,}'       =>  \@{ $args{functions} },
-   'conf-priority=s'         =>  \$priority,
-   'conf-status=s'           =>  \$status,
-   'conf-issues=s'           =>  \$issues,
-   'format=s'                =>  \$args{format},
-   'output|o=s'              =>  \$args{out},
-   'preprocessed|p=s'        =>  \$args{preprocessed},
-   'module|m=s'              =>  \$args{module_dir},
-   'kernel|k=s'              =>  \$args{kernel_dir},
-   'mname=s'                 =>  \$args{mname},
-   'cache!'                  =>  \$args{cache},
-   'renew-cache'             =>  \$args{renew_cache},
-   'done!'                   =>  \$args{done},
-   'from-done'               =>  \$args{from_done},
-   'display-done!'           =>  \$args{display_done},
-   'priority!'               =>  \$args{priority},
-   'issues!'                 =>  \$args{issues},
-   'mark-anyway|a!'          =>  \$args{mark_anyway},
-   'view|v!'                 =>  \$args{view},
-   'open-with|w=s'           =>  \$open_with,
-   'reverse|r!'              =>  \$args{reverse},
-   'level|l=i'               =>  \$args{level},
-   'async!'                  =>  \$args{async},
-   'keep-dot!'               =>  \$args{keep_dot},
-   'priority-legenda!'       =>  \$args{priority_legenda},
-   'issues-legenda!'         =>  \$args{issues_legenda},
-   'legenda!'                =>  sub {$args{priority_legenda} = $args{issues_legenda} = $_[1]},
-   'show-available'          =>  sub {$args{reverse} = $args{from_done} = 1; $args{display_done} = 0; },
-   'help|h'                  =>  \$help
+   'functions|f=s{1,}' => \@{$args{functions}},
+   'conf-priority=s'   => \$priority,
+   'conf-status=s'     => \$status,
+   'conf-issues=s'     => \$issues,
+   'format=s'          => \$args{format},
+   'output|o=s'        => \$args{out},
+   'preprocessed|p=s'  => \$args{preprocessed},
+   'module|m=s'        => \$args{module_dir},
+   'kernel|k=s'        => \$args{kernel_dir},
+   'mname=s'           => \$args{mname},
+   'cache!'            => \$args{cache},
+   'renew-cache'       => \$args{renew_cache},
+   'done!'             => \$args{done},
+   'from-done'         => \$args{from_done},
+   'display-done!'     => \$args{display_done},
+   'priority!'         => \$args{priority},
+   'issues!'           => \$args{issues},
+   'mark-anyway|a!'    => \$args{mark_anyway},
+   'view|v!'           => \$args{view},
+   'open-with|w=s'     => \$open_with,
+   'reverse|r!'        => \$args{reverse},
+   'level|l=i'         => \$args{level},
+   'async!'            => \$args{async},
+   'keep-dot!'         => \$args{keep_dot},
+   'priority-legenda!' => \$args{priority_legenda},
+   'issues-legenda!'   => \$args{issues_legenda},
+   'legenda!'          => sub {$args{priority_legenda} = $args{issues_legenda} = $_[1]},
+   'show-available'    => sub {$args{reverse} = $args{from_done} = 1; $args{display_done} = 0;},
+   'help|h'            => \$help
 ) or pod2usage(1);
 
 unless ($dot_exists) {
@@ -330,13 +329,13 @@ unless ($dot_exists) {
 }
 
 $args{cache} = 0
-   if $args{renew_cache};
-$args{functions} = [ split(/,/,join(',', @{ $args{functions} })) ];
+  if $args{renew_cache};
+$args{functions} = [split(/,/, join(',', @{$args{functions}}))];
 
 if ($args{view}) {
-   $args{view} = $open_with
+   $args{view} = $open_with;
 } else {
-   $args{view} = undef
+   $args{view} = undef;
 }
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
@@ -344,28 +343,31 @@ unless ($args{preprocessed}) {
    $args{module_dir} //= $ENV{CURRENT_PROJECT} // '.';
    $args{kernel_dir} //= autodetect_kernel_directory(dirs => ['..']);
 
-   pod2usage({ -msg => "You should provide kernel directory with -k option.\n", -exitval => 2 }) unless defined $args{kernel_dir};
-   pod2usage({ -msg => "$args{module_dir} is not a directory.\n",        -exitval => 2 }) unless -d $args{module_dir};
-   pod2usage({ -msg => "$args{kernel_dir} is not a kernel directory.\n", -exitval => 2 }) unless check_kernel_dir($args{kernel_dir});
+   pod2usage({-msg => "You should provide kernel directory with -k option.\n", -exitval => 2})
+     unless defined $args{kernel_dir};
+   pod2usage({-msg => "$args{module_dir} is not a directory.\n", -exitval => 2}) unless -d $args{module_dir};
+   pod2usage({-msg => "$args{kernel_dir} is not a kernel directory.\n", -exitval => 2})
+     unless check_kernel_dir($args{kernel_dir});
 } else {
-   pod2usage({ -msg => "$args{preprocessed} file is not readable.\n",    -exitval => 2 }) unless -r $args{preprocessed};
-   pod2usage({ -msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2 }) if $args{module_dir};
+   pod2usage({-msg => "$args{preprocessed} file is not readable.\n", -exitval => 2}) unless -r $args{preprocessed};
+   pod2usage({-msg => "Either preprocessed flag or sources flag should be specified\n", -exitval => 2})
+     if $args{module_dir};
 }
 
 if (!@{$args{functions}} && $args{reverse} && !(defined $args{level}) && !$args{from_done}) {
-   warn "It's pointless to use --reverse option without --functions\n"
+   warn "It's pointless to use --reverse option without --functions\n";
 }
 
 if (defined $args{view} && !which($args{view})) {
-   die "Can't find program $args{view}.\n"
+   die "Can't find program $args{view}.\n";
 }
 
 if (!$args{done} && $args{from_done} == 1) {
-   die "Flag --from-done should be used in combination with flag --done.\n"
+   die "Flag --from-done should be used in combination with flag --done.\n";
 }
 
 if ($args{display_done} == 0 && $args{from_done} && !$args{reverse}) {
-   die "It's pointless to use --no-display-done and --from-done.\n"
+   die "It's pointless to use --no-display-done and --from-done.\n";
 }
 
 ### KERNEL DIRECTORY: $args{kernel_dir}
@@ -379,16 +381,16 @@ $args{cache} = 0 if $args{preprocessed};
       unless (mkdir($_)) {
          unless (-e $_) {
             warn("Can't create directory $_: $!\n");
-            next
+            next;
          }
       }
 
       $args{cache_file} = catfile $_, $args{cache_file};
       $c = 1;
-      last
+      last;
    }
    die "Can't create cache directory.\n"
-      unless $c
+     unless $c
 }
 
 ### CACHE FILE: $args{cache_file}
@@ -398,42 +400,42 @@ if ($args{priority}) {
    ### CONFIG FILE: $priority
    $priority = load_config $priority;
    die("Can't read priority config file.\n")
-       unless $priority;
+     unless $priority;
    die("Wrong file format.\n")
-      unless check_priority_format($priority);
+     unless check_priority_format($priority);
    merge_config_keys $args{config}, $priority;
 }
 if ($args{done}) {
    ### CONFIG FILE: $status
    $status = load_config $status;
    die("Can't read status config file.\n")
-       unless $status;
+     unless $status;
    die("Wrong file format.\n")
-       unless check_status_format($status);
+     unless check_status_format($status);
    merge_config_keys $args{config}, $status;
 }
 if ($args{issues}) {
    ### CONFIG FILE: $issues
    $issues = load_config $issues;
    die("Can't read issues config file.\n")
-       unless $issues;
+     unless $issues;
    die("Wrong file format.\n")
-       unless check_issues_format($issues);
+     unless check_issues_format($issues);
    merge_config_keys $args{config}, $issues;
 }
 
 # level checks
 if (defined $args{level}) {
    die "Can't handle arguments --functions and --level simultaneously.\n"
-       if @{$args{functions}};
+     if @{$args{functions}};
    my $level = $args{level};
-   my $max = @{$args{config}{priority}{lists}};
+   my $max   = @{$args{config}{priority}{lists}};
    if ($level <= 0 || $level > $max) {
-      die "Level option is out of bounds.\n"
+      die "Level option is out of bounds.\n";
    }
 }
 
-run(\%args); # Can die.
+run(\%args);    # Can die.
 
 say '';
 say "File $args{out}.dot contains graph in dot format." if $args{keep_dot};

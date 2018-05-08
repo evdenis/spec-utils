@@ -29,62 +29,61 @@ use C::Util::Transformation;
 use Local::Config qw/find_config load_config merge_config_keys/;
 use Local::Config::Format qw/check_priority_format check_status_format/;
 
-
 unless (which('lizard')) {
-   die "Please, install lizard python package. This program required to measure SLOC and CCN.\n"
+   die "Please, install lizard python package. This program required to measure SLOC and CCN.\n";
 }
 
-my $modified = 0; #Calculate modified cyclomatic complexity number
-my $output_format = 'table'; # table csv excel sqlite
+my $modified      = 0;          #Calculate modified cyclomatic complexity number
+my $output_format = 'table';    # table csv excel sqlite
 my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my $output_file = undef;
-my $force = 0;
+my $force       = 0;
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 my $exact_module = undef;
 
 GetOptions(
-    "modified!"         => \$modified,
-    "kernel|k=s"        => \$kernel,
-    "module|m=s"        => \$module,
-    "mname=s"           => \$exact_module,
-    "force!"            => \$force,
-    "conf-status|status|s=s"     => \$config_file{status},
-    "conf-priority|priority|p=s" => \$config_file{priority},
-    "format|f=s"        => \$output_format,
-    "output|o=s"        => \$output_file,
+   "modified!"                  => \$modified,
+   "kernel|k=s"                 => \$kernel,
+   "module|m=s"                 => \$module,
+   "mname=s"                    => \$exact_module,
+   "force!"                     => \$force,
+   "conf-status|status|s=s"     => \$config_file{status},
+   "conf-priority|priority|p=s" => \$config_file{priority},
+   "format|f=s"                 => \$output_format,
+   "output|o=s"                 => \$output_file,
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
-    unless -d $kernel;
+  unless -d $kernel;
 die "Please, provide valid path to module.\n"
-    unless -d $module;
+  unless -d $module;
 
 my $conf_status = load_config($config_file{status});
-die( "Can't read status config file.\n" )
-    unless $conf_status;
+die("Can't read status config file.\n")
+  unless $conf_status;
 die("Wrong file format.\n")
-    unless check_status_format($conf_status);
+  unless check_status_format($conf_status);
 
 my $conf_priority = load_config($config_file{priority});
 die("Can't read priority config file.\n")
-    unless $conf_priority;
+  unless $conf_priority;
 die("Wrong file format.\n")
-    unless check_priority_format($conf_priority);
+  unless check_priority_format($conf_priority);
 my $config;
 merge_config_keys $config, $conf_status;
 merge_config_keys $config, $conf_priority;
 
-
-unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'excel' || $output_format eq 'sqlite') {
-   die "Format $output_format is not supported by the programm.\n"
+unless ($output_format eq 'table' || $output_format eq 'csv' || $output_format eq 'excel' || $output_format eq 'sqlite')
+{
+   die "Format $output_format is not supported by the programm.\n";
 }
 
 if (($output_format eq 'excel' || $output_format eq 'sqlite') && !defined $output_file) {
-   die "Can't write $output_format file to STDIN. Please, use --output argument.\n"
+   die "Can't write $output_format file to STDIN. Please, use --output argument.\n";
 }
 
 if ($output_file && -f $output_file && !$force) {
-   die "File $output_file already exists in the file system. If you want to overwrite, use --force option.\n"
+   die "File $output_file already exists in the file system. If you want to overwrite, use --force option.\n";
 }
 
 #BEGIN OF A PROGRAM
@@ -114,11 +113,11 @@ if ($output_format eq 'sqlite') {
 }
 ##END OF A PROGRAM
 
-sub get_preprocessed_sources($kernel, $module, $exact_module)
+sub get_preprocessed_sources ($kernel, $module, $exact_module)
 {
    my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
    adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
-   $$source
+   $$source;
 }
 
 # args $_[0] - preprocessed file
@@ -133,18 +132,18 @@ sub get_metrics
 
    #calling lizard
    my $lizard_call = 'lizard -X ' . ($modified ? ' -m ' : '') . $tempdir;
-   my $xml = qx!$lizard_call!;
-   my $xs  = XML::Simple->new();
-   my $ref = $xs->XMLin($xml);
-   my $items = $ref->{measure}[0]{item};
+   my $xml         = qx!$lizard_call!;
+   my $xs          = XML::Simple->new();
+   my $ref         = $xs->XMLin($xml);
+   my $items       = $ref->{measure}[0]{item};
    my %metrics;
-   foreach(keys %$items) {
+   foreach (keys %$items) {
       my $name = ($_ =~ m/(^[^\(]++)/)[0];
-      my @value = @{$items->{$_}{value}}[1,2];
+      my @value = @{$items->{$_}{value}}[1, 2];
       $metrics{$name} = {SLOC => $value[0], CCN => $value[1]};
    }
 
-   \%metrics
+   \%metrics;
 }
 
 # args $_[0] - preprocessed file
@@ -156,9 +155,9 @@ sub build_graph
    build_sources_graph(\%sources);
 }
 
-sub mark_priorities($graph, $config)
+sub mark_priorities ($graph, $config)
 {
-   while ( my ($i, $list) = each @{ $config->{priority}{lists} } ) {
+   while (my ($i, $list) = each @{$config->{priority}{lists}}) {
       foreach (uniq @$list) {
          if ($graph->has_vertex($_)) {
             unless ($graph->has_vertex_attribute($_, 'priority')) {
@@ -170,12 +169,12 @@ sub mark_priorities($graph, $config)
                }
             }
          } else {
-            warn "Priority list: there is no such function '$_' in sources.\n"
+            warn "Priority list: there is no such function '$_' in sources.\n";
          }
       }
    }
 
-   $graph
+   $graph;
 }
 
 sub resolve_function_function_cycles($graph)
@@ -183,24 +182,24 @@ sub resolve_function_function_cycles($graph)
    while ($graph->has_a_cycle) {
       my @cycle = $graph->find_a_cycle();
       if (@cycle == 1) {
-         $graph->delete_edge(@cycle[0,0])
+         $graph->delete_edge(@cycle[0, 0]);
       } else {
-         $graph->delete_edge(@cycle[0,1])
+         $graph->delete_edge(@cycle[0, 1]);
       }
    }
 
-   $graph
+   $graph;
 }
 
 sub mark_levels($graph)
 {
    my %vertices = map {$_ => undef} $graph->vertices;
-   my %vd  = map { ($_, $graph->in_degree($_)) } keys %vertices;
+   my %vd = map {($_, $graph->in_degree($_))} keys %vertices;
    my $level = 1;
    while (%vertices) {
       my @zv;
 
-      foreach(keys %vertices) {
+      foreach (keys %vertices) {
          push @zv, $_ if 0 == $vd{$_};
       }
 
@@ -209,53 +208,52 @@ sub mark_levels($graph)
          last;
       }
 
-      $graph->set_vertex_attribute($_, level => $level)
-          foreach @zv;
+      $graph->set_vertex_attribute($_, level => $level) foreach @zv;
 
       --$vd{$_->[1]} foreach $graph->edges_from(@zv);
       delete @vertices{@zv};
       $level++;
    }
 
-   $graph
+   $graph;
 }
 
-sub create_table($graph, $preprocessed, $modified, $config)
+sub create_table ($graph, $preprocessed, $modified, $config)
 {
-   my $metrics  = get_metrics($preprocessed, $modified);
+   my $metrics = get_metrics($preprocessed, $modified);
 
-   my %done    = map {$_ => 'доказана'}               @{$config->{done}};
-   my %lemma   = map {$_ => 'доказана без лемм'}      @{$config->{'lemma-proof-required'}};
+   my %done    = map {$_ => 'доказана'} @{$config->{done}};
+   my %lemma   = map {$_ => 'доказана без лемм'} @{$config->{'lemma-proof-required'}};
    my %partial = map {$_ => 'частичная спецификация'} @{$config->{'partial-specs'}};
-   my %specs   = map {$_ => 'недоказуемо'}            @{$config->{'specs-only'}};
+   my %specs   = map {$_ => 'недоказуемо'} @{$config->{'specs-only'}};
    my %status = (%done, %lemma, %partial, %specs);
 
    my %vertices = map {$_ => undef} $graph->vertices;
 
    foreach (keys %vertices) {
       my $obj = $graph->get_vertex_attribute($_, 'object');
-      my @calls = grep {! m/^__builtin/} @{$obj->calls}; # filter builtin compiler functions
+      my @calls        = grep {!m/^__builtin/} @{$obj->calls};                       # filter builtin compiler functions
       my @module_calls = grep {exists $vertices{$_}} @calls;
       my @kernel_calls = grep {!exists $vertices{$_}} @calls;
-      my @args = grep {! m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
+      my @args         = grep {!m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
 
-      $metrics->{$_}{code}           = $obj->to_string(undef, 0, 1);
-      $metrics->{$_}{priority}       = $graph->get_vertex_attribute($_, 'priority');
-      $metrics->{$_}{level}          = $graph->get_vertex_attribute($_, 'level');
-      $metrics->{$_}{status}         = $status{$_} // '';
-      $metrics->{$_}{module_calls}   = scalar @module_calls;
-      $metrics->{$_}{kernel_calls}   = scalar @kernel_calls;
-      $metrics->{$_}{args}           = scalar @args;
+      $metrics->{$_}{code} = $obj->to_string(undef, 0, 1);
+      $metrics->{$_}{priority} = $graph->get_vertex_attribute($_, 'priority');
+      $metrics->{$_}{level}    = $graph->get_vertex_attribute($_, 'level');
+      $metrics->{$_}{status}   = $status{$_} // '';
+      $metrics->{$_}{module_calls} = scalar @module_calls;
+      $metrics->{$_}{kernel_calls} = scalar @kernel_calls;
+      $metrics->{$_}{args}         = scalar @args;
    }
 
-   $metrics
+   $metrics;
 }
 
 sub _weight
 {
    my ($args, $sloc, $ccn, $kernel_calls, $module_calls) = @_;
 
-   0.2 * $args + ($sloc * 0.3 + $ccn) + ($kernel_calls * 0.5 + $module_calls) * 0.4
+   0.2 * $args + ($sloc * 0.3 + $ccn) + ($kernel_calls * 0.5 + $module_calls) * 0.4;
 }
 
 sub generate_sort_function
@@ -272,27 +270,31 @@ sub generate_sort_function
       my $wb = _weight(@{$metrics->{$b}}{qw/args SLOC CCN kernel_calls module_calls/});
 
       $pa <=> $pb
-          ||
-      $la <=> $lb
-          ||
-      $wa <=> $wb
-   }
+        || $la <=> $lb
+        || $wa <=> $wb;
+     }
 }
 
-sub prepare_output_document($output_format, $output_file, $config)
+sub prepare_output_document ($output_format, $output_file, $config)
 {
-   my $column_names = ['№', 'Имя', 'Аргументы', 'SLOC', 'CCN', 'Вызвано функций ядра', 'Вызвано функций модуля',
-       'Приоритет', 'Уровень в иерархии', 'Статус верификации'];
+   my $column_names = [
+      '№', 'Имя', 'Аргументы', 'SLOC', 'CCN',
+      'Вызвано функций ядра',
+      'Вызвано функций модуля',
+      'Приоритет',
+      'Уровень в иерархии',
+      'Статус верификации'
+   ];
    my $obj;
    my $addfunc;
    my $retfunc;
    my $outfunc = sub {
-                        if ($output_file) {
-                           write_file($output_file, { binmode => ':utf8' }, $_[0])
-                        } else {
-                           print $_[0]
-                        }
-                     };
+      if ($output_file) {
+         write_file($output_file, {binmode => ':utf8'}, $_[0]);
+      } else {
+         print $_[0];
+      }
+   };
 
    if ($output_format eq 'table') {
       my $t = Text::ANSITable->new;
@@ -304,57 +306,57 @@ sub prepare_output_document($output_format, $output_file, $config)
       }
 
       $t->columns($column_names);
-      $t->set_column_style('№',                      pad    => 0);
-      $t->set_column_style('Имя',                    align  => 'left');
-      $t->set_column_style('Аргументы',              align  => 'middle');
-      $t->set_column_style('SLOC',                   align  => 'middle');
-      $t->set_column_style('CCN',                    align  => 'middle');
-      $t->set_column_style('Вызвано функций ядра',   align  => 'middle');
-      $t->set_column_style('Вызвано функций модуля', align  => 'middle');
-      $t->set_column_style('Приоритет',              align  => 'middle');
-      $t->set_column_style('Уровень в иерархии',     align  => 'middle');
-      $t->set_column_style('Статус верификации',     align  => 'middle');
+      $t->set_column_style('№',                      pad   => 0);
+      $t->set_column_style('Имя',                    align => 'left');
+      $t->set_column_style('Аргументы',              align => 'middle');
+      $t->set_column_style('SLOC',                   align => 'middle');
+      $t->set_column_style('CCN',                    align => 'middle');
+      $t->set_column_style('Вызвано функций ядра',   align => 'middle');
+      $t->set_column_style('Вызвано функций модуля', align => 'middle');
+      $t->set_column_style('Приоритет',              align => 'middle');
+      $t->set_column_style('Уровень в иерархии',     align => 'middle');
+      $t->set_column_style('Статус верификации',     align => 'middle');
 
-      $obj = $t;
+      $obj     = $t;
       $addfunc = \&Text::ANSITable::add_row;
       $retfunc = \&Text::ANSITable::draw;
    } elsif ($output_format eq 'csv') {
       my $csv = Class::CSV->new(
-          fields         => $column_names,
-          line_separator => "\r\n",
-          csv_xs_options => {
-              sep_char          => ';',
-          },
+         fields         => $column_names,
+         line_separator => "\r\n",
+         csv_xs_options => {
+            sep_char => ';',
+         },
       );
 
-      $obj = $csv;
+      $obj     = $csv;
       $addfunc = \&Class::CSV::add_line;
       $retfunc = \&Class::CSV::string;
       $addfunc->($obj, $column_names);
    } elsif ($output_format eq 'excel') {
       shift @$column_names;
-      my $workbook = Excel::Writer::XLSX->new($output_file);
-      my $center  = $workbook->add_format(align => 'center');
-      my $left    = $workbook->add_format(align => 'left');
-      my $heading = $workbook->add_format(align => 'center', bold => 1, bg_color => 'silver', underline => 1);
-      my $warning = $workbook->add_format(bold => 1, color => 'red', align => 'center');
-      my @colors      = map { $config->{priority}{colors}{$_} } @{$config->{priority}{lists}};
+      my $workbook    = Excel::Writer::XLSX->new($output_file);
+      my $center      = $workbook->add_format(align => 'center');
+      my $left        = $workbook->add_format(align => 'left');
+      my $heading     = $workbook->add_format(align => 'center', bold => 1, bg_color => 'silver', underline => 1);
+      my $warning     = $workbook->add_format(bold => 1, color => 'red', align => 'center');
+      my @colors      = map {$config->{priority}{colors}{$_}} @{$config->{priority}{lists}};
       my @color_codes = map {$_->html} Color::Library->colors(@colors);
-      my @formats     = map { $workbook->add_format(align => 'center', bg_color => $_) } @color_codes;
+      my @formats     = map {$workbook->add_format(align => 'center', bg_color => $_)} @color_codes;
 
       my $worksheet = $workbook->add_worksheet('Verification Plan');
       while (my ($i, $value) = each @$column_names) {
          $worksheet->write(0, $i, $value, $heading);
       }
-      $worksheet->set_column(0, 0, 30, $left);    # NAME
-      $worksheet->set_column(1, 0, 10, $center);  # Arguments
-      $worksheet->set_column(2, 0, 5,  $center);  # SLOC
-      $worksheet->set_column(3, 0, 5,  $center);  # CCN
-      $worksheet->set_column(4, 0, 20, $center);  # KCalls
-      $worksheet->set_column(5, 0, 22, $center);  # MCalls
-      $worksheet->set_column(6, 0, 10, $center);  # Priority
-      $worksheet->set_column(7, 0, 17, $center);  # Level
-      $worksheet->set_column(8, 0, 17, $center);  # Status
+      $worksheet->set_column(0, 0, 30, $left);      # NAME
+      $worksheet->set_column(1, 0, 10, $center);    # Arguments
+      $worksheet->set_column(2, 0, 5,  $center);    # SLOC
+      $worksheet->set_column(3, 0, 5,  $center);    # CCN
+      $worksheet->set_column(4, 0, 20, $center);    # KCalls
+      $worksheet->set_column(5, 0, 22, $center);    # MCalls
+      $worksheet->set_column(6, 0, 10, $center);    # Priority
+      $worksheet->set_column(7, 0, 17, $center);    # Level
+      $worksheet->set_column(8, 0, 17, $center);    # Status
 
       $obj = $worksheet;
       my $row_iter = 1;
@@ -368,29 +370,30 @@ sub prepare_output_document($output_format, $output_file, $config)
          $_[0]->write($row_iter, 5, $_[1]->[5]);
          $_[0]->write($row_iter, 6, $_[1]->[6], defined $_[1]->[6] ? $formats[$_[1]->[6] - 1] : ());
          $_[0]->write($row_iter, 7, $_[1]->[7]);
-         $_[0]->write($row_iter, 8, $_[1]->[8 ]);
+         $_[0]->write($row_iter, 8, $_[1]->[8]);
          $row_iter++;
       };
-      $retfunc = sub {};
+      $retfunc = sub { };
       $outfunc = sub {$workbook->close()};
    } else {
-      die "Program doesn't have support for output format $output_format.\n"
+      die "Program doesn't have support for output format $output_format.\n";
    }
 
-   ($obj, $addfunc, $retfunc, $outfunc)
+   ($obj, $addfunc, $retfunc, $outfunc);
 }
 
 sub gather_statistics($metrics)
 {
    my ($total_sloc, $done_sloc);
    my @columns;
-   my @rows; #my %stat_types;
+   my @rows;    #my %stat_types;
    my %done_in_prio;
    my %sloc_in_prio;
    my %ccn_in_prio;
    foreach (keys %$metrics) {
-      my $m = $metrics->{$_};
-      my $prio   = $m->{priority}; $prio //= "без приоритета";
+      my $m    = $metrics->{$_};
+      my $prio = $m->{priority};
+      $prio //= "без приоритета";
       my $status = $m->{status};
       my $sloc   = $m->{SLOC};
       my $ccn    = $m->{CCN};
@@ -415,11 +418,12 @@ sub gather_statistics($metrics)
       }
    }
 
-   sub output_stat ($head, $in_prio ) {
+   sub output_stat ($head, $in_prio)
+   {
       my $cross_prio_total   = 0;
       my $cross_prio_remains = 0;
       my %cross_prio_status;
-      foreach(sort keys %$in_prio) {
+      foreach (sort keys %$in_prio) {
          print "Приоритет: $_\n";
          print "\t$head " . $in_prio->{$_}{total} . "\n";
          $cross_prio_total += $in_prio->{$_}{total};
@@ -446,13 +450,14 @@ sub gather_statistics($metrics)
    output_stat "Полная сложность: ", \%ccn_in_prio;
 }
 
-sub output_plan($obj, $addfunc, $retfunc, $outfunc, $metrics)
+sub output_plan ($obj, $addfunc, $retfunc, $outfunc, $metrics)
 {
-   my $counter = 1;
+   my $counter       = 1;
    my $sort_function = generate_sort_function($metrics);
    foreach (sort $sort_function keys %$metrics) {
-      $addfunc->($obj, [$counter++, $_,
-              @{$metrics->{$_}}{qw/args SLOC CCN kernel_calls module_calls priority level status/}]);
+      $addfunc->(
+         $obj, [$counter++, $_, @{$metrics->{$_}}{qw/args SLOC CCN kernel_calls module_calls priority level status/}]
+      );
    }
 
    $outfunc->($retfunc->($obj));
@@ -482,12 +487,15 @@ sub sqlite_connect
 {
    my ($dbfile) = @_;
    my $dsn      = "dbi:SQLite:dbname=" . $dbfile;
-   my $dbh = DBI->connect($dsn, '', '', {
-           PrintError       => 0,
-           RaiseError       => 1,
-           AutoCommit       => 1,
-           FetchHashKeyName => 'NAME_lc',
-       }) or die "$DBI::errstr\n";
+   my $dbh      = DBI->connect(
+      $dsn, '', '',
+      {
+         PrintError       => 0,
+         RaiseError       => 1,
+         AutoCommit       => 1,
+         FetchHashKeyName => 'NAME_lc',
+      }
+   ) or die "$DBI::errstr\n";
 
    return $dbh;
 }
@@ -496,20 +504,21 @@ sub insert_to_database
 {
    my ($dbh, $metrics) = @_;
    my @order = qw/name
-       code
-       args
-       CCN
-       kernel_calls
-       module_calls
-       level
-       priority
-       SLOC
-       status/;
+     code
+     args
+     CCN
+     kernel_calls
+     module_calls
+     level
+     priority
+     SLOC
+     status/;
 
-   state $ins_sth = $dbh->prepare(qq/
-      INSERT OR REPLACE INTO astraver_functions (/ . join(',', @order) . qq/) VALUES (/ . join(',', ('?') x @order) . ');'
+   state $ins_sth = $dbh->prepare(
+      qq/
+      INSERT OR REPLACE INTO astraver_functions (/
+        . join(',', @order) . qq/) VALUES (/ . join(',', ('?') x @order) . ');'
    );
 
-   $ins_sth->execute($_, @{$metrics->{$_}}{@order[1 .. $#order]})
-       foreach keys %$metrics;
+   $ins_sth->execute($_, @{$metrics->{$_}}{@order[1 .. $#order]}) foreach keys %$metrics;
 }

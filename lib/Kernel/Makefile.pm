@@ -13,20 +13,19 @@ use Cwd qw(realpath);
 
 use Exporter qw(import);
 
-
 our @EXPORT = qw(get_modules_deps);
 
-
-sub get_modules_deps 
+sub get_modules_deps
 {
-   my $file = $_[0];
-   my $kdir = $_[1];
+   my $file    = $_[0];
+   my $kdir    = $_[1];
    my $makedir = (splitpath($file))[1];
-   my $data = read_file($file, scalar_ref => 1);
+   my $data    = read_file($file, scalar_ref => 1);
    my @modules;
    my @includes;
 
-   while ( $$data =~ m/
+   while (
+      $$data =~ m/
                         obj-(?:\$\($varname\)|[mny])
                         \h*+
                            [:+]?=
@@ -40,13 +39,16 @@ sub get_modules_deps
                            .++
                         )
                         $
-                     /gmx ) {
+                     /gmx
+     )
+   {
       push @modules, map {/\.o\Z/ ? substr($_, 0, -2) : ()} split /\s++/, $+{modules};
    }
 
    my %struct;
    foreach my $module (@modules) {
-      while ( $$data =~ m/
+      while (
+         $$data =~ m/
                            \b${module}-(?:y|objs(?:-y|-\$\(CONFIG_\w++\))?)
                            \h*+
                               [:+]?=
@@ -60,15 +62,17 @@ sub get_modules_deps
                               .++
                            )
                            $
-                          /gmx ) {
-         push @{ $struct{$module} },
-            map { realpath(catfile($makedir, substr($_, 0, -2) . '.c')) }
-            grep { /\.o\Z/ }
-            split /\s++/, $+{deps} =~ tr/\\//dr;
+                          /gmx
+        )
+      {
+         push @{$struct{$module}}, map {realpath(catfile($makedir, substr($_, 0, -2) . '.c'))}
+           grep {/\.o\Z/}
+           split /\s++/, $+{deps} =~ tr/\\//dr;
       }
    }
 
-   if ($$data =~ m/ccflags-y\h*+[:+]?=\h*+
+   if (
+      $$data =~ m/ccflags-y\h*+[:+]?=\h*+
                         (?<ccflags>
                            (?<body>
                               [^\\\n]*+
@@ -77,7 +81,9 @@ sub get_modules_deps
                            )?
                            .++
                         )
-                        $/mx) {
+                        $/mx
+     )
+   {
       my $ccflags = $+{ccflags};
       while ($ccflags =~ m/-I\h*+([^\s]++)/g) {
          my $include = $1;
@@ -88,8 +94,7 @@ sub get_modules_deps
       }
    }
 
-   (\%struct, \@includes)
+   (\%struct, \@includes);
 }
-
 
 1;

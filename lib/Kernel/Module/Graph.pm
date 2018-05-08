@@ -23,15 +23,15 @@ use constant HASH  => ref {};
 use constant ARRAY => ref [];
 
 our @EXPORT_OK = qw(
-    build_sources_graph
-    get_predecessors_subgraph
-    get_successors_subgraph
-    get_strict_predecessors_subgraph
-    get_strict_successors_subgraph
-    output_sources_graph
-    get_isolated_subgraph
-    %out_file
-    @out_order
+  build_sources_graph
+  get_predecessors_subgraph
+  get_successors_subgraph
+  get_strict_predecessors_subgraph
+  get_strict_successors_subgraph
+  output_sources_graph
+  get_isolated_subgraph
+  %out_file
+  @out_order
 );
 
 our %out_file = (
@@ -41,21 +41,16 @@ our %out_file = (
    extern_h => undef,
 );
 
-our @out_order = (
-   'kernel_h',
-   'extern_h',
-   'module_h',
-   'module_c',
-);
+our @out_order = ('kernel_h', 'extern_h', 'module_h', 'module_c',);
 
-my %_order  = (0 => sub { @_ }, 1 => sub { ($_[1], $_[0]) });
+my %_order = (0 => sub {@_}, 1 => sub {($_[1], $_[0])});
 my $_orderp = 0;
 my ($order, $vname);
 
 sub init
 {
-   my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
-   $opts->{reverse} ||= 0;
+   my $opts = (ref $_[0] eq HASH) ? shift : {@_};
+   $opts->{reverse}        ||= 0;
    $opts->{human_readable} ||= 0;
 
    $vname = $opts->{human_readable} ? 'name' : 'id';
@@ -63,7 +58,7 @@ sub init
    $_orderp = $opts->{reverse};
    $order   = $_order{$_orderp};
 
-   0
+   0;
 }
 
 init();
@@ -71,57 +66,53 @@ init();
 #dependency graph
 my $dg = Graph::Reader::Dot->new()->read_graph(\*Kernel::Module::Graph::DATA);
 
-
 sub __dependencies_graph_iterator_generic
 {
-   my $sources = shift;
-   my @vertices = @_ ? grep { m/$_[0]/ } $dg->vertices : $dg->vertices;
-   my $l = $#vertices;
+   my $sources     = shift;
+   my @vertices    = @_ ? grep {m/$_[0]/} $dg->vertices : $dg->vertices;
+   my $l           = $#vertices;
    my %_sort_order = (
-                        macro       => 1,
-                        enum        => 2,
-                        structure   => 3,
-                        typedef     => 4,
-                        declaration => 5,
-                        global      => 6,
-                        function    => 7,
-                        acslcomment => 8
+      macro       => 1,
+      enum        => 2,
+      structure   => 3,
+      typedef     => 4,
+      declaration => 5,
+      global      => 6,
+      function    => 7,
+      acslcomment => 8
    );
 
    # Strict order
    # reverse because of vertices[$l--]
-   @vertices = reverse sort {
-         $_sort_order{(split /_/, $a)[1]} <=> $_sort_order{(split /_/, $b)[1]}
-      } @vertices;
+   @vertices = reverse sort {$_sort_order{(split /_/, $a)[1]} <=> $_sort_order{(split /_/, $b)[1]}} @vertices;
 
    return sub {
-      NEXT:
-         return undef if $l < 0;
-         my @keys = split /_/, $vertices[$l--];
-         my $set = $sources->{$keys[0]}{$keys[1]};
-         goto NEXT unless $set;
+    NEXT:
+      return undef if $l < 0;
+      my @keys = split /_/, $vertices[$l--];
+      my $set = $sources->{$keys[0]}{$keys[1]};
+      goto NEXT unless $set;
 
-         return $set;
+      return $set;
    };
 }
 
 sub _dependencies_graph_iterator
 {
-   goto &__dependencies_graph_iterator_generic
+   goto &__dependencies_graph_iterator_generic;
 }
 
 sub _dependencies_graph_iterator_kernel
 {
    push @_, qr/\Akernel_/;
-   goto &__dependencies_graph_iterator_generic
+   goto &__dependencies_graph_iterator_generic;
 }
 
 sub _dependencies_graph_iterator_module
 {
    push @_, qr/\Amodule_/;
-   goto &__dependencies_graph_iterator_generic
+   goto &__dependencies_graph_iterator_generic;
 }
-
 
 #\%sources
 sub __add_vertices
@@ -135,7 +126,7 @@ sub __add_vertices
 
          unless ($graph->has_vertex($id)) {
             $graph->add_vertex($id);
-            $graph->set_vertex_attributes($id, { object => $_ });
+            $graph->set_vertex_attributes($id, {object => $_});
          } else {
             die("Internal Error. Vertex has been already added to the graph: " . $_->name);
          }
@@ -145,22 +136,22 @@ sub __add_vertices
 
 sub _norm
 {
-   $_[0] =~ s/\s++//gr
+   $_[0] =~ s/\s++//gr;
 }
 
 sub _update_ids_index
 {
-   my %index = %{ $_[0] };
+   my %index    = %{$_[0]};
    my $iterator = $_[1];
 
    while (my $set = $iterator->()) {
       my $ids = $set->ids();
-      while ( my ($i, $id) = each @{$ids} ) {
+      while (my ($i, $id) = each @{$ids}) {
          my @id = @{$id};
 
          foreach (@id) {
             if (exists $index{$_}) {
-RECHECK:
+             RECHECK:
                my $o  = $index{$_};
                my $to = ref $o;
 
@@ -180,16 +171,16 @@ RECHECK:
                   }
 
                   unless (exists $index{$_}{$tn}) {
-                     $index{$_}{$tn} = $n
+                     $index{$_}{$tn} = $n;
                   } elsif ($index{$_}{$tn} == $n) {
                   } elsif (($tn eq 'C::Macro') || ($tn eq 'C::Typedef')) {
                      unless (_norm($index{$_}{$tn}->code) eq _norm($n->code)) {
                         warn("$tn '" . $n->name . "' redefinition\n");
-                        $index{$_}{$tn} = $n if ($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module')
+                        $index{$_}{$tn} = $n if ($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module');
                      }
                   } elsif ($tn eq 'C::Acslcomment') {
-                     $index{$_}{$tn} = [ $index{$_}{$tn} ];
-                     push @{$index{$_}{$tn}}, $n
+                     $index{$_}{$tn} = [$index{$_}{$tn}];
+                     push @{$index{$_}{$tn}}, $n;
                   } elsif ($tn eq 'C::Global') {
                      my ($old, $new) = ($index{$_}{$tn}, $n);
                      my $die = 1;
@@ -201,15 +192,15 @@ RECHECK:
                            # FIXME: const
                            my @old_type_words = ($old->type =~ m/\w++/g);
                            my @new_type_words = ($old->type =~ m/\w++/g);
-                           my $old_type_id = $#old_type_words > 1 ? $old_type_words[1] : $old_type_words[0];
-                           my $new_type_id = $#new_type_words > 1 ? $new_type_words[1] : $new_type_words[0];
-                           my $type_old = 1;
-                           my $type_new = 2;
+                           my $old_type_id    = $#old_type_words > 1 ? $old_type_words[1] : $old_type_words[0];
+                           my $new_type_id    = $#new_type_words > 1 ? $new_type_words[1] : $new_type_words[0];
+                           my $type_old       = 1;
+                           my $type_new       = 2;
 
                            $type_old = $index{$old_type_id}
-                              if exists $index{$old_type_id};
+                             if exists $index{$old_type_id};
                            $type_new = $index{$new_type_id}
-                              if exists $index{$new_type_id};
+                             if exists $index{$new_type_id};
 
                            if ($type_old == $type_new && defined $type_old) {
                               warn "Resolved.\n";
@@ -218,8 +209,11 @@ RECHECK:
                         }
 
                         if ($die) {
-                           die("Internal error: $tn duplicate. ID: $_.\n" .
-                              "Globals have different types: " . $new->type . ", " . $old->type . "\n")
+                           die(   "Internal error: $tn duplicate. ID: $_.\n"
+                                . "Globals have different types: "
+                                . $new->type . ", "
+                                . $old->type
+                                . "\n");
                         }
                      } else {
                         if ($old->initialized && $new->initialized) {
@@ -227,8 +221,9 @@ RECHECK:
                               die "Globals duplicate with different initialization: $_\n";
                            }
                         }
-                        if (($new->initialized && !$old->initialized)
-                            || (!$new->extern && $old->extern)) {
+                        if (  ($new->initialized && !$old->initialized)
+                           || (!$new->extern && $old->extern))
+                        {
                            $index{$_}{$tn} = $new;
                         }
                      }
@@ -239,7 +234,7 @@ RECHECK:
                   } else {
                      #print $index{$_}{$tn}->code . "\n";
                      #print $n->code . "\n";
-                     die("Internal error: $tn duplicate. ID: $_\n")
+                     die("Internal error: $tn duplicate. ID: $_\n");
                   }
                } else {
                   $index{$_} = {};
@@ -253,26 +248,21 @@ RECHECK:
       }
    }
 
-   \%index
+   \%index;
 }
-
 
 sub __to_vertex
 {
-   $_[0]->area . '_' . lcfirst(substr(blessed($_[0]), 3))
+   $_[0]->area . '_' . lcfirst(substr(blessed($_[0]), 3));
 }
 
 #label type
 sub _allow
 {
    $_[1] eq 'C::Macro'
-   ||
-   $_[0] eq 'enum' && ($_[1] eq 'C::Enum' || $_[1] eq 'C::Typedef')
-   ||
-   ($_[0] eq 'struct' || $_[0] eq 'union') && ($_[1] eq 'C::Structure' || $_[1] eq 'C::Typedef')
+     || $_[0] eq 'enum' && ($_[1] eq 'C::Enum' || $_[1] eq 'C::Typedef')
+     || ($_[0] eq 'struct' || $_[0] eq 'union') && ($_[1] eq 'C::Structure' || $_[1] eq 'C::Typedef');
 }
-
-
 
 my %__sort_priority = (
    'C::Macro'       => 1,
@@ -281,19 +271,20 @@ my %__sort_priority = (
    'C::Typedef'     => 4,
    'C::Acslcomment' => 5,
 );
+
 sub __sort_cmp
 {
    my $pa = $__sort_priority{blessed($a)} // 10;
    my $pb = $__sort_priority{blessed($b)} // 10;
-   $pa <=> $pb
+   $pa <=> $pb;
 }
 
 sub __add_edge
 {
    if (blessed($_[1]) eq 'C::Enum') {
-      $_[1]->up($_[3])
+      $_[1]->up($_[3]);
    }
-   $_[0]->add_edge($order->($_[1]->$vname, $_[2]->$vname))
+   $_[0]->add_edge($order->($_[1]->$vname, $_[2]->$vname));
 }
 
 sub _create_edges
@@ -308,16 +299,16 @@ sub _create_edges
       foreach (@keys) {
          if (ref $index->{$_} eq ARRAY) {
             if ($dg->has_edge(__to_vertex($index->{$_}[0]), __to_vertex($to))) {
-               push @possible, @{$index->{$_}}
+               push @possible, @{$index->{$_}};
             }
          } else {
             if ($dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))) {
-               push @possible, $index->{$_}
+               push @possible, $index->{$_};
             }
          }
       }
       return
-         unless @possible;
+        unless @possible;
    }
 
    @possible = sort __sort_cmp @possible;
@@ -331,14 +322,14 @@ sub _create_edges
          if (_allow($label, $type)) {
             push @from, $_;
             $single = 1;
-            last
+            last;
          }
       } else {
          if ($type eq 'C::Macro') {
             push @from, $_;
             unless ($_->expands_to_itself) {
                $single = 1;
-               last
+               last;
             }
          }
          # Should bind them anyway
@@ -355,12 +346,12 @@ sub _create_edges
    }
 
    if ($single && @from == 1) {
-      __add_edge($graph, $from[0], $to, $tag)
+      __add_edge($graph, $from[0], $to, $tag);
    } elsif (!$single && $label) {
-      die('Internal error')
+      die('Internal error');
    } elsif (!$single && !$label) {
-      foreach(@from) {
-         __add_edge($graph, $_, $to, $tag)
+      foreach (@from) {
+         __add_edge($graph, $_, $to, $tag);
       }
    }
 }
@@ -378,27 +369,31 @@ sub _form_graph
             my $label;
 
             ($label, $tag) = @$tag
-               if ref $tag eq ARRAY;
+              if ref $tag eq ARRAY;
 
             if (exists $index->{$tag}) {
                my $from = $index->{$tag};
-               my $to = $set->get_from_index($i);
+               my $to   = $set->get_from_index($i);
 
                if (ref $from eq HASH) {
-                  _create_edges($graph, $from, $to, $label, $tag)
+                  _create_edges($graph, $from, $to, $label, $tag);
                } else {
                   if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
                      if ($label) {
                         my $type = blessed($from);
 
                         unless (_allow($label, $type)) {
-                           warn("Wrong type: want $label, but get $type." .
-                                "Objects:\n" . $from->code . "\n<->\n" . $to->code) if $ENV{DEBUG};
-                           next
+                           warn(  "Wrong type: want $label, but get $type."
+                                . "Objects:\n"
+                                . $from->code
+                                . "\n<->\n"
+                                . $to->code)
+                             if $ENV{DEBUG};
+                           next;
                         }
                      }
 
-                     __add_edge($graph, $from, $to, $tag)
+                     __add_edge($graph, $from, $to, $tag);
                   }
                }
             } else {
@@ -408,7 +403,7 @@ sub _form_graph
       }
    }
 
-   $graph
+   $graph;
 }
 
 #human_readable:
@@ -420,48 +415,40 @@ sub _form_graph
 sub build_sources_graph
 {
    my $sources = shift;
-   my $opts = ( ref $_[0] eq HASH ) ? shift : { @_ };
+   my $opts = (ref $_[0] eq HASH) ? shift : {@_};
 
    my $index;
    if ($opts->{cache}{use}) {
       my ($hr, $rev);
-      my ($k, $ks);
-      ($index, $k, $ks, $hr, $rev) = @{ retrieve($opts->{cache}{file}) };
+      my ($k,  $ks);
+      ($index, $k, $ks, $hr, $rev) = @{retrieve($opts->{cache}{file})};
       die("Internal error. Corrupted cache.\n")
-         unless $hr eq $vname && $rev == $_orderp;
+        unless $hr eq $vname && $rev == $_orderp;
 
-      $sources->{kernel} = $k;
+      $sources->{kernel}         = $k;
       $sources->{kernel_strings} = $ks;
    } else {
-      $index = _update_ids_index({},
-                  _dependencies_graph_iterator_kernel($sources)
-               );
+      $index = _update_ids_index({}, _dependencies_graph_iterator_kernel($sources));
 
-      store([ $index, $sources->{kernel}, $sources->{kernel_strings}, $vname, $_orderp ], $opts->{cache}{file})
-         if $opts->{cache}{file};
+      store([$index, $sources->{kernel}, $sources->{kernel_strings}, $vname, $_orderp], $opts->{cache}{file})
+        if $opts->{cache}{file};
    }
 
-   $index = _update_ids_index($index,
-       _dependencies_graph_iterator_module($sources)
-   );
+   $index = _update_ids_index($index, _dependencies_graph_iterator_module($sources));
 
    my $graph = Graph::Directed->new();
    __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
    __add_vertices($graph, _dependencies_graph_iterator_module($sources));
 
-   $graph = _form_graph($graph, $index,
-       _dependencies_graph_iterator_kernel($sources)
-   );
+   $graph = _form_graph($graph, $index, _dependencies_graph_iterator_kernel($sources));
 
-   $graph = _form_graph($graph, $index,
-      _dependencies_graph_iterator_module($sources)
-   );
+   $graph = _form_graph($graph, $index, _dependencies_graph_iterator_module($sources));
 
    # ACSL handling specs to functions edge
    if ($sources->{module}{acslcomment}) {
-      my %spec_index = $sources->{module}{acslcomment}->map( sub {$_->replacement_id => $_} );
-      foreach (@{ $sources->{module}{function}->set }, @{ $sources->{module}{declaration}->set }) {
-         foreach my $id (@{ $_->spec_ids }) {
+      my %spec_index = $sources->{module}{acslcomment}->map(sub {$_->replacement_id => $_});
+      foreach (@{$sources->{module}{function}->set}, @{$sources->{module}{declaration}->set}) {
+         foreach my $id (@{$_->spec_ids}) {
             if (exists $spec_index{$id}) {
                unless ($_->can_detach_specification($id, $spec_index{$id}->code)) {
                   $spec_index{$id}->function_spec($_->id);
@@ -492,19 +479,20 @@ sub build_sources_graph
       }
    }
 
-
-   $graph
+   $graph;
 }
 
+my %ft  = (all_predecessors => 'edges_to',   all_successors => 'edges_from');
+my %rft = (all_predecessors => 'edges_from', all_successors => 'edges_to');     # reverse
 
-my %ft = (all_predecessors => 'edges_to', all_successors => 'edges_from');
-my %rft = (all_predecessors => 'edges_from', all_successors => 'edges_to'); # reverse
 sub _generic_get_subgraph
 {
    my ($method, $strict, $graph, @id) = @_;
-   my $em = $ft{$method};
-   my $me = $rft{$method};
-   my $from_edge_gen = sub {$_[0] eq 'edges_from' ? sub {$_->[1]} : sub {$_->[0]}};
+   my $em            = $ft{$method};
+   my $me            = $rft{$method};
+   my $from_edge_gen = sub {
+      $_[0] eq 'edges_from' ? sub {$_->[1]} : sub {$_->[0]}
+   };
    my $from_em_edge = $from_edge_gen->($em);
    my $from_me_edge = $from_edge_gen->($me);
 
@@ -527,53 +515,52 @@ sub _generic_get_subgraph
                }
             }
             push @sv, $_
-                if $all;
+              if $all;
          }
 
          push @queue, @sv;
-         push @pr, @sv;
+         push @pr,    @sv;
       }
 
       $subgraph = Graph::Directed->new(vertices => [@pr]);
-      my %pr; @pr{@pr} = undef;
+      my %pr;
+      @pr{@pr} = undef;
       $subgraph->add_edges(grep {exists $pr{$_->[0]} && exists $pr{$_->[1]}} $graph->edges);
    } else {
       @pr = (@id, $graph->$method(@id));
-      $subgraph = Graph::Directed->new(edges => [ map $graph->$em($_), @pr ]);
+      $subgraph = Graph::Directed->new(edges => [map $graph->$em($_), @pr]);
    }
 
-   $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
-      foreach @pr;
+   $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_)) foreach @pr;
 
-   $subgraph->set_edge_attributes(@$_, $graph->get_edge_attributes(@$_))
-      foreach $subgraph->edges;
+   $subgraph->set_edge_attributes(@$_, $graph->get_edge_attributes(@$_)) foreach $subgraph->edges;
 
    foreach (qw/comments module_strings kernel_strings/) {
       $subgraph->set_graph_attribute($_, $graph->get_graph_attribute($_))
-          if $graph->has_graph_attribute($_);
+        if $graph->has_graph_attribute($_);
    }
 
-   $subgraph
+   $subgraph;
 }
 
 sub get_predecessors_subgraph
 {
-   _generic_get_subgraph('all_predecessors', 0, @_)
+   _generic_get_subgraph('all_predecessors', 0, @_);
 }
 
 sub get_strict_predecessors_subgraph
 {
-   _generic_get_subgraph('all_predecessors', 1, @_)
+   _generic_get_subgraph('all_predecessors', 1, @_);
 }
 
 sub get_successors_subgraph
 {
-   _generic_get_subgraph('all_successors', 0, @_)
+   _generic_get_subgraph('all_successors', 0, @_);
 }
 
 sub get_strict_successors_subgraph
 {
-   _generic_get_subgraph('all_successors', 1, @_)
+   _generic_get_subgraph('all_successors', 1, @_);
 }
 
 sub get_isolated_subgraph
@@ -585,13 +572,12 @@ sub get_isolated_subgraph
 
    $subgraph->add_vertices(@vertices);
 
-   $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_))
-       foreach @vertices;
+   $subgraph->set_vertex_attributes($_, $graph->get_vertex_attributes($_)) foreach @vertices;
 
    $subgraph->set_graph_attribute('comments', $graph->get_graph_attribute('comments'))
-       if $graph->has_graph_attribute('comments');
+     if $graph->has_graph_attribute('comments');
 
-   $subgraph
+   $subgraph;
 }
 
 sub _write_to_files
@@ -599,11 +585,10 @@ sub _write_to_files
    my ($output_dir, $output_file, $single_file, $content, $call) = @_;
    my @files;
 
-   $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r
-      foreach keys %out_file;
+   $out_file{$_} = $_ =~ s/_(?=[ch]\Z)/./r foreach keys %out_file;
 
    $out_file{module_c} = catfile $output_dir, $out_file{module_c}
-      if $output_dir;
+     if $output_dir;
 
    if ($single_file == 1) {
 
@@ -612,24 +597,24 @@ sub _write_to_files
       $out_file{extern_h} = '';
 
       if ($output_file) {
-         $out_file{module_c} = catfile $output_dir, $output_file
+         $out_file{module_c} = catfile $output_dir, $output_file;
       }
 
-      $call->( level      => 'raw_data',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
-
-      $call->( level      => 'pre_output',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
-
-      write_file($out_file{module_c},
-                 join("\n" . '//' . '-' x 78 . "\n\n",
-                    map { $content->{$_} || () } @out_order
-                 )
+      $call->(
+         level      => 'raw_data',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
       );
+
+      $call->(
+         level      => 'pre_output',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
+      );
+
+      write_file($out_file{module_c}, join("\n" . '//' . '-' x 78 . "\n\n", map {$content->{$_} || ()} @out_order));
       push @files, $out_file{module_c};
    } elsif ($single_file == 2) {
 
@@ -644,17 +629,17 @@ sub _write_to_files
          }
       }
 
-      $call->( level      => 'raw_data',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
-      my %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
+      $call->(
+         level      => 'raw_data',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
+      );
+      my %blank = map {$_ => ($content->{$_} ? 0 : 1)} keys %$content;
 
       if (!$blank{kernel_h} || !$blank{module_h} || !$blank{extern_h}) {
          $content->{module_h} =
-            join("\n" . '//' . '-' x 78 . "\n\n",
-                 map { $blank{$_} ? () : $content->{$_} } grep {m/_h$/} @out_order
-         );
+           join("\n" . '//' . '-' x 78 . "\n\n", map {$blank{$_} ? () : $content->{$_}} grep {m/_h$/} @out_order);
          $content->{kernel_h} = undef;
          $content->{extern_h} = undef;
 
@@ -662,22 +647,20 @@ sub _write_to_files
          $define = $define =~ s/[^\w]/_/gr;
          $define = '__' . $define . '__';
          $content->{module_h} =
-            qq(#ifndef $define\n#define $define\n\n) .
-            $content->{module_h} .
-            qq(\n\n#endif // $define);
+           qq(#ifndef $define\n#define $define\n\n) . $content->{module_h} . qq(\n\n#endif // $define);
 
-         $content->{module_c} =
-            qq(#include "$output_h_file"\n\n) .
-            $content->{module_c};
+         $content->{module_c} = qq(#include "$output_h_file"\n\n) . $content->{module_c};
 
          $out_file{module_h} = catfile $output_dir, $output_h_file
-            if $output_dir;
+           if $output_dir;
       }
 
-      $call->( level      => 'pre_output',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
+      $call->(
+         level      => 'pre_output',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
+      );
 
       if ($content->{module_h}) {
          write_file($out_file{module_h}, $content->{module_h});
@@ -688,42 +671,40 @@ sub _write_to_files
    } else {
 
       warn "Can't write result to a single file $output_file. Will use default scheme with 4 files.\n"
-          if $output_file;
+        if $output_file;
 
-      $call->( level      => 'raw_data',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
-      my %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
+      $call->(
+         level      => 'raw_data',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
+      );
+      my %blank = map {$_ => ($content->{$_} ? 0 : 1)} keys %$content;
 
       unless ($blank{kernel_h}) {
          $content->{kernel_h} =
-            qq(#ifndef __KERNEL_H__\n#define __KERNEL_H__\n\n) .
-            $content->{kernel_h} .
-            qq(\n\n#endif // __KERNEL_H__);
+           qq(#ifndef __KERNEL_H__\n#define __KERNEL_H__\n\n) . $content->{kernel_h} . qq(\n\n#endif // __KERNEL_H__);
       }
       unless ($blank{extern_h}) {
          $content->{extern_h} =
-            qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n) .
-            ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n\n)) .
-            $content->{extern_h} .
-            qq(\n\n#endif // __EXTERN_H__);
+             qq(#ifndef __EXTERN_H__\n#define __EXTERN_H__\n\n)
+           . ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n\n))
+           . $content->{extern_h}
+           . qq(\n\n#endif // __EXTERN_H__);
       }
       unless ($blank{module_h}) {
          $content->{module_h} =
-            qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n) .
-            ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n)) .
-            ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n)) .
-            "\n" .
-            $content->{module_h} .
-            qq(\n\n#endif // __MODULE_H__);
+             qq(#ifndef __MODULE_H__\n#define __MODULE_H__\n\n)
+           . ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n))
+           . ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n)) . "\n"
+           . $content->{module_h}
+           . qq(\n\n#endif // __MODULE_H__);
       }
       $content->{module_c} =
-         ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n)) .
-         ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n)) .
-         ($blank{module_h} ? '' : qq(#include "$out_file{module_h}"\n)) .
-         "\n" .
-         $content->{module_c};
+          ($blank{kernel_h} ? '' : qq(#include "$out_file{kernel_h}"\n))
+        . ($blank{extern_h} ? '' : qq(#include "$out_file{extern_h}"\n))
+        . ($blank{module_h} ? '' : qq(#include "$out_file{module_h}"\n)) . "\n"
+        . $content->{module_c};
 
       if ($output_dir) {
          $out_file{module_h} = catfile $output_dir, $out_file{module_h};
@@ -731,12 +712,14 @@ sub _write_to_files
          $out_file{extern_h} = catfile $output_dir, $out_file{extern_h};
       }
 
-      $call->( level      => 'pre_output',
-               files      => \%out_file,
-               output_dir => $output_dir,
-               output     => $content );
+      $call->(
+         level      => 'pre_output',
+         files      => \%out_file,
+         output_dir => $output_dir,
+         output     => $content
+      );
       # update
-      %blank = map { $_ => ($content->{$_} ? 0 : 1) } keys %$content;
+      %blank = map {$_ => ($content->{$_} ? 0 : 1)} keys %$content;
 
       foreach (keys %out_file) {
          unless ($blank{$_}) {
@@ -749,44 +732,42 @@ sub _write_to_files
    @files;
 }
 
-
 my %sp = (
-             'C::Enum'      => 2,
-             'C::Typedef'   => 3,
-             'C::Structure' => 4,
+   'C::Enum'      => 2,
+   'C::Typedef'   => 3,
+   'C::Structure' => 4,
 
-             'C::Macro'       => 1,
-             'C::Global'      => 5,
-             'C::Declaration' => 6,
-             'C::Acslcomment' => 7,
-             'C::Function'    => 8
-         );
+   'C::Macro'       => 1,
+   'C::Global'      => 5,
+   'C::Declaration' => 6,
+   'C::Acslcomment' => 7,
+   'C::Function'    => 8
+);
 
 sub output_sources_graph
 {
    my ($graph, $ids, $output_dir, $output_file, $single_file, $remove_fields, $fullkernel, $full, $call) = @_;
 
-   my %out = map { $_ => [] } qw/
-      kernel_h
-      extern_h
-      module_h
-      module_c
-      kernel_macro
-      module_macro
-   /;
+   my %out = map {$_ => []} qw/
+     kernel_h
+     extern_h
+     module_h
+     module_c
+     kernel_macro
+     module_macro
+     /;
 
-
-   my %vertices = map { ($_ => 0) } $graph->vertices;
+   my %vertices = map {($_ => 0)} $graph->vertices;
 
    while ($graph->has_a_cycle) {
       resolve($graph, $graph->find_a_cycle);
    }
 
-   my %vd  = map { ($_, $graph->in_degree($_)) } keys %vertices;
+   my %vd = map {($_, $graph->in_degree($_))} keys %vertices;
    while (%vertices) {
       my @zv;
 
-      foreach(keys %vertices) {
+      foreach (keys %vertices) {
          push @zv, $_ if 0 == $vd{$_};
       }
 
@@ -794,23 +775,23 @@ sub output_sources_graph
 
       foreach (@zv) {
          --$vd{$_->[1]} foreach $graph->edges_from($_);
-         delete $vertices{$_}
+         delete $vertices{$_};
       }
 
-
       my %i = map {
-                     my $o = $graph->get_vertex_attribute($_, 'object');
-                     ($_ => {
-                           object => $o,
-                           type => blessed($o),
-                           area => $o->area
-                        })
-                  } @zv;
+         my $o = $graph->get_vertex_attribute($_, 'object');
+         (
+            $_ => {
+               object => $o,
+               type   => blessed($o),
+               area   => $o->area
+            }
+           )
+      } @zv;
 
       my $sort_sub = sub {
-            $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}}
-         or
-            $i{$a}->{object}->name cmp $i{$b}->{object}->name
+         $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}}
+           or $i{$a}->{object}->name cmp $i{$b}->{object}->name;
       };
 
       foreach (sort $sort_sub keys %i) {
@@ -821,19 +802,19 @@ sub output_sources_graph
 
          if ($a eq 'kernel') {
             if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration') {
-               $content = $out{extern_h}
+               $content = $out{extern_h};
             } elsif ($t eq 'C::Macro') {
-               $content = $out{kernel_macro}
+               $content = $out{kernel_macro};
             } else {
-               $content = $out{kernel_h}
+               $content = $out{kernel_h};
             }
          } else {
             if ($t eq 'C::Function' || $t eq 'C::Global' || $t eq 'C::Declaration' || $t eq 'C::Acslcomment') {
-               $content = $out{module_c}
+               $content = $out{module_c};
             } elsif ($t eq 'C::Macro') {
-               $content = $out{module_macro}
+               $content = $out{module_macro};
             } else {
-               $content = $out{module_h}
+               $content = $out{module_h};
             }
          }
 
@@ -843,49 +824,44 @@ sub output_sources_graph
       $graph->delete_vertices(@zv);
    }
 
-   unshift @{ $out{kernel_h} }, @{ $out{kernel_macro} };
-   unshift @{ $out{module_h} }, @{ $out{module_macro} };
+   unshift @{$out{kernel_h}}, @{$out{kernel_macro}};
+   unshift @{$out{module_h}}, @{$out{module_macro}};
    delete @out{qw/kernel_macro module_macro/};
 
    {
-      my $c = $graph->get_graph_attribute('comments');
+      my $c  = $graph->get_graph_attribute('comments');
       my $ms = $graph->get_graph_attribute('module_strings');
       my $ks = $graph->get_graph_attribute('kernel_strings');
 
       my %ids = map {$_ => undef} @$ids;
       foreach (keys %out) {
-         foreach (@{ $out{$_} }) {
+         foreach (@{$out{$_}}) {
             if ($_->area eq 'kernel') {
-               $_ = $_->to_string($c, $remove_fields, $fullkernel)
+               $_ = $_->to_string($c, $remove_fields, $fullkernel);
             } else {
                unless (exists $ids{$_->id}) {
-                  $_ = $_->to_string($c, 0, $full)
+                  $_ = $_->to_string($c, 0, $full);
                } else {
-                  $_ = $_->to_string($c, 0, 1)
+                  $_ = $_->to_string($c, 0, 1);
                }
             }
          }
       }
 
-      %out = map { $_ => join("\n\n", grep {$_} @{ $out{$_} } ) } keys %out;
+      %out = map {
+         $_ => join("\n\n", grep {$_} @{$out{$_}})
+      } keys %out;
 
       foreach (qw/module_h module_c/) {
-         restore($out{$_}, comments => $c, strings => $ms)
+         restore($out{$_}, comments => $c, strings => $ms);
       }
 
       foreach (qw/kernel_h extern_h/) {
-         restore($out{$_}, strings => $ks)
+         restore($out{$_}, strings => $ks);
       }
    }
 
-
-   _write_to_files(
-      $output_dir,
-      $output_file,
-      $single_file,
-      \%out,
-      $call
-   )
+   _write_to_files($output_dir, $output_file, $single_file, \%out, $call);
 }
 
 1;

@@ -22,35 +22,34 @@ use C::Util::Transformation;
 use Local::Config qw/find_config load_config merge_config_keys/;
 use Local::Config::Format qw/check_priority_format check_status_format/;
 
-
 my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
 my $exact_module = undef;
 
 GetOptions(
-    "kernel|k=s"        => \$kernel,
-    "module|m=s"        => \$module,
-    "mname=s"           => \$exact_module,
-    "conf-status|status|s=s"     => \$config_file{status},
-    "conf-priority|priority|p=s" => \$config_file{priority},
+   "kernel|k=s"                 => \$kernel,
+   "module|m=s"                 => \$module,
+   "mname=s"                    => \$exact_module,
+   "conf-status|status|s=s"     => \$config_file{status},
+   "conf-priority|priority|p=s" => \$config_file{priority},
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
-    unless -d $kernel;
+  unless -d $kernel;
 die "Please, provide valid path to module.\n"
-    unless -d $module;
+  unless -d $module;
 
 my $conf_status = load_config($config_file{status});
-die( "Can't read status config file.\n" )
-    unless $conf_status;
+die("Can't read status config file.\n")
+  unless $conf_status;
 die("Wrong file format.\n")
-    unless check_status_format($conf_status);
+  unless check_status_format($conf_status);
 
 my $conf_priority = load_config($config_file{priority});
 die("Can't read priority config file.\n")
-    unless $conf_priority;
+  unless $conf_priority;
 die("Wrong file format.\n")
-    unless check_priority_format($conf_priority);
+  unless check_priority_format($conf_priority);
 my $config;
 merge_config_keys $config, $conf_status;
 merge_config_keys $config, $conf_priority;
@@ -67,11 +66,11 @@ my $prio = get_priorities($graph);
 print encode_json($prio);
 ##END OF A PROGRAM
 
-sub get_preprocessed_sources($kernel, $module, $exact_module)
+sub get_preprocessed_sources ($kernel, $module, $exact_module)
 {
    my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
    adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
-   $$source
+   $$source;
 }
 
 # args $_[0] - preprocessed file
@@ -83,9 +82,9 @@ sub build_graph
    build_sources_graph(\%sources);
 }
 
-sub mark_priorities($graph, $config)
+sub mark_priorities ($graph, $config)
 {
-   while ( my ($i, $list) = each @{ $config->{priority}{lists} } ) {
+   while (my ($i, $list) = each @{$config->{priority}{lists}}) {
       foreach (uniq @$list) {
          if ($graph->has_vertex($_)) {
             unless ($graph->has_vertex_attribute($_, 'priority')) {
@@ -97,12 +96,12 @@ sub mark_priorities($graph, $config)
                }
             }
          } else {
-            warn "Priority list: there is no such function '$_' in sources.\n"
+            warn "Priority list: there is no such function '$_' in sources.\n";
          }
       }
    }
 
-   $graph
+   $graph;
 }
 
 sub get_priorities($graph)
@@ -113,6 +112,6 @@ sub get_priorities($graph)
       push @{$hash{$prio}}, $_;
    }
 
-   \%hash
+   \%hash;
 }
 

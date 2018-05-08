@@ -8,22 +8,22 @@ use namespace::autoclean;
 extends 'C::Entity';
 
 has 'args' => (
-   is => 'ro',
-   isa => 'Maybe[ArrayRef[Str]]',
+   is        => 'ro',
+   isa       => 'Maybe[ArrayRef[Str]]',
    predicate => 'has_args'
 );
 
 has 'substitution' => (
-   is => 'ro',
-   isa => 'Maybe[Str]',
-   lazy => 1,
+   is      => 'ro',
+   isa     => 'Maybe[Str]',
+   lazy    => 1,
    builder => '_build_substitution'
 );
 
 has 'expands_to_itself' => (
-   is => 'ro',
-   isa => 'Bool',
-   lazy => 1,
+   is      => 'ro',
+   isa     => 'Bool',
+   lazy    => 1,
    builder => '_is_expands_to_itself'
 );
 
@@ -40,22 +40,21 @@ sub _build_substitution
       return substr($code, $+[0]);
    }
 
-   undef
+   undef;
 }
 
 sub get_code_tags
 {
    my $filter = $_[0]->get_code_ids();
-   push @$filter, @{ $_[0]->args } if $_[0]->args; #struct arg case ?
+   push @$filter, @{$_[0]->args} if $_[0]->args;    #struct arg case ?
 
-   prepare_tags($_[0]->substitution, $filter)
+   prepare_tags($_[0]->substitution, $filter);
 }
 
 sub _is_expands_to_itself
 {
-   $_[0]->substitution eq $_[0]->name
+   $_[0]->substitution eq $_[0]->name;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 
