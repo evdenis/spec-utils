@@ -9,7 +9,7 @@ our @EXPORT_OK = qw(window_size);
 
 sub window_size
 {
-   require 'sys/ioctl.ph';
+   eval {require 'sys/ioctl.ph';};
 
    unless (defined &TIOCGWINSZ) {
       warn "no TIOCGWINSZ\n";
@@ -30,7 +30,7 @@ sub window_size
    return (unpack('S4', $winsize))[0, 1];
 
  ERR:
-   return ();
+   return (60, 80);
 }
 
 1;

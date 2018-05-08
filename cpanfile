@@ -12,6 +12,7 @@ requires 'Graph::Writer::Dot';
 requires 'Hash::Ordered';
 requires 'IO::Interactive';
 requires 'List::MoreUtils';
+requires 'List::Util', '1.41';
 requires 'Module::Loader';
 requires 'Moose';
 requires 'Moose::Role';
