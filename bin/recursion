@@ -14,7 +14,7 @@ use File::Which;
 use File::Slurp qw(write_file);
 use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 use C::Util::Transformation;
 use Local::List::Util qw(any);

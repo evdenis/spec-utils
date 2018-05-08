@@ -14,7 +14,7 @@ use Getopt::Long qw(:config gnu_getopt);
 use Text::ANSITable;
 use Class::CSV;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 use C::Util::Transformation;
 use Local::String::Util qw(normalize);

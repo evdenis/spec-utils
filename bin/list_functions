@@ -13,7 +13,7 @@ use Getopt::Long;
 use File::Slurp qw/write_file/;
 use JSON;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 use Local::List::Util qw/uniq/;
 use C::FunctionSet;
 use Kernel::Module::Graph qw/build_sources_graph/;

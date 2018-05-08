@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 
 package TS {

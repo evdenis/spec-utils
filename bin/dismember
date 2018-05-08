@@ -22,7 +22,7 @@ use Scalar::Util qw(blessed);
 use File::Path qw(make_path);
 
 use FindBin;
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 use Local::Config qw(load_config);
 use Local::Config::Format qw(check_status_format);

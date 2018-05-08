@@ -6,7 +6,7 @@ use strict;
 use re '/aa';
 use feature qw(say);
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 use utf8;
 

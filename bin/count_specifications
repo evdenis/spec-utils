@@ -8,7 +8,7 @@ use warnings;
 use utf8::all;
 use Getopt::Long;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 use C::AcslcommentSet;
 use Kernel::Module qw/preprocess_module_sources/;
 use C::Util::Transformation;

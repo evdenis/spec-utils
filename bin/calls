@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use feature qw(say state);
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 
 use utf8::all;
 use IO::Interactive;

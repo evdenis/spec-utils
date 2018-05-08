@@ -20,7 +20,7 @@ use Excel::Writer::XLSX;
 use Color::Library;
 use DBI;
 
-use lib::abs 'lib';
+use lib::abs '../lib';
 use Local::List::Util qw/uniq/;
 use C::FunctionSet;
 use Kernel::Module::Graph qw/build_sources_graph/;
