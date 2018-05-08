@@ -1,0 +1,9 @@
+full=1
+single=1
+cache=0
+
+plugin=inline
+plugin-inline-text=begin^1^#define KERNRELEASE "TEST"
+
+plugin=exec
+plugin-exec-file=scripts/compile.sh
