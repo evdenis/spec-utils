@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
 
-qx(ln -fs ../../hooks/pre-commit .git/hooks/pre-commit);
+qx(ln -fs ../../.hooks/pre-commit .git/hooks/pre-commit);
 
 qx(find . -type f -name '*.tidyrc' -delete);
 
 my @files = qx(find lib t web -type f -name '*.pm' -or -name '*.pl' -or -name '*.psgi');
-push @files, qx(find bin hooks -type f);
+push @files, qx(find bin .hooks -type f);
 
 chomp foreach @files;
 my %all_files = map {$_ => 1} @files;
