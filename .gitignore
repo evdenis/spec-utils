@@ -3,6 +3,7 @@
 *.svg
 *.pdf
 *.iml
+*.tidybak
 
 *.conf
 *.config

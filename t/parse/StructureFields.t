@@ -14,7 +14,6 @@ my $fields = _get_structure_fields($data);
 p $str;
 p $fields;
 
-
 __DATA__
 
 struct test {

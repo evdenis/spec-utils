@@ -223,14 +223,15 @@ sub to_string
 
    my $body = join(',', @body);
    chomp $body;
+   my $head = $self->head;
    if (@body > 1) {
       $body .= "\n";
    } else {
-      $self->head($self->head =~ s/\s++/ /rg);
+      $head =~ s/\s++/ /g;
       $body = " " . trim($body) . " ";
    }
 
-   $self->head . $body . $self->tail;
+   $head . $body . $self->tail;
 }
 
 __PACKAGE__->meta->make_immutable;

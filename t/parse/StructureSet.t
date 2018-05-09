@@ -11,7 +11,7 @@ my $data = join('', <DATA>);
 my $set = C::StructureSet->parse(\$data, 'kernel');
 
 foreach (@{$set->set}) {
-   print _get_structure_wo_field_names($_->code)
+   print _get_structure_wo_field_names($_->code);
 }
 
 __DATA__

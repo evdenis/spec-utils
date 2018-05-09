@@ -2,9 +2,9 @@
 
 qx(ln -fs ../../.hooks/pre-commit .git/hooks/pre-commit);
 
-qx(find . -type f -name '*.tidyrc' -delete);
+qx(find . -type f -name '*.tidybak' -delete);
 
-my @files = qx(find lib t web -type f -name '*.pm' -or -name '*.pl' -or -name '*.psgi');
+my @files = qx(find lib t web -type f -name '*.pm' -or -name '*.pl' -or -name '*.psgi' -or -name '*.t');
 push @files, qx(find bin .hooks -type f);
 
 chomp foreach @files;
@@ -16,7 +16,7 @@ chomp foreach @modified;
 
 if (@modified) {
    qx(perltidy @modified);
-   qx(find . -type f -name '*.tidyrc' -delete);
+   qx(find . -type f -name '*.tidybak' -delete);
 
    my @updated = qx(git diff --name-only --diff-filter=ACM);
    chomp foreach @updated;

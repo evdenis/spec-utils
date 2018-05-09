@@ -1,6 +1,6 @@
 --character-encoding=utf8
 --backup-and-modify-in-place
---backup-file-extension=.tidyrc
+--backup-file-extension=.tidybak
 --maximum-line-length=120
 --indent-columns=3
 --starting-indentation-level=0
