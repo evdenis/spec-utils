@@ -19,7 +19,7 @@ is($enum->tail, '};',     'tail');
 is(
    $enum->to_string(undef, 0), 'enum {
    TEST1,
-   TEST12,
+   TEST12 = 10,
    TEST2 = TEST1 + 3,
    TEST3 = TEST2 + 1,
    TEST4,
@@ -33,7 +33,7 @@ is($enum->to_string(undef, 1), undef, 'undef in case of unused enum');
 
 cmp_deeply(
    $enum->fields_dependence,
-   [[], [], [1, 0], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
+   [[], [0], [1, 0], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]],
    'fields dependence'
 );
 
@@ -41,7 +41,7 @@ cmp_deeply(
    [$enum->fields->as_list],
    [
       "TEST1",  [0, "\n   TEST1",             "next"],
-      "TEST12", [0, "\n   TEST12",            "next"],
+      "TEST12", [0, "\n   TEST12 = 10",       "value", "10"],
       "TEST2",  [0, "\n   TEST2 = TEST1 + 3", "expr", "TEST1 + 3"],
       "TEST3",  [0, "\n   TEST3 = TEST2 + 1", "expr", "TEST2 + 1"],
       "TEST4",  [0, "\n   TEST4",             "next"],
@@ -79,7 +79,7 @@ __DATA__
 
 enum {
    TEST1,
-   TEST12,
+   TEST12 = 10,
    TEST2 = TEST1 + 3,
    TEST3 = TEST2 + 1,
    TEST4,
