@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
+[![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
+
 В данном репозитории собран ряд утилит для изучения исходных кодов модуля ядра Linux и для работы с ними. Программы имеют внешние зависимости. Для того, чтобы их установить необходимо выполнить команды:
 <pre>
 cpan cpanm
