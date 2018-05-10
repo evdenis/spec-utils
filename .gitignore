@@ -10,6 +10,7 @@
 
 .cache/
 result/
+cover_db/
 
 /tags
 .idea/
