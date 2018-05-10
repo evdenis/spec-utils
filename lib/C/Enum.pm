@@ -6,6 +6,7 @@ use C::Util::Transformation qw(:RE);
 use Local::String::Util qw(normalize);
 use C::Keywords qw(prepare_tags);
 use Local::String::Util qw(trim);
+use Clone qw(clone);
 use Hash::Ordered;
 
 use namespace::autoclean;
@@ -130,7 +131,11 @@ sub get_code_tags
 {
    my $filter = $_[0]->get_code_ids();
 
-   $filter->[0] = 'enum ' . $_[0]->name if $_[0]->has_name;    #HACK
+   #HACK
+   if ($_[0]->has_name) {
+      $filter = clone($filter);
+      $filter->[0] = 'enum ' . $_[0]->name;
+   }
 
    prepare_tags(substr($_[0]->code, index($_[0]->code, '{')), $filter);
 }

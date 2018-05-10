@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More;
+use Test::More tests => 13;
 use Test::Deep;
 
 use C::EnumSet;
@@ -8,6 +8,15 @@ use C::EnumSet;
 my $set = C::EnumSet->parse(\join('', <DATA>), 'kernel');
 
 my ($enum) = @{$set->set};
+
+cmp_deeply($enum->get_code_tags, [], 'tags');
+cmp_deeply($enum->get_code_ids, [
+    'pid_type',
+    'PIDTYPE_PID',
+    'PIDTYPE_PGID',
+    'PIDTYPE_SID',
+    'PIDTYPE_MAX',
+], 'ids');
 
 ok($enum->has_name, 'has_name');
 is($enum->name, 'pid_type',         'name');
@@ -30,12 +39,14 @@ cmp_deeply(
 $enum->up('PIDTYPE_MAX');
 cmp_deeply($enum->fields->get('PIDTYPE_MAX'), [1, ignore(), 'next'], 'inc ref');
 is($enum->to_string(undef, 1), 'enum pid_type { PIDTYPE_MAX = 3 };', 'last constant');
+
 $enum->up('PIDTYPE_PID');
 is(
    $enum->to_string(undef, 1) =~ s/\s++/ /gr,
    "enum pid_type { PIDTYPE_PID, PIDTYPE_MAX = 3 };",
    'first and last constants'
 );
+
 $enum->up('PIDTYPE_SID');
 is(
    $enum->to_string(undef, 1) =~ s/\s++/ /gr,
@@ -43,7 +54,6 @@ is(
    'middle constant'
 );
 
-done_testing();
 
 __DATA__
 
