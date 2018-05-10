@@ -1,6 +1,7 @@
 package C::Global;
 use Moose;
 use C::Util::Transformation qw(:RE);
+use Local::String::Util qw(trim);
 use namespace::autoclean;
 
 extends 'C::Entity';
@@ -14,7 +15,7 @@ has 'initialized' => (
 
 has 'initializer' => (
    is      => 'ro',
-   isa     => 'Str',
+   isa     => 'Maybe[Str]',
    lazy    => 1,
    builder => '_build_initializer'
 );
@@ -44,9 +45,13 @@ sub _build_initialized
 
 sub _build_initializer
 {
-   my $str = substr($_[0]->code, index($_[0]->code, '=') + 1);
-   $str =~ m/${s}*+(.*?)${s}*+;/;
-   return $1;
+   if ($_[0]->initialized) {
+      my $start = index($_[0]->code, '=') + 1;
+      my $end = rindex($_[0]->code, ';');
+      my $str = substr($_[0]->code, $start, $end - $start);
+      return trim($str);
+   }
+   return undef;
 }
 
 sub to_string

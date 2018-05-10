@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 20;
+use Test::More tests => 17;
 use Test::Deep;
 
 use C::MacroSet;
@@ -29,13 +29,6 @@ is($macro{ENUM}->substitution,       'ENUM',                                    
 ok($macro{ENUM}->expands_to_itself,        'expands to itself');
 ok(!$macro{__lockfunc}->expands_to_itself, 'not expands to itself');
 
-cmp_deeply($macro{D}->get_code_ids,          ['D'],          'code ids test 1');
-cmp_deeply($macro{__lockfunc}->get_code_ids, ['__lockfunc'], 'code ids test 2');
-
-cmp_deeply($macro{D}->get_code_tags,          [],                  'code tags test 1');
-cmp_deeply($macro{nd}->get_code_tags,         [],                  'code tags test 2');
-cmp_deeply($macro{__lockfunc}->get_code_tags, [qw(spinlock text)], 'code tags test 3');
-
 cmp_deeply($macro{ENUM}->to_string,    '   #define ENUM ENUM', 'to_string 1');
 cmp_deeply($macro{current}->to_string, '   #define current()', 'to_string 2');
 cmp_deeply(
@@ -43,6 +36,9 @@ cmp_deeply(
    '#define __lockfunc __attribute__((section(".spinlock.text")))',
    'to_string 3'
 );
+
+cmp_deeply($set->ids, bag(["__lockfunc"], ["nd"], ["D"], ["ENUM"], ["current"], ["d"]), 'ids');
+cmp_deeply($set->tags, bag([], ["spinlock", "text"], [], [], [], []), 'tags');
 
 __DATA__
 	#define D(fmt,arg...)
