@@ -9,7 +9,7 @@ before_install:
   cpanm --quiet --notest Devel::Cover::Report::Coveralls
 
 script:
-  - PERL5OPT="$PER5OPT -MDevel::Cover=-coverage,statement,branch,condition,path,subroutine" prove -lsv t/parse/StructureSet.t t/parse/EnumSet.t t/parse/EnumSet2.t
+  - PERL5OPT="$PER5OPT -MDevel::Cover=-coverage,statement,branch,condition,path,subroutine" prove -lsv t/parse/StructureSet.t t/parse/EnumSet.t t/parse/EnumSet2.t t/parse/MacroSet.t
   - cover -ignore_re=^/ -ignore_re=^t
 
 after_success:

@@ -10,7 +10,6 @@ my $set = C::StructureSet->parse(\join('', <DATA>), 'kernel');
 
 my ($struct) = @{$set->set};
 
-my $tags = $struct->get_code_tags;
 cmp_deeply($struct->get_code_tags,
    [['struct', 'sk_buff',], ['struct', 'sock',], ['struct', 'key',], ['struct', 'cred',],], 'tags');
 cmp_deeply($struct->get_code_ids, ['security_operations'], 'ids');

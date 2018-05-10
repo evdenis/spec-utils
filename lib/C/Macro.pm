@@ -8,9 +8,8 @@ use namespace::autoclean;
 extends 'C::Entity';
 
 has 'args' => (
-   is        => 'ro',
-   isa       => 'Maybe[ArrayRef[Str]]',
-   predicate => 'has_args'
+   is  => 'ro',
+   isa => 'Maybe[ArrayRef[Str]]'
 );
 
 has 'substitution' => (
