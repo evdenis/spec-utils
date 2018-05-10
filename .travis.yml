@@ -1,6 +1,7 @@
 language: perl
 perl:
   - "5.24"
+sudo: false
 
 before_install:
   cpanm --quiet --notest Devel::Cover::Report::Coveralls
