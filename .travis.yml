@@ -1,26 +1,27 @@
 language: perl
 perl:
   - "5.24"
-  - "5.20"
-  - "5.16"
+#  - "5.20"
+#  - "5.16"
+#  - "5.14"
 os:
   - linux
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install bc libelf-dev 
-
-before_script:
-  - export TOOLS_DIR=$(pwd)
-  # download and extract the linux source code.
-  - wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.7.tar.xz
-  - tar xf linux-4.16.7.tar.xz 
-  # DST_KERNEL is the path to the linux source code
-  - export CURRENT_KERNEL=linux-4.16.7
-  - cd $CURRENT_KERNEL
-  - make defconfig
-  - make modules_prepare
-
-script:
-  - cd $TOOLS_DIR
-  - t/dismember_compile_test.sh
+#before_install:
+#  - sudo apt-get update -qq
+#  - sudo apt-get install bc libelf-dev 
+#
+#before_script:
+#  - export TOOLS_DIR=$(pwd)
+#  # download and extract the linux source code.
+#  - wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.7.tar.xz
+#  - tar xf linux-4.16.7.tar.xz 
+#  # DST_KERNEL is the path to the linux source code
+#  - export CURRENT_KERNEL=linux-4.16.7
+#  - cd $CURRENT_KERNEL
+#  - make defconfig
+#  - make modules_prepare
+#
+#script:
+#  - cd $TOOLS_DIR
+#  - t/dismember_compile_test.sh
