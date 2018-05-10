@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use Test::Deep;
 
 use C::EnumSet;
@@ -10,18 +10,21 @@ my $set = C::EnumSet->parse(\join('', <DATA>), 'kernel');
 my ($enum) = @{$set->set};
 
 cmp_deeply($enum->get_code_tags, [], 'tags');
-cmp_deeply($enum->get_code_ids, [
-    'pid_type',
-    'PIDTYPE_PID',
-    'PIDTYPE_PGID',
-    'PIDTYPE_SID',
-    'PIDTYPE_MAX',
-], 'ids');
+cmp_deeply($enum->get_code_ids, ['pid_type', 'PIDTYPE_PID', 'PIDTYPE_PGID', 'PIDTYPE_SID', 'PIDTYPE_MAX'], 'ids');
 
 ok($enum->has_name, 'has_name');
 is($enum->name, 'pid_type',         'name');
 is($enum->head, "enum pid_type\n{", 'head');
 is($enum->tail, '};',               'tail');
+is(
+   $enum->to_string(undef, 0), 'enum pid_type
+{
+       PIDTYPE_PID,
+       PIDTYPE_PGID,
+       PIDTYPE_SID,
+       PIDTYPE_MAX
+};', 'original enum'
+);
 is($enum->to_string(undef, 1), 'enum pid_type { __STUB__PID_TYPE };', 'stub enum');
 
 cmp_deeply($enum->fields_dependence, [[], [], [], []], 'fields dependence');
@@ -31,7 +34,7 @@ cmp_deeply(
       'PIDTYPE_PID',  [0, re('^\s*PIDTYPE_PID\s*$'),  'next',],
       'PIDTYPE_PGID', [0, re('^\s*PIDTYPE_PGID\s*$'), 'next',],
       'PIDTYPE_SID',  [0, re('^\s*PIDTYPE_SID\s*$'),  'next',],
-      'PIDTYPE_MAX',  [0, re('^\s*PIDTYPE_MAX\s*$'),  'next',],
+      'PIDTYPE_MAX',  [0, re('^\s*PIDTYPE_MAX\s*$'),  'next',]
    ],
    'fields'
 );
@@ -53,7 +56,6 @@ is(
    "enum pid_type { PIDTYPE_PID, PIDTYPE_SID = 2, PIDTYPE_MAX };",
    'middle constant'
 );
-
 
 __DATA__
 
