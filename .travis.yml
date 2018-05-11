@@ -1,11 +1,21 @@
 language: perl
 perl:
-  - "5.24"
+  - 5.24
+  - 5.20
+  - 5.14
 sudo: false
 addons:
   apt:
     packages:
       - libelf-dev
+matrix:
+  include:
+  - perl: 5.24
+    env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/ramfs
+  - perl: 5.20
+    env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/debugfs
+  - perl: 5.14
+    env: KERNEL_VERSION=4.9.99 MODULE_TO_TEST=fs/fat
 
 before_install:
   cpanm --quiet --notest Devel::Cover::Report::Coveralls
@@ -15,18 +25,3 @@ script:
 
 after_success:
   cover -ignore_re=^/ -ignore_re=^t -report coveralls
-
-#before_script:
-#  - export TOOLS_DIR=$(pwd)
-#  # download and extract the linux source code.
-#  - wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.7.tar.xz
-#  - tar xf linux-4.16.7.tar.xz 
-#  # DST_KERNEL is the path to the linux source code
-#  - export CURRENT_KERNEL=linux-4.16.7
-#  - cd $CURRENT_KERNEL
-#  - make defconfig
-#  - make modules_prepare
-#
-#script:
-#  - cd $TOOLS_DIR
-#  - t/dismember_compile_test.sh
