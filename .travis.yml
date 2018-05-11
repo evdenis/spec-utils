@@ -1,21 +1,22 @@
 language: perl
-perl:
-  - 5.24
-  - 5.20
-  - 5.14
 sudo: false
 addons:
   apt:
     packages:
       - libelf-dev
 matrix:
-  include:
-  - perl: 5.24
-    env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/ramfs
-  - perl: 5.20
-    env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/sysfs
-  - perl: 5.14
-    env: KERNEL_VERSION=4.9.99 MODULE_TO_TEST=fs/fat
+   include:
+      - perl: '5.24'
+        env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/ramfs
+      - perl: '5.20'
+        env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/sysfs
+      - perl: '5.14'
+        env: KERNEL_VERSION=4.9.99 MODULE_TO_TEST=fs/debugfs
+
+cache:
+  directories:
+  - $HOME/perl5
+  - linux-$KERNEL_VERSION
 
 before_install:
   cpanm --quiet --notest Devel::Cover::Report::Coveralls
