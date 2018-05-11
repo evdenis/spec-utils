@@ -3,30 +3,32 @@ default:
 prove:
 	prove --jobs 1 --shuffle --lib --recurse t/
 
-export CURRENT_KERNEL=linux-4.16.7
-export MODULE_TO_TEST=fs/ramfs
-export CURRENT_SOURCES=$(CURRENT_KERNEL)/$(MODULE_TO_TEST)
+export KERNEL_VERSION=4.16.8
+export KERNEL=linux-$(KERNEL_VERSION)
+export KERNEL_ARCHIVE=$(KERNEL).tar.xz
+export MODULE_TO_TEST=fs/fat
+export MODULE=$(KERNEL)/$(MODULE_TO_TEST)
 
-$(CURRENT_KERNEL).tar.xz:
+$(KERNEL_ARCHIVE):
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/$@
 
 prepare_kernel:
-	cd $(CURRENT_KERNEL) \
+	cd $(KERNEL) \
 	&& make defconfig \
 	&& make modules_prepare
 
-$(CURRENT_KERNEL): $(CURRENT_KERNEL).tar.xz
-	tar xf $(CURRENT_KERNEL).tar.xz
+$(KERNEL): $(KERNEL_ARCHIVE)
+	tar xf $(KERNEL).tar.xz
 
-kernel: $(CURRENT_KERNEL) prepare_kernel
+kernel: $(KERNEL) prepare_kernel
 	PERL5OPT="$(PERL5OPT) -MDevel::Cover" bin/dismember    \
 		--full --single --cache=0                           \
-		--plugin=exec --plugin-exec-file=scripts/compile.sh \
-		--all --kernel $(CURRENT_KERNEL) --module $(CURRENT_SOURCES)
+		--plugin=testcompile                                \
+		--all --kernel $(KERNEL) --module $(MODULE)
 
 test: prove kernel
 
 clean:
-	-rm -fr $(CURRENT_KERNEL) $(CURRENT_KERNEL).tar.xz result/
+	-rm -fr $(KERNEL) $(KERNEL_ARCHIVE) result/
 
 .PHONY: default test prove kernel prepare_kernel

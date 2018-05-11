@@ -347,7 +347,7 @@ pod2usage({-msg => "File $config{done} is not readable.\n", -exitval => 2})
   if $config{done} && !-r $config{done};
 
 my @plugins;
-my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5);
+my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5, before_exit => 6);
 if (@{$config{plugin}}) {
    my $loader = Module::Loader->new(max_depth => 1);
    my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
@@ -716,6 +716,8 @@ my @all_output_files;
       }
    }
 }
+
+call_plugins(level => 'before_exit');
 
 if ($config{editor}) {
    if (which($ENV{EDITOR})) {
