@@ -6,7 +6,7 @@ prove:
 export KERNEL_VERSION=4.16.8
 export KERNEL=linux-$(KERNEL_VERSION)
 export KERNEL_ARCHIVE=$(KERNEL).tar.xz
-export MODULE_TO_TEST=fs/fat
+export MODULE_TO_TEST=fs/ramfs
 export MODULE=$(KERNEL)/$(MODULE_TO_TEST)
 
 $(KERNEL_ARCHIVE):
