@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+use warnings;
+use strict;
+
 use Test::More tests => 2;
 use Test::Deep;
 use C::Util::Parsing qw(_get_structure_wo_field_names _get_structure_fields);
