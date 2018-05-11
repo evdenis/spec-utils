@@ -20,9 +20,9 @@ matrix:
         env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/integrity
       - perl: '5.14'
         env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/ramfs
-      - perl: '5.12'
+      - perl: '5.14'
         env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/sysfs
-      - perl: '5.10'
+      - perl: '5.14'
         env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/debugfs
 
 cache:
