@@ -20,7 +20,7 @@
 use warnings;
 use strict;
 
-use feature qw/switch say/;
+use feature qw(switch say);
 no if $] >= 5.018, warnings => "experimental::smartmatch";
 use re '/aa';
 
@@ -30,7 +30,7 @@ use Getopt::Long qw(:config gnu_compat no_getopt_compat pass_through);
 use File::Spec::Functions qw(catfile catdir splitpath);
 use File::Which;
 use Storable;
-use POSIX qw/setsid/;
+use POSIX qw(setsid);
 use Module::Loader;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);

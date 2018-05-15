@@ -317,7 +317,7 @@ sub parse_sources
    my ($kernel_code, $module_code) = prepare_module_sources(@_);
 
    my %ret;
-   @ret{qw/kernel kernel_strings module comments module_strings/} = (
+   @ret{qw(kernel kernel_strings module comments module_strings)} = (
       ($kernel_parse ? _parse_kernel_part($kernel_code, $full_kernel, 1) : (undef, undef)),
       _parse_module_part($module_code)
    );

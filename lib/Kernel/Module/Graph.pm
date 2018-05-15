@@ -535,7 +535,7 @@ sub _generic_get_subgraph
 
    $subgraph->set_edge_attributes(@$_, $graph->get_edge_attributes(@$_)) foreach $subgraph->edges;
 
-   foreach (qw/comments module_strings kernel_strings/) {
+   foreach (qw(comments module_strings kernel_strings)) {
       $subgraph->set_graph_attribute($_, $graph->get_graph_attribute($_))
         if $graph->has_graph_attribute($_);
    }

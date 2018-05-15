@@ -36,7 +36,7 @@ sub parse
 
    #get list of all module functions
    while (${$_[0]} =~ m/${ret}${s}*+\b${name}${s}*+${args}${s}*+${attrs}?${s}*+${body}/gp) {
-      my ($ret, $name, $args, $fbody) = @+{qw/ret name args fbody/};
+      my ($ret, $name, $args, $fbody) = @+{qw(ret name args fbody)};
       my $code = ${^MATCH};
       my $decl = normalize(filter_dup("${ret} ${name}${args};"));
 
@@ -49,7 +49,7 @@ sub parse
          warn "Repeated defenition of function $name\n";
       }
 
-      @{$functions{$name}}{qw/code declaration ret args body/} = ($code, $decl, $ret, $args, $fbody);
+      @{$functions{$name}}{qw(code declaration ret args body)} = ($code, $decl, $ret, $args, $fbody);
    }
 
    return $self->new(set => [map {C::Function->new(name => $_, %{$functions{$_}}, area => $area)} keys %functions]);

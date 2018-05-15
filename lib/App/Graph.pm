@@ -37,7 +37,7 @@ BEGIN {
 
 use Exporter qw(import);
 
-our @EXPORT = qw/run/;
+our @EXPORT = qw(run);
 
 sub run
 {

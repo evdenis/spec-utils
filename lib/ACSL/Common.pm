@@ -21,7 +21,7 @@ sub is_acsl_spec ($)
    $_[0] =~ m!^\s*+(?:/\*\@|//\@)!;
 }
 
-my @acsl_keywords = qw/
+my @acsl_keywords = qw(
   char
   short
   int
@@ -83,7 +83,7 @@ my @acsl_keywords = qw/
   Post
   LoopEntry
   LoopCurrent
-  /;
+);
 
 my %acsl_keywords_filter = map {$_ => undef} @acsl_keywords;
 

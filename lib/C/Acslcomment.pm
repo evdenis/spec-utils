@@ -4,7 +4,7 @@ use Moose;
 use Moose::Util::TypeConstraints;
 use Local::List::Util qw(difference);
 use ACSL::Common qw(prepare_tags);
-use RE::Common qw/$varname/;
+use RE::Common qw($varname);
 use namespace::autoclean;
 use C::GlobalSet;
 use C::EnumSet;

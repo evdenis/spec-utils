@@ -42,7 +42,7 @@ has 'fields_dependence' => (
    default  => sub {[]},
 );
 
-has [qw/head tail/] => (
+has [qw(head tail)] => (
    is       => 'rw',
    isa      => 'Str',
    init_arg => undef

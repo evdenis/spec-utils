@@ -10,7 +10,7 @@ use Scalar::Util qw(blessed);
 use C::Util::Transformation qw(:RE);
 use Local::String::Util qw(trim);
 
-our @EXPORT = qw/resolve/;
+our @EXPORT = qw(resolve);
 
 sub resolve_macro_macro ($$$)
 {

@@ -18,33 +18,33 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 use v5.20;
-use feature qw/say signatures state/;
+use feature qw(say signatures state);
 use strict;
 use warnings;
-no warnings qw/experimental::signatures/;
+no warnings qw(experimental::signatures);
 
 use utf8::all;
-use File::Temp qw/tempdir/;
+use File::Temp qw(tempdir);
 use XML::Simple;
 use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
 use File::Which;
-use YAML::XS qw/LoadFile/;
+use YAML::XS qw(LoadFile);
 use Getopt::Long;
-use File::Slurp qw/write_file/;
+use File::Slurp qw(write_file);
 use Excel::Writer::XLSX;
 use Color::Library;
 use DBI;
 
 use lib::abs '../lib';
-use Local::List::Util qw/uniq/;
+use Local::List::Util qw(uniq);
 use C::FunctionSet;
-use Kernel::Module::Graph qw/build_sources_graph/;
-use Kernel::Module qw/preprocess_module_sources/;
+use Kernel::Module::Graph qw(build_sources_graph);
+use Kernel::Module qw(preprocess_module_sources);
 use C::Util::Transformation;
-use Local::Config qw/find_config load_config merge_config_keys/;
-use Local::Config::Format qw/check_priority_format check_status_format/;
+use Local::Config qw(find_config load_config merge_config_keys);
+use Local::Config::Format qw(check_priority_format check_status_format);
 
 unless (which('lizard')) {
    die "Please, install lizard python package. This program required to measure SLOC and CCN.\n";
@@ -55,7 +55,7 @@ my $output_format = 'table';    # table csv excel sqlite
 my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my $output_file = undef;
 my $force       = 0;
-my ($kernel, $module) = @ENV{qw/CURRENT_KERNEL CURRENT_PROJECT/};
+my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
 my $exact_module = undef;
 
 GetOptions(
@@ -133,7 +133,7 @@ if ($output_format eq 'sqlite') {
 sub get_preprocessed_sources ($kernel, $module, $exact_module)
 {
    my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
-   adapt($$source, map {$_ => 1} qw/strings comments macro attributes/);
+   adapt($$source, map {$_ => 1} qw(strings comments macro attributes));
    $$source;
 }
 
@@ -283,8 +283,8 @@ sub generate_sort_function
       my $pa = $metrics->{$a}{priority} || 10000;
       my $pb = $metrics->{$b}{priority} || 10000;
 
-      my $wa = _weight(@{$metrics->{$a}}{qw/args SLOC CCN kernel_calls module_calls/});
-      my $wb = _weight(@{$metrics->{$b}}{qw/args SLOC CCN kernel_calls module_calls/});
+      my $wa = _weight(@{$metrics->{$a}}{qw(args SLOC CCN kernel_calls module_calls)});
+      my $wb = _weight(@{$metrics->{$b}}{qw(args SLOC CCN kernel_calls module_calls)});
 
       $pa <=> $pb
         || $la <=> $lb
@@ -473,7 +473,7 @@ sub output_plan ($obj, $addfunc, $retfunc, $outfunc, $metrics)
    my $sort_function = generate_sort_function($metrics);
    foreach (sort $sort_function keys %$metrics) {
       $addfunc->(
-         $obj, [$counter++, $_, @{$metrics->{$_}}{qw/args SLOC CCN kernel_calls module_calls priority level status/}]
+         $obj, [$counter++, $_, @{$metrics->{$_}}{qw(args SLOC CCN kernel_calls module_calls priority level status)}]
       );
    }
 
@@ -520,7 +520,7 @@ sub sqlite_connect
 sub insert_to_database
 {
    my ($dbh, $metrics) = @_;
-   my @order = qw/name
+   my @order = qw(name
      code
      args
      CCN
@@ -529,7 +529,7 @@ sub insert_to_database
      level
      priority
      SLOC
-     status/;
+     status);
 
    state $ins_sth = $dbh->prepare(
       qq/

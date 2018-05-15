@@ -44,7 +44,7 @@ has 'calls' => (
    builder  => '_build_calls'
 );
 
-has [qw/ret args body/] => (
+has [qw(ret args body)] => (
    is       => 'ro',
    isa      => 'Str',
    required => 1

@@ -104,7 +104,7 @@ package TS {
 
       {
          my %param;
-         $param{$_} = $self->$_ foreach qw/strings comments macro attributes/;
+         $param{$_} = $self->$_ foreach qw(strings comments macro attributes);
          adapt($$source, %param);
       }
 
