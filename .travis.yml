@@ -7,23 +7,9 @@ addons:
 matrix:
    include:
       - perl: '5.26'
-        env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/exportfs
-      - perl: '5.24'
-        env: KERNEL_VERSION=4.15.18 MODULE_TO_TEST=fs/efivarfs
-      - perl: '5.22'
-        env: KERNEL_VERSION=4.14.40 MODULE_TO_TEST=fs/tracefs
-      - perl: '5.20'
-        env: KERNEL_VERSION=4.9.99 MODULE_TO_TEST=fs/loadpin
-      - perl: '5.18'
-        env: KERNEL_VERSION=4.4.131 MODULE_TO_TEST=fs/yama
-      - perl: '5.16'
-        env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/integrity
-      - perl: '5.14'
         env: KERNEL_VERSION=4.16.8 MODULE_TO_TEST=fs/ramfs
       - perl: '5.14'
         env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/sysfs
-      - perl: '5.14'
-        env: KERNEL_VERSION=4.1.51 MODULE_TO_TEST=fs/debugfs
 
 cache:
   directories:
