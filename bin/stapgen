@@ -34,7 +34,7 @@ use Pod::Usage;
 
 use Kernel::Common qw(check_kernel_files_readable autodetect_kernel_directory);
 
-use constant CAPABILITY_C => catfile('security', 'capability.c');
+use constant CAPABILITY_C => catfile('security', 'security.c');
 
 =encoding utf8
 
@@ -153,15 +153,8 @@ my %configuration;
 
 my $security_c = read_file(catfile($kernel, CAPABILITY_C));
 
-if ($security_c =~ m/security_fixup_ops\s*\(\s*struct\s+security_operations\s*\*ops\s*\)\s*\{([^}]+)\}/m) {
-   my $contents = $1;
-   while ($contents =~ s/#ifdef\s+(?<conf>\w+)\s+(?<funcs>[^\#]+)\s*#endif//m) {
-      my $conf = $+{conf};
-      $configuration{$conf} = [map {"cap_$_"} ($+{funcs} =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
-   }
-   $configuration{'DEFAULT'} = [map {"cap_$_"} ($contents =~ m/set_to_cap_if_null\s*\(\s*\w+\s*,\s*(\w+)\s*\);/g)];
-} else {
-   die("Can't find security_fixup_ops.\n");
+while ($security_c =~ m/(void|int)\s*+(?<name>security_\w++)/g) {
+   push @{$configuration{'DEFAULT'}}, $+{name};
 }
 
 my $global = <<'GLOBAL';
