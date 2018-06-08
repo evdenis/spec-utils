@@ -8,10 +8,16 @@
 *.conf
 *.config
 
+*.o
+*.swp
+*.snapshot
+*.log
+
 .cache/
 result/
 cover_db/
 
+/local
 /tags
 .idea/
 .frama-c/

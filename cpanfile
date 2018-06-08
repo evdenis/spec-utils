@@ -1,8 +1,5 @@
-requires 'Algorithm::Diff';
-requires 'Class::CSV';
 requires 'Clone';
 requires 'Color::Library';
-requires 'Excel::Writer::XLSX';
 requires 'File::Modified';
 requires 'File::Slurp';
 requires 'File::Which';
@@ -19,14 +16,39 @@ requires 'Moose';
 requires 'Moose::Role';
 requires 'Moose::Util::TypeConstraints';
 requires 'Pod::Find';
-requires 'Term::ProgressBar';
-requires 'Text::ANSITable';
 requires 'Try::Tiny';
-requires 'YAML::XS';
+requires 'YAML';
 requires 'common::sense';
 requires 'lib::abs';
 requires 'namespace::autoclean';
 requires 'utf8::all';
-requires 'XML::Simple';
-requires 'DBI';
-requires 'DBD::SQLite';
+
+feature 'merge', 'Move Specs Between Sources Verions' => sub {
+  requires 'Algorithm::Diff';
+};
+
+feature 'report', 'Reports Generation' => sub {
+  requires 'Text::ANSITable';
+  requires 'Class::CSV';
+  requires 'Excel::Writer::XLSX';
+  requires 'XML::Simple';
+  requires 'Term::ProgressBar';
+};
+
+feature 'web', 'Web CallGraph Support' => sub {
+  requires 'DBI';
+  requires 'DBD::SQLite';
+  requires 'File::Spec::Functions';
+  requires 'Plack::Request';
+  requires 'Plack::Builder';
+  requires 'Plack::Util';
+  requires 'Plack::MIME';
+  requires 'HTTP::Date';
+  requires 'Starman';
+  requires 'JSON';
+};
+
+on 'develop' => sub {
+  recommends 'Devel::NYTProf';
+  recommends 'Smart::Comments';
+};

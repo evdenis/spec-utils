@@ -1,24 +1,18 @@
 #!/usr/bin/env perl
 
-use FindBin;
+my $cpanfile = shift @ARGV;
 
-sub read_file
-{
-   open my $fh, '<', "$_[0]"
-      or die "Can't open file $_[0]: $!\n";
-   my @str = <$fh>;
-   close $fh;
-   @str;
+if ($cpanfile) {
+   die "usage: fedora-list-deps <abs-path-to-cpanfile>"
+      unless -r $cpanfile;
+} else {
+   die "usage: fedora-list-deps <abs-path-to-cpanfile>";
 }
 
 my @deps;
-foreach (read_file "$FindBin::Bin/../cpanfile") {
-   if (m/'([^']+)'/) {
-      push @deps, 'perl-' . ($1 =~ s/::/-/gr)
-   } else {
-      die "Parse fail\n";
-   }
+foreach (qx(cpanfile-dump --with-all-features $cpanfile)) {
+   chomp;
+   push @deps, 'perl-' . ($_ =~ s/::/-/gr);
 }
-
-exec(dnf => list => @deps);
-
+my @list = map {if (m/^perl-[\w+\.\-]++/p) {${^MATCH}} else {()}} qx(dnf list @deps);
+print join("\n", @list) . "\n";

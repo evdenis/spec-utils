@@ -30,7 +30,7 @@ use IO::Interactive;
 use Text::ANSITable;
 use Class::CSV;
 use File::Which;
-use YAML::XS qw(LoadFile);
+use YAML qw(LoadFile);
 use Getopt::Long;
 use File::Slurp qw(write_file);
 use Excel::Writer::XLSX;

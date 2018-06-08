@@ -33,7 +33,7 @@ use List::MoreUtils qw(uniq);
 use Cwd qw(abs_path);
 use Term::ProgressBar 2.00;
 use Text::ANSITable;
-use YAML::XS qw(LoadFile);
+use YAML qw(LoadFile);
 
 use Class::CSV;
 

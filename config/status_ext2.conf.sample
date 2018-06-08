@@ -1,0 +1,29 @@
+done:
+   - ext2_msg
+   - EXT2_SB
+   - test_root
+   - verify_chain
+   - add_chain
+   - EXT2_I
+   - ext2_mask_flags
+   - rsv_is_empty
+   - ext2_block_to_path
+   - ext2_sync_super
+   - ext2_get_group_desc
+   - ext2_count_free_blocks
+   - ext2_count_free_inodes
+   - ext2_clear_super_error
+   - ext2_error
+   - sb_bgl_lock
+   - ext2_group_first_block_no
+   - ext2_valid_block_bitmap
+   - read_block_bitmap
+   - __rsv_window_dump
+   - rsv_window_remove
+   - ext2_rsv_window_add
+   - find_next_reservable_window
+   - alloc_new_reservation
+
+specs-only:
+   - search_reserve_window
+   - bitmap_search_next_usable_block

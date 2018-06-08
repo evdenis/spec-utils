@@ -1,0 +1,13 @@
+kernel_dir   = /spec-utils/linux-4.17/
+module_dir   = /spec-utils/linux-4.17/fs/ext2/
+cache        = 1
+cache_file   = /spec-utils/web/_web.graph.cache
+out          = /spec-utils/web/
+format       = svg
+
+priority = 1
+done     = 1
+
+priority_config_file  = /spec-utils/config/priority_ext2.conf.sample
+status_config_file    = /spec-utils/config/status_ext2.conf.sample
+dbfile                = /spec-utils/web/ext2.db

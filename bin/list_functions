@@ -25,7 +25,7 @@ no warnings qw(experimental::signatures);
 
 use utf8::all;
 use File::Temp qw(tempdir);
-use YAML::XS qw(LoadFile);
+use YAML qw(LoadFile);
 use Getopt::Long;
 use File::Slurp qw(write_file);
 use JSON;

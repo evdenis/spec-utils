@@ -8,17 +8,25 @@ TODO
 .gitignore
 
 .git/
+*.tidybak
 
 *.conf
 *.config
 
+*.o
+*.swp
+*.snapshot
+*.log
+
 .cache/
 result/
+cover_db/
 
 .ctags
 .ctagslist
 
 /t
+/local
 /tags
 .idea/
 .frama-c/

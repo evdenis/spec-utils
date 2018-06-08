@@ -1,0 +1,51 @@
+priority:
+   lists:
+    - &1
+      - ext2_get_blocks
+      - ext2_ioctl
+
+    - &2
+      - ext2_setattr
+      - ext2_xattr_delete_inode
+      - ext2_bmap
+      - ext2_quota_write
+      - ext2_readpage
+      - ext2_readpages
+      - ext2_writepage
+      - ext2_writepages
+
+    - &3
+      - ext2_mknod
+      - ext2_create
+      - ext2_mkdir
+      - ext2_link
+      - ext2_rename
+      - ext2_rmdir
+      - ext2_fiemap
+
+    - &4
+      - ext2_write_begin
+      - ext2_write_end
+      - ext2_write_inode
+      - ext2_fsync
+      - ext2_direct_IO
+      - ext2_evict_inode
+      - ext2_nobh_writepage
+      - ext2_lookup
+
+    - &5
+      - ext2_destroy_inode
+      - ext2_compat_ioctl
+      - ext2_tmpfile
+      - ext2_symlink
+      - ext2_new_block
+      - ext2_quota_read
+      - ext2_readdir
+      - ext2_mount
+
+   colors:
+        *1 : lightcyan
+        *2 : palegreen1
+        *3 : cornflowerblue
+        *4 : goldenrod2
+        *5 : grey50

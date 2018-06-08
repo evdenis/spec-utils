@@ -7,7 +7,7 @@ use Exporter qw(import);
 use FindBin;
 use File::Basename;
 use File::Spec::Functions qw(catfile);
-use YAML::XS qw(LoadFile);
+use YAML qw(LoadFile);
 use Carp;
 
 our @EXPORT_OK = qw(find_config load_config merge_config_keys update_config_keys);
