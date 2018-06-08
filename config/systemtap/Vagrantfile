@@ -12,7 +12,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "thoughtbot/debian-jessie-64"
+  config.vm.box = "generic/fedora27"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -65,13 +65,30 @@ Vagrant.configure(2) do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
-    sudo bash -c 'DEBIAN_FRONTEND="noninteractive" apt-get update && apt-get install -y build-essential systemtap systemtap-client systemtap-server linux-image-amd64 linux-image-3.16.0-4-amd64-dbg vim libfile-slurp-perl liblib-abs-perl linux-source ca-certificates linux-headers-3.16.0-4-all'
-    sudo perl -i -pE 'say "#include <asm/syscall.h>" if $. == 11' /usr/share/systemtap/tapset/linux/aux_syscalls.stp
+    sudo dnf update -y
+    sudo dnf install -y @development-tools vim \
+             systemtap systemtap-client systemtap-server \
+             kernel-devel \
+             kernel-debug kernel-debug-devel \
+             perl-App-cpanminus perl-local-lib \
+             dnf-utils
+
+    rm -fr spec-utils-devel
     wget https://github.com/evdenis/spec-utils/archive/devel.zip && \
-    unzip devel.zip && \
-    rm devel.zip
-    tar xf /usr/src/linux-source-3.16.tar.xz && \
-    echo "CURRENT_KERNEL=$HOME/linux-source-3.16" >> $HOME/.bashrc
+         unzip devel.zip && \
+         rm devel.zip
+
+    rm -fr linux-4.16.14
+    wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.14.tar.xz &&
+    tar xf linux-4.16.14.tar.xz &&
+    rm linux-4.16.14.tar.xz
+
+    cd spec-utils-devel
+    sudo dnf install -y $(sudo ./scripts/fedora-list-deps | grep perl | cut -d ' ' -f 1)
+    cpanm --notest --installdeps .
+
+    ./bin/stapgen -c --v --kernel ../linux-4.16.14/ > module.stp
+
     reboot
   SHELL
 end
