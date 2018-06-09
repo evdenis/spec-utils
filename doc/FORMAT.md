@@ -35,6 +35,8 @@ priority:
 
 Количество приоритетов произвольно. Количество цветов должно соответствовать количеству приоритетов. Имена цветов можно брать из [документации программы dot](http://www.graphviz.org/content/color-names). Функции должны быть уникальны в каждом приоритете.
 
+[Пример конфигурации](/config/priority_ext2.conf.sample).
+
 ## Issues
 Используется YAML. Структура в общем виде:
 ```YAML
@@ -84,9 +86,17 @@ specs-only:
 
 Функция не может одновременно присутствовать в разных категориях.
 
+[Пример конфигурации](/config/status_ext2.conf.sample).
+
 ## Dismember
 **TBD**
+
+[Пример конфигурации](/config/dismember-compile-test.conf.sample).
+
 ## Web
 **TBD**
+
+[Пример конфигурации](/web/.config.sample).
+
 ## Calls Status
 **TBD**
