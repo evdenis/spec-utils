@@ -25,7 +25,7 @@ $ sudo dnf install gcc
 Requires lizard. Can be installed from pip:
 
 ```
-$ pip install lizard
+$ pip3 install --user lizard
 ```
 
 Optional: sqlite. Can be installed from your distribution repo:
@@ -37,7 +37,7 @@ $ sudo dnf install sqlite3
 
 ## web
 
-Optional: sqlite.
+Requires sqlite3.
 
 ## graph\_diff, headers, recursion
 
