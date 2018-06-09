@@ -1,4 +1,4 @@
-FROM fedora:latest
+FROM fedora:28
 
 EXPOSE 80
 
