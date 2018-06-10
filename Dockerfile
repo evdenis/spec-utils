@@ -34,8 +34,8 @@ RUN perl -Mlocal::lib=extlib bin/complexity_plan --kernel $CURRENT_KERNEL \
                              --module $CURRENT_PROJECT --mname ext2       \
                              --status config/status_ext2.conf.sample      \
                              --priority config/priority_ext2.conf.sample  \
-                             --no-preprocess --force                      \
-                             --format sqlite --output web/ext2.db
+                             --format sqlite --force                      \
+                             --output web/ext2.db
 
 CMD perl -Mlocal::lib=extlib /usr/bin/starman --port 80 --workers 1 \
                             --access-log web/access.log             \
