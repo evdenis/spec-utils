@@ -41,7 +41,7 @@ use lib::abs '../lib';
 use Local::List::Util qw(uniq);
 use C::FunctionSet;
 use Kernel::Module::Graph qw(build_sources_graph);
-use Kernel::Module qw(preprocess_module_sources prepare_module_sources);
+use Kernel::Module qw(preprocess_module_sources);
 use C::Util::Transformation;
 use Local::Config qw(find_config load_config merge_config_keys);
 use Local::Config::Format qw(check_priority_format check_status_format);
@@ -57,7 +57,6 @@ my $output_file = undef;
 my $force       = 0;
 my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
 my $exact_module = undef;
-my $preprocess   = 1;
 
 GetOptions(
    "modified!"                  => \$modified,
@@ -65,7 +64,6 @@ GetOptions(
    "module|m=s"                 => \$module,
    "mname=s"                    => \$exact_module,
    "force!"                     => \$force,
-   "preprocess!"                => \$preprocess,
    "conf-status|status|s=s"     => \$config_file{status},
    "conf-priority|priority|p=s" => \$config_file{priority},
    "format|f=s"                 => \$output_format,
@@ -106,7 +104,7 @@ if ($output_file && -f $output_file && !$force) {
 }
 
 #BEGIN OF A PROGRAM
-my $preprocessed = get_sources($kernel, $module, $exact_module, $preprocess);
+my $preprocessed = get_preprocessed_sources($kernel, $module, $exact_module);
 
 #Initializing the library
 Kernel::Module::Graph::init(human_readable => 1);
@@ -132,10 +130,9 @@ if ($output_format eq 'sqlite') {
 }
 ##END OF A PROGRAM
 
-sub get_sources ($kernel, $module, $exact_module, $preprocess)
+sub get_preprocessed_sources ($kernel, $module, $exact_module)
 {
-   my $proc = $preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
-   my $source = ($proc->($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
+   my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
    adapt($$source, map {$_ => 1} qw(strings comments macro attributes));
    $$source;
 }
@@ -252,8 +249,7 @@ sub create_table ($graph, $preprocessed, $modified, $config)
 
    foreach (keys %vertices) {
       my $obj = $graph->get_vertex_attribute($_, 'object');
-      # filter builtin compiler functions
-      my @calls        = grep {!m/^__builtin/} @{$obj->calls};
+      my @calls        = grep {!m/^__builtin/} @{$obj->calls};                       # filter builtin compiler functions
       my @module_calls = grep {exists $vertices{$_}} @calls;
       my @kernel_calls = grep {!exists $vertices{$_}} @calls;
       my @args         = grep {!m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
