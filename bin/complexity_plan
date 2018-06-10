@@ -41,7 +41,7 @@ use lib::abs '../lib';
 use Local::List::Util qw(uniq);
 use C::FunctionSet;
 use Kernel::Module::Graph qw(build_sources_graph);
-use Kernel::Module qw(preprocess_module_sources);
+use Kernel::Module qw(preprocess_module_sources prepare_module_sources);
 use C::Util::Transformation;
 use Local::Config qw(find_config load_config merge_config_keys);
 use Local::Config::Format qw(check_priority_format check_status_format);
@@ -105,15 +105,17 @@ if ($output_file && -f $output_file && !$force) {
 
 #BEGIN OF A PROGRAM
 my $preprocessed = get_preprocessed_sources($kernel, $module, $exact_module);
+my $unpreprocessed = get_prepared_sources($kernel, $module, $exact_module);
 
 #Initializing the library
 Kernel::Module::Graph::init(human_readable => 1);
 
-my $graph = build_graph($preprocessed);
+my $functions = get_all_functions($unpreprocessed);
+my $graph     = build_graph($preprocessed);
 $graph = mark_priorities($graph, $config);
 $graph = resolve_function_function_cycles($graph);
 $graph = mark_levels($graph);
-my $metrics = create_table($graph, $preprocessed, $modified, $config);
+my $metrics = create_table($graph, $preprocessed, $modified, $functions, $config);
 
 # filter out __inittest and __check_enabled
 delete $metrics->{__inittest};
@@ -125,16 +127,27 @@ if ($output_format eq 'sqlite') {
    insert_to_database($dbh, $metrics);
 } else {
    gather_statistics($metrics);
-
    output_plan(prepare_output_document($output_format, $output_file, $config), $metrics);
 }
 ##END OF A PROGRAM
 
-sub get_preprocessed_sources ($kernel, $module, $exact_module)
+sub _get_sources ($sub, $kernel, $module, $exact_module)
 {
-   my $source = (preprocess_module_sources($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
+   my $source = ($sub->($kernel, $module, $exact_module, ["#define SPECIFICATION 1\n"]))[1];
    adapt($$source, map {$_ => 1} qw(strings comments macro attributes));
    $$source;
+}
+
+sub get_preprocessed_sources ($kernel, $module, $exact_module)
+{
+   unshift @_, \&preprocess_module_sources;
+   goto &_get_sources;
+}
+
+sub get_prepared_sources ($kernel, $module, $exact_module)
+{
+   unshift @_, \&prepare_module_sources;
+   goto &_get_sources;
 }
 
 # args $_[0] - preprocessed file
@@ -167,9 +180,32 @@ sub get_metrics
 sub build_graph
 {
    my %sources;
-   $sources{module}{function} = C::FunctionSet->parse(\$_[0], 'module');
+   $sources{module}{function} = find_functions($_[0]);
 
    build_sources_graph(\%sources);
+}
+
+# args $_[0] - file
+sub get_all_functions
+{
+   my $functions = find_functions($_[0]);
+   my %index;
+   foreach my $f (@{$functions->set}) {
+      my $fname = $f->name;
+      unless (exists($index{$fname})) {
+         $index{$fname} = $f;
+      } else {
+         warn "Function with name '$fname' already exists in index.\n";
+      }
+   }
+
+   \%index;
+}
+
+# args $_[0] - file
+sub find_functions
+{
+   C::FunctionSet->parse(\$_[0], 'module');
 }
 
 sub mark_priorities ($graph, $config)
@@ -235,7 +271,7 @@ sub mark_levels($graph)
    $graph;
 }
 
-sub create_table ($graph, $preprocessed, $modified, $config)
+sub create_table ($graph, $preprocessed, $modified, $functions, $config)
 {
    my $metrics = get_metrics($preprocessed, $modified);
 
@@ -254,7 +290,12 @@ sub create_table ($graph, $preprocessed, $modified, $config)
       my @kernel_calls = grep {!exists $vertices{$_}} @calls;
       my @args         = grep {!m/^void$/} split /,/, $obj->args =~ s/[)(\s]++//gr;
 
-      $metrics->{$_}{code} = $obj->to_string(undef, 0, 1);
+      if (exists($functions->{$_})) {
+         $metrics->{$_}{code} = $functions->{$_}->to_string(undef, 0, 1);
+      } else {
+         warn "Can't find unpreprocessed source code for function '$_'.\n";
+         $metrics->{$_}{code} = $obj->to_string(undef, 0, 1);
+      }
       $metrics->{$_}{priority} = $graph->get_vertex_attribute($_, 'priority');
       $metrics->{$_}{level}    = $graph->get_vertex_attribute($_, 'level');
       $metrics->{$_}{status}   = $status{$_} // '';
