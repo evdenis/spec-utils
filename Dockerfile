@@ -30,6 +30,14 @@ RUN wget --quiet https://cdn.kernel.org/pub/linux/kernel/v4.x/$KERNEL.tar.xz && 
 
 ENV GRAPH_CONFIG .config.sample
 
-RUN perl -Mlocal::lib=extlib bin/complexity_plan --kernel $CURRENT_KERNEL --module $CURRENT_PROJECT --mname ext2 --status config/status_ext2.conf.sample --priority config/priority_ext2.conf.sample --format sqlite --output web/ext2.db
+RUN perl -Mlocal::lib=extlib bin/complexity_plan --kernel $CURRENT_KERNEL \
+                             --module $CURRENT_PROJECT --mname ext2       \
+                             --status config/status_ext2.conf.sample      \
+                             --priority config/priority_ext2.conf.sample  \
+                             --no-preprocess --force                      \
+                             --format sqlite --output web/ext2.db
 
-CMD perl -Mlocal::lib=extlib /usr/bin/starman --port 80 --workers 1 --access-log web/access.log --error-log web/error.log web/graph.psgi
+CMD perl -Mlocal::lib=extlib /usr/bin/starman --port 80 --workers 1 \
+                            --access-log web/access.log             \
+                            --error-log web/error.log               \
+                            web/graph.psgi
