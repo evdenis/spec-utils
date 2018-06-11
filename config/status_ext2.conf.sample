@@ -23,6 +23,19 @@ done:
    - ext2_rsv_window_add
    - find_next_reservable_window
    - alloc_new_reservation
+   - find_next_usable_block
+
+partial-specs:
+   - ext2_new_blocks
+   - ext2_try_to_allocate_with_rsv
+   - ext2_try_to_allocate
+   - try_to_extend_reservation
+
+lemma-proof-required:
+   - group_adjust_blocks
+   - ext2_free_blocks
+   - ext2_has_free_blocks
+   - goal_in_my_reservation
 
 specs-only:
    - search_reserve_window
