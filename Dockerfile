@@ -13,7 +13,7 @@ WORKDIR spec-utils
 RUN dnf update  -y                                             && \
     dnf install -y @development-tools graphviz wget xz            \
         bison flex elfutils-libelf-devel bc openssl-devel         \
-        redhat-rpm-config                                      && \
+        redhat-rpm-config which                                && \
     dnf install -y perl-App-cpanminus perl-Pod-Checker         && \
     dnf install -y $(scripts/fedora-list-deps $(pwd)/cpanfile) && \
     dnf autoremove -y;                                            \
