@@ -112,14 +112,14 @@ Kernel::Module::Graph::init(human_readable => 1);
 
 my $functions = get_all_functions($unpreprocessed);
 my $graph     = build_graph($preprocessed);
+# filter out __inittest, __exittest and __check_enabled
+$graph->delete_vertices(qw(__check_enabled __inittest __exittest));
 $graph = mark_priorities($graph, $config);
 $graph = resolve_function_function_cycles($graph);
 $graph = mark_levels($graph);
 my $metrics = create_table($graph, $preprocessed, $modified, $functions, $config);
 
-# filter out __inittest and __check_enabled
-delete $metrics->{__inittest};
-delete $metrics->{__check_enabled};
+delete @$metrics{qw(__check_enabled __inittest __exittest)};
 
 if ($output_format eq 'sqlite') {
    my $dbh = sqlite_connect($output_file);
