@@ -49,6 +49,10 @@ feature 'web', 'Web CallGraph Support' => sub {
 };
 
 on 'develop' => sub {
+  requires 'Smart::Comments';
+  requires 'DDP';
   recommends 'Devel::NYTProf';
   recommends 'Smart::Comments';
+  suggests 'Devel::Cover::Report::Coveralls';
+  suggests 'Devel::Cover::Report::Kritika';
 };
