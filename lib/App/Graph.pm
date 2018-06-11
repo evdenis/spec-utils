@@ -96,6 +96,8 @@ sub run
         if exists $args->{config}{'specs-only'};
       push @from_done, @{$args->{config}{'lemma-proof-required'}}
         if exists $args->{config}{'lemma-proof-required'};
+      push @from_done, @{$args->{config}{'partial-specs'}}
+        if exists $args->{config}{'partial-specs'};
 
       if (@{$args->{functions}}) {
          $args->{functions} = [intersection($args->{functions}, \@from_done)];
@@ -139,7 +141,7 @@ sub run
    my $graph = build_sources_graph(\%sources);
 
    #these are special kernel functions generated after preprocessing
-   $graph->delete_vertices(qw(__check_enabled __inittest));
+   $graph->delete_vertices(qw(__check_enabled __inittest __exittest));
 
  CACHE: if ($args->{cache}) {
       $graph = retrieve($args->{cache_file});
