@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
 [![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
+[![Kritika.io](https://img.shields.io/badge/kritika-io-orange.svg)](https://kritika.io/users/evdenis/repos/9148422910107407/)
 
 В данном репозитории собран ряд утилит для изучения исходных кодов модуля ядра Linux и для работы с ними. Программы имеют внешние по perl модулям и другим программа. Для того, чтобы установить perl модули необходимо выполнить команды:
 <pre>
@@ -80,8 +81,12 @@ firefox http://localhost:8889/graph
 # How to Contribute
 
 * Проще всего начать исправлять замечания с [kritika.io](https://kritika.io/users/evdenis/repos/9148422910107407/)
+* Убрать все experimental конструкции
+* Вычистить smart-matching
+* Минимизировать использование lib/Local функций, заменить их на функции из других библиотек (List::Utils, List::MoreUtils)
 * Добавить тестов на другие модули ядра для dismember
 * Добавить тестов на другие утилиты (например, сравнение генерируемых dot файлов для graph)
 * Использовать Dist::Zilla или другую систему и залить исходных код в CPAN
 * Добавить ```--help``` для описания параметров утилит, в которых это еще не сделано
+* Упростить кастомизацию регулярок из ```*Set.p``` модулей (добавить возможность их конфигурации на основе выделения стандартных конструкций и типовых использований макросов)
 * ...
