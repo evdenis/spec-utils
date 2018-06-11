@@ -13,7 +13,7 @@ export MODULE=$(KERNEL)/$(MODULE_TO_TEST)
 export MODULE_FUNCTIONS?=--all
 
 $(KERNEL_ARCHIVE):
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/$@
+	wget --quiet https://cdn.kernel.org/pub/linux/kernel/v4.x/$@
 	touch --date=@0 $@
 
 $(MODULE): $(KERNEL_ARCHIVE)
