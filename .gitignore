@@ -12,6 +12,7 @@
 *.swp
 *.snapshot
 *.log
+*.db
 
 .cache/
 result/
