@@ -157,33 +157,49 @@ sub run
 
    if ($args->{done}) {
       ### MARKING VERIFIED FUNCTIONS
-      #sub label_done { "\N{BALLOT BOX WITH CHECK} " . join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
-      #sub label_done { join( '', map { $_ . "\N{U+0336}" } split '', $_[0] ) }
       sub label_done {state $mark = "\N{BALLOT BOX WITH CHECK} "; $mark . $_[0]}
-
-      if (my @set = intersection $args->{config}{done}, $args->{config}{'specs-only'}) {
-         die "These functions are in done and specs-only lists: \n" . join("\n", @set) . "\n";
-      }
-
-      foreach (uniq @{$args->{config}{done}}) {
-         if ($graph->has_vertex($_)) {
-            $graph->set_vertex_attribute($_, 'label', label_done($_));
-            $graph->set_vertex_attribute($_, style => 'dashed');
-            $graph->set_vertex_attribute($_, done  => 1);
-            $stat_done++;
-            push @marked_as_done, $_;
-         } else {
-            warn "Done: there is no function: '$_'\n";
+      my %how_to_mark = (
+         done => {
+            label         => \&label_done,
+            shape         => 'hexagon',
+            style         => 'bold',
+            count_as_done => 1
+         },
+         'specs-only' => {
+            label         => \&label_done,
+            shape         => 'hexagon',
+            style         => 'dotted',
+            count_as_done => 1
+         },
+         'partial-specs' => {
+            shape => 'hexagon',
+            style => 'dotted'
+         },
+         'lemma-proof-required' => {
+            label         => \&label_done,
+            shape         => 'hexagon',
+            style         => 'dashed',
+            count_as_done => 1
          }
-      }
+      );
+      my @done_categories = keys %how_to_mark;
 
-      foreach (uniq @{$args->{config}{'specs-only'}}) {
-         if ($graph->has_vertex($_)) {
-            $graph->set_vertex_attribute($_, style => 'dotted');
-            $graph->set_vertex_attribute($_, done  => 1);
-            push @marked_as_done, $_;    # no stat but should be marked
-         } else {
-            warn "Specs-only: there is no function: '$_'\n";
+      foreach my $mark (@done_categories) {
+         foreach my $func (uniq @{$args->{config}{$mark}}) {
+            if ($graph->has_vertex($func)) {
+               $graph->set_vertex_attribute($func, label => $how_to_mark{$mark}{label}->($func))
+                 if exists $how_to_mark{$mark}{label};
+               foreach my $attr (qw(style shape)) {
+                  $graph->set_vertex_attribute($func, $attr => $how_to_mark{$mark}{$attr})
+                    if exists $how_to_mark{$mark}{$attr};
+               }
+               $graph->set_vertex_attribute($func, done => 1);
+               $stat_done++
+                 if $how_to_mark{$mark}{count_as_done};
+               push @marked_as_done, $func;
+            } else {
+               warn ucfirst($mark) . ": there is no function: '$func'\n";
+            }
          }
       }
 
