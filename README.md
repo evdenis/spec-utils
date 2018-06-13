@@ -60,6 +60,8 @@ docker run -d -p 127.0.0.1:8889:80 ext2_callgraph
 firefox http://localhost:8889/graph
 ```
 
+[![ext2 web callgraph demo](https://img.youtube.com/vi/AuUsaleib9M/0.jpg)](https://www.youtube.com/watch?v=AuUsaleib9M)
+
 ## Адрес
 
 * только изображение: [http://localhost:8889/graph/image](http://localhost:8889/graph/image)
