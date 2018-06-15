@@ -65,26 +65,38 @@ Vagrant.configure(2) do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
-    sudo dnf update -y
-    sudo dnf install -y @development-tools vim \
-             systemtap systemtap-client systemtap-server \
-             kernel-devel \
-             kernel-debug kernel-debug-devel \
-             perl-App-cpanminus perl-local-lib \
+    dnf update -y
+    dnf install -y @development-tools vim                      \
+             systemtap systemtap-client systemtap-server       \
+             kernel-devel                                      \
+             kernel-debug kernel-debug-devel                   \
+             perl-App-cpanminus perl-local-lib                 \
+             graphviz wget xz                                  \
+             bison flex elfutils-libelf-devel bc openssl-devel \
+             redhat-rpm-config which                           \
              dnf-utils
 
-    rm -fr spec-utils-devel
-    wget https://github.com/evdenis/spec-utils/archive/devel.zip && \
-         unzip devel.zip && \
-         rm devel.zip
+    dnf install -y --enablerepo="fedora-debuginfo"  \
+                   --enablerepo="updates-debuginfo" \
+                   kernel-debuginfo 
 
-    rm -fr linux-4.16.14
-    wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.14.tar.xz &&
-    tar xf linux-4.16.14.tar.xz &&
+    rm -fr spec-utils-devel devel.zip
+    wget --quiet https://github.com/evdenis/spec-utils/archive/devel.zip && \
+    unzip devel.zip && \
+    rm devel.zip
+
+    rm -fr linux-4.16.14 linux-4.16.14.tar.xz
+    wget --quiet https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.16.14.tar.xz && \
+    tar xf linux-4.16.14.tar.xz && \
     rm linux-4.16.14.tar.xz
 
+    cd linux-4.16.14
+    make defconfig
+    make modules_prepare
+    cd -
+
     cd spec-utils-devel
-    sudo dnf install -y $(sudo ./scripts/fedora-list-deps | grep perl | cut -d ' ' -f 1)
+    sudo dnf install -y $(./scripts/fedora-list-deps $(pwd)/cpanfile)
     cpanm --notest --installdeps .
 
     ./bin/stapgen -c --v --kernel ../linux-4.16.14/ > module.stp
