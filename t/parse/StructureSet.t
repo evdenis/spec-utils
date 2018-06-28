@@ -14,7 +14,7 @@ my $set = C::StructureSet->parse(\join('', <DATA>), 'kernel');
 my ($struct) = @{$set->set};
 
 cmp_deeply($struct->get_code_tags,
-   [['struct', 'sk_buff',], ['struct', 'sock',], ['struct', 'key',], ['struct', 'cred',],], 'tags');
+   [['struct', 'sk_buff'], ['struct', 'sock'], ['struct', 'key'], ['struct', 'cred'], '__packed'], 'tags');
 cmp_deeply($struct->get_code_ids, ['security_operations'], 'ids');
 
 is($struct->name, 'security_operations', 'name');
@@ -25,7 +25,7 @@ is(
  void (*skb_owned_by) (struct sk_buff *skb, struct sock *sk);
  int (*key_alloc) (struct key *key, const struct cred *cred, unsigned long flags);
  void (*key_free) (struct key *key);
-};', 'to_string'
+} __packed;', 'to_string'
 );
 
 is(
@@ -34,7 +34,7 @@ is(
  void (*) (struct sk_buff *, struct sock *)
  int (*) (struct key *, const struct cred *, unsigned long )
  void (*) (struct key *)
-};',
+} __packed;',
    'to_string without field names'
 );
 
@@ -44,5 +44,5 @@ struct security_operations {
  void (*skb_owned_by) (struct sk_buff *skb, struct sock *sk);
  int (*key_alloc) (struct key *key, const struct cred *cred, unsigned long flags);
  void (*key_free) (struct key *key);
-};
+} __packed;
 
