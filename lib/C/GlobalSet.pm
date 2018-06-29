@@ -55,13 +55,14 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my @globals;
-   my $name  = qr/(?<name>${varname})/;
-   my $sbody = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
-   my $fargs = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
-   my $array = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
-   my $decl  = qr/(?:${s}*+${sbody})/;
-   my $init  = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/;        # requires strings to be previously hided
-   my $ptr   = qr/(\*|${s}++|const)*+/;
+   my $name         = qr/(?<name>${varname})/;
+   my $sbody        = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
+   my $fargs        = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
+   my $array        = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
+   my $optional_asm = qr/(?:${s}*+asm${s}*+\(${s}*+[^\)]*+${s}*+\))?/;
+   my $decl         = qr/(?:${s}*+${sbody})/;
+   my $init         = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/;          # requires strings to be previously hided
+   my $ptr          = qr/(\*|${s}++|const)*+/;
    my $standard_type =
      qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
    my $common_typedef =
@@ -95,9 +96,9 @@ sub parse
                            (?>
                               (?<typeof>__typeof__${s}*+\(${s}*+)?+
                               (?<type>${simple_type}|${complex_type})
-                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_ainit}
+                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_asm}${optional_ainit}
                               |
-                              (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_init}
+                              (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_asm}${optional_init}
                               |
                               (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
@@ -113,7 +114,7 @@ sub parse
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               |
-                              (?<type>${type})${name}${optional_ainit}
+                              (?<type>${type})${name}${optional_asm}${optional_ainit}
                            )
                         )(*SKIP)
                         ${s}*+;
