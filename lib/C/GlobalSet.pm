@@ -66,7 +66,7 @@ sub parse
    my $standard_type =
      qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
    my $common_typedef =
-     qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t)/;
+     qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t|atomic_t)/;
    my $simple_type = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
    my $optional_init  = qr/(?:\h*+__initdata)?${init}?/;
@@ -96,7 +96,7 @@ sub parse
                            (?>
                               (?<typeof>__typeof__${s}*+\(${s}*+)?+
                               (?<type>${simple_type}|${complex_type})
-                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+__initdata)?${optional_asm}${optional_ainit}
+                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+(?:__initdata|__initconst|__exitdata|__read_mostly))?${optional_asm}${optional_ainit}
                               |
                               (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_asm}${optional_init}
                               |
