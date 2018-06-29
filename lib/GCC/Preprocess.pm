@@ -207,8 +207,8 @@ sub __generic_preprocess_as_kernel_module
 
    return ([], {}) unless ${$_[0]};
 
-   _add_kernel_defines(${$_[0]});
    _add_kernel_kconfig(${$_[0]});
+   _add_kernel_defines(${$_[0]});
 
    my $argline = pop @_;
    $argline .= ' ' . form_gcc_kernel_include_path($kdir);
@@ -243,8 +243,8 @@ sub preprocess_as_kernel_module_simpl
       return $_[2] ? [] : \undef;
    }
 
-   _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
+   _add_kernel_defines(${$_[1]});
    call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
@@ -254,8 +254,8 @@ sub preprocess_as_kernel_module_get_macro_simpl
       return $_[2] ? [] : \undef;
    }
 
-   _add_kernel_defines(${$_[1]});
    _add_kernel_kconfig(${$_[1]});
+   _add_kernel_defines(${$_[1]});
    call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
