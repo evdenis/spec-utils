@@ -14,8 +14,13 @@ with 'C::Parse';
 has '+set' => (isa => 'ArrayRef[C::Global]');
 
 my %type_alias = (
-   DEFINE_SPINLOCK         => 'spinlock_t',
-   DEFINE_MUTEX            => 'struct mutex',
+   DEFINE_SPINLOCK    => 'spinlock_t',
+   DEFINE_MUTEX       => 'struct mutex',
+   DEFINE_SRCU        => 'struct srcu_struct',
+   DEFINE_STATIC_SRCU => {
+      modifier => 'static',
+      type     => 'struct srcu_struct'
+   },
    DEFINE_RWLOCK           => 'rwlock_t',
    DECLARE_WAIT_QUEUE_HEAD => 'wait_queue_head_t',
    DECLARE_WORK            => 'struct work_struct',
@@ -100,7 +105,7 @@ sub parse
                               |
                               (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_asm}${optional_init}
                               |
-                              (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
+                              (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX|SRCU|STATIC_SRCU)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
                               (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |

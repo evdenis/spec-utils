@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 28;
+use Test::More tests => 29;
 use Test::Deep;
 
 use C::GlobalSet;
@@ -15,7 +15,9 @@ $g{$_->name} = $_ foreach @{$set->set};
 
 cmp_deeply(
    [sort keys %g],
-   [qw(chroot_count cpu_stop current_stack_pointer current_task fs_type read_f socket_update_slock unix_socket_table)],
+   [
+      qw(chroot_count chroot_srcu cpu_stop current_stack_pointer current_task fs_type read_f socket_update_slock unix_socket_table)
+   ],
    'globals'
 );
 
@@ -24,8 +26,9 @@ is($g{fs_type}->type,             'struct file_system_type ', 'type test 2');
 is($g{socket_update_slock}->type, 'spinlock_t',               'type test 3');
 is($g{current_task}->type,        'struct task_struct *',     'type test 4');
 is($g{read_f}->type, 'int (*read_f[SYM_NUM]) (struct policydb *p, struct hashtab *h, void *fp)', 'type test 5');
-is($g{current_stack_pointer}->type, 'unsigned long ', 'type test 6');
-is($g{chroot_count}->type,          'atomic_t ',      'type test 7');
+is($g{current_stack_pointer}->type, 'unsigned long ',     'type test 6');
+is($g{chroot_count}->type,          'atomic_t ',          'type test 7');
+is($g{chroot_srcu}->type,           'struct srcu_struct', 'type test 8');
 
 ok($g{unix_socket_table}->extern, 'extern test true 1');
 ok($g{current_task}->extern,      'extern test true 2');
@@ -69,8 +72,9 @@ is($g{chroot_count}->initializer, 'ATOMIC_INIT(0)', 'initializer test 5');
 cmp_deeply(
    $set->ids,
    bag(
-      ["unix_socket_table"], ["fs_type"], ["socket_update_slock"], ["current_task"],
-      ["cpu_stop"], ["read_f"], ["current_stack_pointer"], ["chroot_count"]
+      ["unix_socket_table"], ["fs_type"], ["socket_update_slock"],   ["current_task"],
+      ["cpu_stop"],          ["read_f"],  ["current_stack_pointer"], ["chroot_count"],
+      ["chroot_srcu"]
    ),
    'ids'
 );
@@ -90,7 +94,8 @@ cmp_deeply(
          "sens_read", "cat_read"
       ],
       ["_ASM_SP"],
-      ["atomic_t", "__read_mostly", "ATOMIC_INIT"]
+      ["atomic_t", "__read_mostly", "ATOMIC_INIT"],
+      ["DEFINE_SRCU"]
    ),
    'tags'
 );
@@ -127,3 +132,5 @@ static int (*read_f[SYM_NUM]) (struct policydb *p, struct hashtab *h, void *fp) 
 register unsigned long current_stack_pointer asm(_ASM_SP);
 
 atomic_t chroot_count __read_mostly = ATOMIC_INIT(0);
+
+DEFINE_SRCU(chroot_srcu);
