@@ -33,7 +33,7 @@ use Storable;
 use POSIX qw(setsid);
 use Module::Loader;
 use Try::Tiny;
-use YAML::XS qw(LoadFile);
+use YAML qw(LoadFile);
 use Cwd qw(realpath);
 use Scalar::Util qw(blessed);
 use File::Path qw(make_path);
