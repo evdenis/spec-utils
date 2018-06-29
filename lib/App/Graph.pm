@@ -429,3 +429,5 @@ sub run
       croak("Can't find dot program to create the source map.\n");
    }
 }
+
+1;
