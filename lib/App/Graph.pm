@@ -356,7 +356,7 @@ sub run
 
    {
       local $SIG{__WARN__} = sub { };
-      Graph::Writer::Dot->new()->write_graph($graph, $dotfile)
+      Graph::Writer::Dot->new()->write_graph($graph, $dotfile);
    }
 
    if ($args->{priority} && $args->{priority_legenda} || $args->{issues} && $args->{issues_legenda}) {

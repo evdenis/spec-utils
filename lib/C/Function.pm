@@ -57,7 +57,7 @@ sub _build_calls
 
 sub _build_specs
 {
-   [$_[0]->code =~ m/$comment_t{pattern}/g]
+   [$_[0]->code =~ m/$comment_t{pattern}/g];
 }
 
 sub get_code_tags

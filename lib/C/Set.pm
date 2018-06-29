@@ -16,12 +16,12 @@ has 'set' => (
 
 sub ids
 {
-   [$_[0]->map(sub {$_->get_code_ids})]
+   [$_[0]->map(sub {$_->get_code_ids})];
 }
 
 sub tags
 {
-   [$_[0]->map(sub {$_->get_code_tags})]
+   [$_[0]->map(sub {$_->get_code_tags})];
 }
 
 __PACKAGE__->meta->make_immutable;

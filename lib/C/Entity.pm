@@ -52,7 +52,7 @@ sub to_string
 
 sub get_code_ids
 {
-   [$_[0]->name]
+   [$_[0]->name];
 }
 
 sub get_code_tags

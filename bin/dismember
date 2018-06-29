@@ -460,7 +460,7 @@ create_directory $config{'output-dir'};
       }
    }
    die "Can't create directory for cache.\n"
-     unless $c
+     unless $c;
 }
 
 $cache = 2 if $cache > 2;
@@ -505,7 +505,7 @@ sub call_plugins
    if (exists $schedule{$opts{level}}) {
       foreach my $plugin (@{$schedule{$opts{level}}}) {
          try {
-            $plugin->action(\%opts)
+            $plugin->action(\%opts);
          } catch {
             when (/^FAIL:/) {die $_}
             default {$res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n"}

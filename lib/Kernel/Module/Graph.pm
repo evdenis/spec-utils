@@ -491,7 +491,7 @@ sub _generic_get_subgraph
    my $em            = $ft{$method};
    my $me            = $rft{$method};
    my $from_edge_gen = sub {
-      $_[0] eq 'edges_from' ? sub {$_->[1]} : sub {$_->[0]}
+      $_[0] eq 'edges_from' ? sub {$_->[1]} : sub {$_->[0]};
    };
    my $from_em_edge = $from_edge_gen->($em);
    my $from_me_edge = $from_edge_gen->($me);

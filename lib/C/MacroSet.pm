@@ -51,12 +51,12 @@ sub push
 
 sub ids
 {
-   [$_[0]->map(sub {return [] unless $_; $_->get_code_ids})]
+   [$_[0]->map(sub {return [] unless $_; $_->get_code_ids})];
 }
 
 sub tags
 {
-   [$_[0]->map(sub {return [] unless $_; $_->get_code_tags})]
+   [$_[0]->map(sub {return [] unless $_; $_->get_code_tags})];
 }
 
 sub delete

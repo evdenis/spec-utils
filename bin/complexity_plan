@@ -318,7 +318,7 @@ sub generate_sort_function
 {
    my $metrics = $_[0];
 
-   sub {
+   return sub {
       my $la = $metrics->{$a}{level};
       my $lb = $metrics->{$b}{level};
       my $pa = $metrics->{$a}{priority} || 10000;
@@ -330,7 +330,7 @@ sub generate_sort_function
       $pa <=> $pb
         || $la <=> $lb
         || $wa <=> $wb;
-     }
+   };
 }
 
 sub prepare_output_document ($output_format, $output_file, $config)

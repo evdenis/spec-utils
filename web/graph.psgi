@@ -23,6 +23,7 @@ use Local::Config qw(load_config merge_config_keys update_config_keys);
 use Local::Config::Format qw(check_priority_format check_status_format detect_and_check_format);
 
 my %config;
+
 sub read_config
 {
    open my $fh, '<', $_[0] or die "Can't read config file.\n";
@@ -32,17 +33,17 @@ sub read_config
       if (/\A\h*+(\w++)\h*+=\h*+([\w\/\-\.]++)\h*+\Z/) {
          my ($key, $value) = ($1, $2);
          if (exists $config{$key}) {
-            warn "Option $key has been already set.\n"
+            warn "Option $key has been already set.\n";
          }
-         $config{$key} = $value
+         $config{$key} = $value;
       } else {
-         warn "Error in config string '$_'. Can't parse. Skipping.\n"
+         warn "Error in config string '$_'. Can't parse. Skipping.\n";
       }
    }
    close $fh;
 }
 
-my $ppid = getppid();
+my $ppid        = getppid();
 my $config_file = $ENV{GRAPH_CONFIG} // '.config';
 read_config catfile $FindBin::Bin, $config_file;
 my $priority = load_config $config{priority_config_file};
@@ -50,7 +51,7 @@ unless ($priority) {
    warn "Can't read priority config file.\n";
    kill "SIGKILL", $ppid;
 }
-my $status   = load_config $config{status_config_file};
+my $status = load_config $config{status_config_file};
 unless ($status) {
    warn "Can't read status config file.\n";
    kill "SIGKILL", $ppid;
@@ -79,12 +80,16 @@ my $cache_default = $config{cache};
 my $dbh = undef;
 my $sth = undef;
 if (exists $config{dbfile} && -r $config{dbfile}) {
-   $dbh = DBI->connect("dbi:SQLite:dbname=$config{dbfile}", "", "", {
-        PrintError       => 0,
-        RaiseError       => 1,
-        AutoCommit       => 1,
-        FetchHashKeyName => 'NAME_lc',
-   });
+   $dbh = DBI->connect(
+      "dbi:SQLite:dbname=$config{dbfile}",
+      "", "",
+      {
+         PrintError       => 0,
+         RaiseError       => 1,
+         AutoCommit       => 1,
+         FetchHashKeyName => 'NAME_lc',
+      }
+   );
    $dbh->{sqlite_unicode} = 1;
    $sth = $dbh->prepare('SELECT * FROM astraver_functions WHERE name = ?');
 }
@@ -110,24 +115,23 @@ sub return_503
    return [503, ['Content-Type' => 'text/plain', 'Content-Length' => 26], ["Database isn't configured."]];
 }
 
-
 sub generate_image
 {
    if (my (@cf) = $cmonitor->changed) {
       try {
-             my $new_config;
-             foreach (@cf) {
-                my $c = load_config $_;
-                if (detect_and_check_format($c)) {
-                   merge_config_keys $new_config, $c;
-                } else {
-                   warn "Incorrect configuration update. Will use previous.\n";
-                }
-             }
-             update_config_keys $config{config}, $new_config;
-             warn "Loading updated configuration @cf\n";
+         my $new_config;
+         foreach (@cf) {
+            my $c = load_config $_;
+            if (detect_and_check_format($c)) {
+               merge_config_keys $new_config, $c;
+            } else {
+               warn "Incorrect configuration update. Will use previous.\n";
+            }
+         }
+         update_config_keys $config{config}, $new_config;
+         warn "Loading updated configuration @cf\n";
       } catch {
-         warn "Can't load updated configuration\n"
+         warn "Can't load updated configuration\n";
       };
       $cmonitor->update();
    }
@@ -135,19 +139,19 @@ sub generate_image
    my $fail = 0;
    try {
       $config{cache} = $cache_default;
-      run(\%config)
+      run(\%config);
    } catch {
       warn "Can't generate image: $_\n";
       $fail = 1;
    };
 
    if ($fail) {
-      return -1
+      return -1;
    }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
-      my $svg = read_file($filename);
+      my $svg      = read_file($filename);
 
       my $link_begin;
       my $link_level_begin;
@@ -159,11 +163,11 @@ sub generate_image
          $link_begin       = qq|<a xlink:href="/graph?func=|;
          $link_level_begin = qq|<a xlink:href="/graph?level=|;
       }
-      my $link_end   = qq|</a>\n|;
+      my $link_end = qq|</a>\n|;
 
       while ($svg =~ /<g id="node/g) {
          my $begin = $-[0];
-         my $pos = pos($svg);
+         my $pos   = pos($svg);
 
          my $end = index($svg, "</g>\n", $begin) + 5;
          my $area = substr($svg, $begin, $end - $begin);
@@ -171,12 +175,12 @@ sub generate_image
          next unless $title;
          my $link;
          unless (looks_like_number($title)) {
-            $link = $link_begin.$title.$link_begin_end;
+            $link = $link_begin . $title . $link_begin_end;
          } else {
-            $link = $link_level_begin.$title.$link_begin_end;
+            $link = $link_level_begin . $title . $link_begin_end;
          }
 
-         substr($svg, $end, 0, $link_end);
+         substr($svg, $end,   0, $link_end);
          substr($svg, $begin, 0, $link);
          pos($svg) = $pos + length($link) + length($link_end);
       }
@@ -184,7 +188,7 @@ sub generate_image
       write_file($filename, $svg);
    }
 
-   return 0
+   return 0;
 }
 
 my $image = sub {
@@ -195,25 +199,25 @@ my $image = sub {
 
    if ($req->param('fmt')) {
       if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
-         $config{format} = $req->param('fmt')
+         $config{format} = $req->param('fmt');
       } else {
-         return return_403
+         return return_403;
       }
    }
    if ($req->param('func')) {
-      $config{functions} = [ split(/,/, $req->param('func')) ]
+      $config{functions} = [split(/,/, $req->param('func'))];
    }
    if ($req->param('level') && looks_like_number($req->param('level'))) {
-      $config{level} = $req->param('level')
+      $config{level} = $req->param('level');
    }
    if ($req->param('no-display-done')) {
-      $config{display_done} = 0
+      $config{display_done} = 0;
    }
    if ($req->param('reverse')) {
-      $config{reverse} = 1
+      $config{reverse} = 1;
    }
    if ($req->param('from-done')) {
-      $config{from_done} = 1
+      $config{from_done} = 1;
    }
    if ($req->param('available')) {
       $config{from_done}    = 1;
@@ -222,15 +226,15 @@ my $image = sub {
    }
    if (defined $req->param('legenda') && !$req->param('legenda')) {
       $config{priority_legenda} = 0;
-      $config{issues_legenda} = 0;
+      $config{issues_legenda}   = 0;
    }
 
    return return_500
-      if generate_image('image');
+     if generate_image('image');
 
    my $file = $config{out} . '.' . $config{format};
-   $config{format}       = $original{format};
-   $config{functions}    = $original{functions};
+   $config{format}    = $original{format};
+   $config{functions} = $original{functions};
    delete $config{level};
    delete $config{display_done};
    delete $config{reverse};
@@ -239,7 +243,7 @@ my $image = sub {
    delete $config{issues_legenda};
 
    open my $fh, "<:raw", $file
-      or return return_500;
+     or return return_500;
 
    my @stat = stat $file;
    my $mime = Plack::MIME->mime_type($file);
@@ -250,7 +254,7 @@ my $image = sub {
       [
          'Content-Type'   => $mime,
          'Content-Length' => $stat[7],
-         'Last-Modified'  => HTTP::Date::time2str( $stat[9] )
+         'Last-Modified'  => HTTP::Date::time2str($stat[9])
       ],
       $fh,
    ];
@@ -258,7 +262,7 @@ my $image = sub {
 };
 
 my $page = sub {
-   my $env = shift;
+   my $env      = shift;
    my %original = (format => $config{format}, functions => $config{functions});
    my $html_svg = <<'HTML';
 <!DOCTYPE html>
@@ -482,31 +486,30 @@ HTML
 </html>
 HTML
 
-
    my $req = Plack::Request->new($env);
    my $res = $req->new_response(200);
 
    if ($req->param('fmt')) {
       if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
-         $config{format} = $req->param('fmt')
+         $config{format} = $req->param('fmt');
       } else {
-         return return_403
+         return return_403;
       }
    }
    if ($req->param('func')) {
-      $config{functions} = [ split(/,/, $req->param('func')) ]
+      $config{functions} = [split(/,/, $req->param('func'))];
    }
    if ($req->param('level') && looks_like_number($req->param('level'))) {
-      $config{level} = $req->param('level')
+      $config{level} = $req->param('level');
    }
    if ($req->param('no-display-done')) {
-      $config{display_done} = 0
+      $config{display_done} = 0;
    }
    if ($req->param('reverse')) {
-      $config{reverse} = 1
+      $config{reverse} = 1;
    }
    if ($req->param('from-done')) {
-      $config{from_done} = 1
+      $config{from_done} = 1;
    }
    if ($req->param('available')) {
       $config{from_done}    = 1;
@@ -515,14 +518,14 @@ HTML
    }
    if (defined $req->param('legenda') && !$req->param('legenda')) {
       $config{priority_legenda} = 0;
-      $config{issues_legenda} = 0;
+      $config{issues_legenda}   = 0;
    }
 
    if ($config{format} eq 'svg') {
       my $filename = $config{out} . '.' . $config{format};
 
       return return_500
-         if generate_image('page');
+        if generate_image('page');
 
       my $svg = read_file($filename);
       unlink $filename;
@@ -531,19 +534,19 @@ HTML
    } else {
       my $get = '?';
       if ($req->param('fmt')) {
-         $get .= 'fmt=' . $req->param('fmt')
+         $get .= 'fmt=' . $req->param('fmt');
       }
       if ($req->param('func')) {
-         $get .= '&func=' . $req->param('func')
+         $get .= '&func=' . $req->param('func');
       }
       $html =~ s/###INLINE###/$get/
-         if $get
+        if $get;
    }
 
    $res->body($html);
 
-   $config{format}       = $original{format};
-   $config{functions}    = $original{functions};
+   $config{format}    = $original{format};
+   $config{functions} = $original{functions};
    delete $config{level};
    delete $config{display_done};
    delete $config{reverse};
@@ -556,23 +559,24 @@ HTML
 
 my $info = sub {
    my $env = shift;
-   
+
    return return_503
-      if !$dbh || !$sth;
+     if !$dbh || !$sth;
 
    my $req = Plack::Request->new($env);
    my $func;
    if ($req->param('func')) {
-      $func = $req->param('func')
+      $func = $req->param('func');
    } else {
-      return return_403
+      return return_403;
    }
 
    $sth->execute($func);
-   my $hash = $sth->fetchrow_hashref; $sth->finish(); #$dbh->disconnect;
+   my $hash = $sth->fetchrow_hashref;
+   $sth->finish();    #$dbh->disconnect;
 
    return return_404
-      unless $hash;
+     unless $hash;
 
    my $res = $req->new_response(200);
    $res->content_type('application/json');
@@ -582,10 +586,10 @@ my $info = sub {
 };
 
 my $main_app = builder {
-   mount '/graph/image' => builder { $image };
-   mount '/graph'       => builder { $page };
-   mount '/map'         => builder { $page };
-   mount '/info'        => builder { $info };
-   mount '/favicon.ico' => builder { \&return_404 };
-   mount '/'            => builder { \&return_404 };
+   mount '/graph/image' => builder {$image};
+   mount '/graph'       => builder {$page};
+   mount '/map'         => builder {$page};
+   mount '/info'        => builder {$info};
+   mount '/favicon.ico' => builder {\&return_404};
+   mount '/'            => builder {\&return_404};
 };

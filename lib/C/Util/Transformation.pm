@@ -105,12 +105,12 @@ qr!/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n)|(?<other>"(?:\\
       $sub = sub {
          if   (defined $_[1]->{other}) {${^MATCH}}
          else                          {push @{$_[0]}, ${^MATCH}; "$comment_t{L}$#{$_[0]}$comment_t{R}"}
-        }
+      };
    } else {
       $sub = sub {
          if   (defined $_[0]->{other}) {${^MATCH}}
          else                          {''}
-        }
+      };
    }
 
    generic_remove(

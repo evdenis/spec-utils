@@ -52,7 +52,7 @@ sub detect_format($)
          }
       }
    } catch {
-      carp "Can't determine configuration file format. Unknown structure.\n"
+      carp "Can't determine configuration file format. Unknown structure.\n";
    };
 
    return $format;

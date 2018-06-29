@@ -183,7 +183,7 @@ sub generate_wanted
         if $_ =~ /\.h\Z/;
    }, sub {
       \%headers;
-     }
+   };
 }
 
 my ($wanted, $get_result) = generate_wanted();

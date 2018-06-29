@@ -407,7 +407,7 @@ $args{cache} = 0 if $args{preprocessed};
       last;
    }
    die "Can't create cache directory.\n"
-     unless $c
+     unless $c;
 }
 
 ### CACHE FILE: $args{cache_file}
