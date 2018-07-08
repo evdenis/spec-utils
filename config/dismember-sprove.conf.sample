@@ -1,0 +1,16 @@
+single=1
+full=1
+
+plugin=filter
+plugin-filter-name=size_t
+plugin-filter-name=offsetof
+
+plugin=inline
+plugin-inline-text=begin^1^#define KERNRELEASE "TEST"
+
+plugin=rewrite
+plugin-rewrite-id=container_of^#define container_of(ptr,type,member) ((type *)((char *)ptr - offsetof(type,member)))
+plugin-rewrite-id=call_rcu^#define call_rcu(a,b) b(a)
+
+plugin=exec
+plugin-exec-file=/home/work/workspace/work/spec-utils/scripts/framac-sprove.pl
