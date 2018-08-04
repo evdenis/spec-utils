@@ -620,14 +620,14 @@ my @all_output_files;
             my $spaces = $col - $reserved_colons - length($_) - length($i);
             print $msg . $_ . ' ' x $spaces . "[" . $i++ . "/$total]\n";
             my $output = generate_files $g, $_;
-            call_plugins level => 'post_output', %$output;
+            call_plugins level => 'post_output', %$output, function => $_;
             push @all_output_files, $output;
          }
       } else {
          my $spaces = $col - $reserved_colons - length('merged') - 1;
          print $msg . 'merged' . ' ' x $spaces . "[1/1]\n";
          my $output = generate_files $g, @functions;
-         call_plugins level => 'post_output', %$output;
+         call_plugins level => 'post_output', %$output, function => \@functions;
          push @all_output_files, $output;
       }
    } else {
@@ -650,7 +650,7 @@ my @all_output_files;
             push @vertices, @module;
          }
          my $output = generate_files $g, @vertices;
-         call_plugins level => 'post_output', %$output;
+         call_plugins level => 'post_output', %$output, function => \@vertices;
          push @all_output_files, $output;
       } else {
          my %rindx    = reverse %$indx;
@@ -697,7 +697,7 @@ my @all_output_files;
                my $spaces   = $col - $reserved_colons - length($function) - length($i);
                print $msg . $function . ' ' x $spaces . "[" . $i++ . "/$total]\n";
                my $output = generate_files $g, $function;
-               if (call_plugins(level => 'post_output', %$output)) {
+               if (call_plugins(level => 'post_output', %$output, function => $function)) {
                   push @fail, $_;
                }
                push @all_output_files, $output;
