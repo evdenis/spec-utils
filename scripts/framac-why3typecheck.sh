@@ -3,8 +3,8 @@
 while (( $# > 0 ))
 do
    case "$1" in
-      --dir)
-         dir=$2
+      --file)
+         file=$2
          break
          ;;
       *)
@@ -13,9 +13,9 @@ do
    esac
 done
 
-if [[ -z "$dir" || ! -r "$dir/module.c" ]]
+if [[ -z "$file" || ! -r "$file" ]]
 then
    exit 1
 fi
 
-frama-c -jessie -jessie-target why3typecheck "$dir/module.c"
+frama-c -jessie -jessie-target why3typecheck "$file"
