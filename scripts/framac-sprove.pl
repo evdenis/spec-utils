@@ -6,17 +6,17 @@ use warnings;
 use File::Basename;
 
 my %args = @ARGV;
-my $dir  = $args{'--dir'};
+my $file = $args{'--file'};
 
-die("$0: --dir <dir> is the required argument\n")
-   unless $dir;
+die("$0: --file <file> is the required argument\n")
+   unless $file;
 
-die("Can't read file $dir/module.c\n")
-   unless -r "$dir/module.c";
+die("Can't read file $file\n")
+   unless -r $file;
 
-my $func = basename $dir;
+my $func = $args{'--function'} // 'unknown';
 
-my $output = qx(frama-c -jessie -jessie-target why3sprove -jessie-why3-opt ' --strategy proof_juicer ' "$dir/module.c" 2>&1);
+my $output = qx(frama-c -jessie -jessie-target why3sprove -jessie-why3-opt ' --strategy proof_juicer ' "$file" 2>&1);
 
 die("Unable to launch external process: $!\n")
    if not defined $output;
