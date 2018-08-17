@@ -3,7 +3,7 @@ use Moose;
 
 use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
-use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
+use C::Util::Transformation qw(:RE %comment_t filter_comments_dup filter_comments);
 use ACSL::Common qw(is_acsl_spec is_contract);
 use Local::List::Util qw(difference);
 use namespace::autoclean;
@@ -82,6 +82,18 @@ sub detach_specification
    my @ids = @{$_[0]->spec_ids};
    @ids = grep {$_ != $spec_id} @ids;
    $_[0]->spec_ids(\@ids);
+}
+
+sub remove_contract
+{
+   my $code = $_[0]->code;
+   my @ids  = @{$_[0]->spec_ids};
+
+   filter_comments($code);
+   $code =~ s/\A\s++//;
+
+   $_[0]->code($code);
+   $_[0]->spec_ids([]);
 }
 
 sub to_string

@@ -162,10 +162,19 @@ sub _update_ids_index
                   #declaration <-> function handling
                   if ($tn eq 'C::Declaration') {
                      if (exists $index{$_}{'C::Function'}) {
+                        if ($n->spec_ids()) {
+                           $index{$_}{'C::Function'}->attach_declaration($n);
+                        }
                         next;
                      }
                   } elsif ($tn eq 'C::Function') {
                      if (exists $index{$_}{'C::Declaration'}) {
+                        my $decl = $index{$_}{'C::Declaration'};
+                        if ($decl->spec_ids()) {
+                           $n->attach_declaration($decl);
+                           # Just in case
+                           # $decl->remove_contract();
+                        }
                         delete $index{$_}{'C::Declaration'};
                      }
                   }

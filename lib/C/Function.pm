@@ -142,6 +142,24 @@ sub detach_specification
    $_[0]->spec_ids(\@ids);
 }
 
+sub attach_declaration
+{
+   my $self = $_[0];
+   my $decl = $_[1];
+
+   if ($decl->code =~ m/\A\s*+(?<contract>${s}*)/) {
+      my $contract = $+{contract};
+
+      my $code = $self->code();
+      $code =~ m/\A${s}*+/;
+      my $sep_pos         = $+[0];
+      my $before_function = substr($code, 0, $sep_pos);
+      my $function        = substr($code, $sep_pos);
+
+      $self->code($before_function . $contract . $function);
+   }
+}
+
 sub to_string
 {
    my $str      = '';
