@@ -17,7 +17,11 @@ my $cpanfile_dump_args = join(' ',  @ARGV);
 my @deps;
 foreach (qx(cpanfile-dump $cpanfile_dump_args $cpanfile)) {
    chomp;
-   push @deps, 'lib' . ($_ =~ s/::/-/gr) . '-perl';
+   if ($_ eq 'Starman') {
+      push @deps, $_;
+   } else {
+      push @deps, 'lib' . ($_ =~ s/::/-/gr) . '-perl';
+   }
 }
 my $grep_filter = '\<\(' . join('\|', @deps) . '\)\>';
 my @list = qx(apt-cache pkgnames | grep -i '$grep_filter');
