@@ -1,0 +1,19 @@
+#!/usr/bin/env perl
+
+my $cpanfile = shift @ARGV;
+
+if ($cpanfile) {
+   die "usage: debian-list-deps <abs-path-to-cpanfile>"
+      unless -r $cpanfile;
+} else {
+   die "usage: debian-list-deps <abs-path-to-cpanfile>";
+}
+
+my @deps;
+foreach (qx(cpanfile-dump --with-all-features $cpanfile)) {
+   chomp;
+   push @deps, 'lib' . ($_ =~ s/::/-/gr) . '-perl';
+}
+my $grep_filter = '\<\(' . join('\|', @deps) . '\)\>';
+my @list = qx(apt-cache pkgnames | grep -i '$grep_filter');
+print (sort @list);
