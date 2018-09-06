@@ -3,14 +3,19 @@
 my $cpanfile = shift @ARGV;
 
 if ($cpanfile) {
-   die "usage: debian-list-deps <abs-path-to-cpanfile>"
-      unless -r $cpanfile;
+   die "usage: debian-list-deps <abs-path-to-cpanfile> <cpanfile-dump args>"
+   unless -r $cpanfile;
 } else {
-   die "usage: debian-list-deps <abs-path-to-cpanfile>";
+   die "usage: debian-list-deps <abs-path-to-cpanfile> <cpanfile-dump args>";
 }
 
+unless (@ARGV) {
+   push @ARGV, '--with-all-features';
+}
+my $cpanfile_dump_args = join(' ',  @ARGV);
+
 my @deps;
-foreach (qx(cpanfile-dump --with-all-features $cpanfile)) {
+foreach (qx(cpanfile-dump $cpanfile_dump_args $cpanfile)) {
    chomp;
    push @deps, 'lib' . ($_ =~ s/::/-/gr) . '-perl';
 }
