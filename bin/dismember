@@ -537,6 +537,8 @@ sub generate_merged_dirname
          $pf .= 'all';
       } else {
          $pf .= join('-', sort(@$functions));
+         $pf = substr($pf, 0, 100) . '...'
+           if length($pf) > 100;
       }
       return $pf;
    }
