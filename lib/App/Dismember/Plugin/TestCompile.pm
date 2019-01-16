@@ -14,7 +14,7 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::TestCompile
 
-Plugin::TestCompile - плагин для тетста компиляции сгенерированного исходного кода
+Plugin::TestCompile - плагин для теста компиляции сгенерированного исходного кода
 
 =head1 OPTIONS
 
