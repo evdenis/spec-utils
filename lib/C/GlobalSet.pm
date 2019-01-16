@@ -74,7 +74,7 @@ sub parse
      qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t|atomic_t)/;
    my $simple_type = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
-   my $optional_init  = qr/(?:\h*+__initdata)?${init}?/;
+   my $optional_init  = qr/(?:\h*+__(?:initdata|lsm_ro_after_init))?${init}?/;
    my $optional_ainit = qr/${array}?${optional_init}/;
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
    my $complex_type   = qr/(?>struct|union|enum)(*SKIP)${s}++${type}/;

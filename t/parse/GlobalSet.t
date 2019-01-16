@@ -16,7 +16,7 @@ $g{$_->name} = $_ foreach @{$set->set};
 cmp_deeply(
    [sort keys %g],
    [
-      qw(chroot_count chroot_srcu cpu_stop current_stack_pointer current_task fs_type read_f socket_update_slock unix_socket_table)
+      qw(chroot_count chroot_srcu cpu_stop current_stack_pointer current_task fs_type read_f smack_hooks socket_update_slock unix_socket_table)
    ],
    'globals'
 );
@@ -74,7 +74,7 @@ cmp_deeply(
    bag(
       ["unix_socket_table"], ["fs_type"], ["socket_update_slock"],   ["current_task"],
       ["cpu_stop"],          ["read_f"],  ["current_stack_pointer"], ["chroot_count"],
-      ["chroot_srcu"]
+      ["chroot_srcu"],       ["smack_hooks"]
    ),
    'ids'
 );
@@ -95,7 +95,15 @@ cmp_deeply(
       ],
       ["_ASM_SP"],
       ["atomic_t", "__read_mostly", "ATOMIC_INIT"],
-      ["DEFINE_SRCU"]
+      ["DEFINE_SRCU"],
+      [
+         ["struct", "security_hook_list"], "__lsm_ro_after_init",
+         "LSM_HOOK_INIT",             "ptrace_access_check",
+         "smack_ptrace_access_check", "ptrace_traceme",
+         "smack_ptrace_traceme",      "syslog",
+         "smack_syslog"
+      ]
+
    ),
    'tags'
 );
@@ -134,3 +142,10 @@ register unsigned long current_stack_pointer asm(_ASM_SP);
 atomic_t chroot_count __read_mostly = ATOMIC_INIT(0);
 
 DEFINE_SRCU(chroot_srcu);
+
+static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
+	LSM_HOOK_INIT(ptrace_access_check, smack_ptrace_access_check),
+	LSM_HOOK_INIT(ptrace_traceme, smack_ptrace_traceme),
+	LSM_HOOK_INIT(syslog, smack_syslog)
+};
+
