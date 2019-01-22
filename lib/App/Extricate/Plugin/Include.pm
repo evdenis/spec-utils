@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::Include;
+package App::Extricate::Plugin::Include;
 
 use warnings;
 use strict;

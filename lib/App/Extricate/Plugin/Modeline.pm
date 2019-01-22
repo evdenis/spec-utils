@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::Modeline;
+package App::Extricate::Plugin::Modeline;
 
 use warnings;
 use strict;

@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::Inline;
+package App::Extricate::Plugin::Inline;
 
 use warnings;
 use strict;

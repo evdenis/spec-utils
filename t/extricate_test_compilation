@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#./dismember -a
+#./extricate -a
 
 if [[ -n $1 && ! -d $1 ]]
 then
-   echo "USAGE: ./dismember_test_comilation dir"
+   echo "USAGE: ./extricate_test_comilation dir"
    exit
 elif [[ -z $1 ]]
 then

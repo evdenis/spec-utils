@@ -11,7 +11,7 @@ $ sudo apt-get install graphviz
 $ sudo dnf install graphviz
 ```
 
-## dismember
+## extricate
 
 Requires gcc. Can be installed from your distribution repo:
 

@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::SmartLib;
+package App::Extricate::Plugin::SmartLib;
 
 use warnings;
 use strict;

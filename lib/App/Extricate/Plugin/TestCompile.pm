@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::TestCompile;
+package App::Extricate::Plugin::TestCompile;
 
 use Pod::Usage;
 use Pod::Find qw(pod_where);

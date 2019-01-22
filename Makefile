@@ -25,7 +25,7 @@ prepare_kernel:
 	&& make modules_prepare
 
 kernel: $(MODULE) prepare_kernel
-	PERL5OPT="$(PERL5OPT) -MDevel::Cover" bin/dismember \
+	PERL5OPT="$(PERL5OPT) -MDevel::Cover" bin/extricate \
 		--full --single --cache=0                   \
 		--plugin=testcompile                        \
 		$(MODULE_FUNCTIONS)                         \

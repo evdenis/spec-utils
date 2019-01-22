@@ -1,4 +1,4 @@
-package App::Dismember::Plugin::Exec;
+package App::Extricate::Plugin::Exec;
 
 use Pod::Usage;
 use Pod::Find qw(pod_where);
@@ -13,7 +13,7 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::Exec
 
-Plugin::Exec - плагин для запуска программы после вывода результатов работы dismember для конкретной функции
+Plugin::Exec - плагин для запуска программы после вывода результатов работы extricate для конкретной функции
 
 =head1 OPTIONS
 

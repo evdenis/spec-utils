@@ -88,7 +88,7 @@ specs-only:
 
 [Пример конфигурации](/config/status_ext2.conf.sample).
 
-## Dismember
+## Extricate
 ```
 full=1
 single=1
@@ -102,7 +102,7 @@ plugin-exec-file=scripts/compile.sh
 ```
 Конфигурация состоит из опций коммандной строки программы. Опции должны располагаться на отдельных строках. Флаги указываются через равенство единице или нулю. Конфигурация будет считываться по-умолчанию, в командной строке можно после переопределить определенные флаги.
 
-[Пример конфигурации](/config/dismember-compile-test.conf.sample).
+[Пример конфигурации](/config/extricate-compile-test.conf.sample).
 
 ## Web
 ```

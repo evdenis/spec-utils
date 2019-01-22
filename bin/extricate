@@ -65,13 +65,13 @@ BEGIN {
 
 =pod
 
-=head1 dismember
+=head1 extricate
 
-dismember - программа для выборки из общего набора исходных кодов ядра и модуля ядра минимального объёма кода для конкретной функции с зависимостями, достаточного для компиляции в объектный файл
+extricate - программа для выборки из общего набора исходных кодов ядра и модуля ядра минимального объёма кода для конкретной функции с зависимостями, достаточного для компиляции в объектный файл
 
 =head1 SYNOPSIS
 
- dismember [options]
+ extricate [options]
 
  Options:
   -k|--kernel dir      - директория с исходными кодами ядра
@@ -210,7 +210,7 @@ my @functions;
 #cache options
 my $cache                = 0;
 my $renew_cache_and_exit = 0;
-my @cache_dir            = (catdir($ENV{HOME}, '.cache', 'dismember'), catdir($FindBin::Bin, '.cache'));
+my @cache_dir            = (catdir($ENV{HOME}, '.cache', 'extricate'), catdir($FindBin::Bin, '.cache'));
 my @cache_file           = (undef, 'kernel.cache', 'kernel_module.cache');
 
 my %config;
@@ -327,7 +327,7 @@ pod2usage({-verbose => 2, -exitval => 0})
 
 if ($list_plugins) {
    my @plugins =
-     map {lc(substr($_, rindex($_, ':') + 1))} Module::Loader->new(max_depth => 1)->search('App::Dismember::Plugin');
+     map {lc(substr($_, rindex($_, ':') + 1))} Module::Loader->new(max_depth => 1)->search('App::Extricate::Plugin');
    print join("\n", @plugins) . "\n";
    exit 0;
 }
@@ -350,7 +350,7 @@ my @plugins;
 my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5, before_exit => 6);
 if (@{$config{plugin}}) {
    my $loader = Module::Loader->new(max_depth => 1);
-   my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Dismember::Plugin');
+   my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Extricate::Plugin');
    foreach my $p (@{$config{plugin}}) {
       if (any {$p eq $_} keys %pmap) {
          ### LOADING PLUGIN: $p
