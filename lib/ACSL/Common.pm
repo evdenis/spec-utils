@@ -117,15 +117,15 @@ sub is_assert
 sub prepare_tags
 {
    my %filter = map {$_ => undef} @{$_[1]};
-   my $token = qr/($acsl_varname)\b/;    #Don't append \b to the beginning
+   my $token = qr/($acsl_varname)\b/;    # don't append \b to the beginning
 
    my $code = substr($_[0], 3);
 
-   #remove strings
+   # remove strings
    $code =~ s/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'//g;
-   #remove behaviors with labels
+   # remove behaviors with labels
    $code =~ s/behavior\s+\w+://g;
-   #remove oneline comments; nested multile are not possible
+   # remove comments; nested multiline are impossible
    $code =~ s!//.*!!g;
 
    my @tokens;
