@@ -1,4 +1,4 @@
-# Инструменты для трансформации кода с сохранением стиля
+# Tools for style-preserving C-code transformations
 [![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
 [![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
 [![Kritika Analysis Status](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/status.svg)](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/)
@@ -6,54 +6,73 @@
 ---
 ![ext2 callgraph](doc/ext2_callgraph_banner.png)
 
-В данном репозитории собран ряд утилит для изучения исходных кодов модуля ядра Linux и для работы с ними. Программы имеют внешние по perl модулям и другим программам. Для того, чтобы установить perl модули необходимо выполнить команды:
+Russian version of the page is available by the link [doc/README_ru.md](doc/README_ru.md)
+
+The repository contains a number of tools for analyzing Linux kernel code.
+The tools depend on external Perl modules.
+To install the instruments, one needs to run the commands:
 <pre>
-cpan cpanm
-cpanm --with-all-features --installdeps .
+$ cpan cpanm
+$ cpanm --with-all-features --installdeps .
 </pre>
 
-Зависимости по иным программам описываются на отдельной странице [doc/EXTERNAL_DEPS.md](doc/EXTERNAL_DEPS.md)
+Other external dependencies are described at the page [doc/EXTERNAL_DEPS.md](doc/EXTERNAL_DEPS.md)
 
-Для удобства работы с программами можно задать переменные окружения:
-* **CURRENT_PROJECT** - директория с исходными кодами исследуемого модуля ядра Linux
-* **CURRENT_KERNEL**  - директория с исходными кодами ядра Linux с которым сочетается модуль
+All tools share the same cli options for specifying the kernel directory and a particular kernel module.
+For convenience it is possible to set these directories as environment variables:
+* **CURRENT_PROJECT** - directory of a Linux kernel module of interest
+* **CURRENT_KERNEL**  - directory of Linux kernel code
 
-# Краткое описание функциональности программ
+# Short description of the tools
 
-Каждая из программ имеет собственную man документацию, которая доступна по ключу --help. Здесь сведено вместе краткое описание программ, их функциональности и предназначения.
+Each tool has its own man documentation available by the --help argument.
+Here is a brief overview of the tools, their functionality, and purpose.
 
-## Трансформация исходных кодов
+## Source code transformation
 
-Данные программы используются для работы с исходными кодами и разработки спецификаций.
+These two programs are used mainly to write ACSL specifications for kernel code.
 
-* **extricate** - из исходных кодов "вытаскиваются" все зависимости для конкретных функций так, чтобы компилятор мог создать отдельный объектный файл. У инструментов верификации вызывает затруднение работа с большими объёмами кода, что проявляется в существенном замедлении их работы. Программа позволяет многократно сократить объём исходного кода за счёт того, что неиспользуемый код исключается. В получившемся коде функции расположены в соответствии с графом их вызовов, структуры и остальные сущности расположены так, чтобы программисту было наиболее удобно работать с получившимся набором исходных кодов.
+* **extricate** - extracts all dependencies from the source code for
+particular functions in a way, a compiler can build an object file after.
+For verifications tools (e.g., Frama-C) it's difficult to work with with
+large codebases (e.g., > 100000 sloc), this result in a significant
+slowdown of their work. The "extricate" tool allow one to reduce a
+source code size by extracting only relevant parts of it.
+In a resulting code, functions are ordered in accordance
+with their callgraph.
 [![asciicast](https://asciinema.org/a/186080.png)](https://asciinema.org/a/186080)
-* **merge** - спецификации переносятся с одного набора исходных кодов на другой. Осуществляется полуавтоматическим образом. В случае невозможности автоматического разрешения конфликтов вызывается внешняя программа. Расположение функций в файлах не имеет значения.
+* **merge** - semi-automatically moves ACSL specifications from one
+codebase to another without relying on a particular sources structure.
+In case of a conflict call an external diff tool, e.g., meld, kdiff3.
+The location of the functions in the files does not matter.
 [![asciicast](https://asciinema.org/a/186083.png)](https://asciinema.org/a/186083)
 
-## Информация из исходных кодов
+## Gathering information from sources
 
-Данные программы предназначены для изучения исходных кодов модуля ядра как самостоятельного объекта. А также для изучения взаимодействия модулей с интерфейсом ядра. Используются при исследовании новых релизов исходных кодов, для подготовки отчётов и планирования работ.
+These tools are designed to examine the source code of a kernel module
+of interest, to inspect an interaction between a module and the kernel.
+Used for exploring new source code releases and for reporting and
+verification planning.
 
-* **graph** - строит карту исходных кодов. Карта представляет собой граф вызовов функций модуля ядра.
-* **graph_diff** - строит карту различий между версиями графов вызовов разных релизов.
-* **complexity_plan** - строит таблицу функций, где отображены метрики их сложности.
-* **headers** - строит карту подключений заголовочных файлов в исходном коде.
-* **calls** - программа для анализа и сбора статистики вызовов функций и функциональных макросов в модуле ядра. Автоматическое определение сущности функция/макрос, и места определения ядро/модуль.
-* **lsm_diff** - программа для анализа интерфейса lsm ядра и его использования в модуле ядра.
-* **stapgen** - по исходным кодам ядра создаёт скрипт для systemtap. Скрипт в динамике перехватывает вызовы lsm интерфейса ядра, осуществляет логирование параметров и контекста вызова функции. Позволяет отследить какие действия в ОС, приводят к вызову конкретных функций интерфейса lsm.
-* **get_preprocessed** - осуществляет частичный (раскрываются только макросы ядра) либо полный препроцессинг исходных кодов модуля ядра.
-* **recursion** - программа для детектирования рекурсии (прямой/косвенной) в исходных кодах модуля ядра Linux.
-* **count_specifications** - программа для подсчета количества строк спецификаций на языке ACSL.
-* **list_functions** - программа для вывода "плоского" списка функций модуля в соответствии с приоритетом.
+* **graph** - creates a source code map. A map is a callgraph of module functions.
+* **graph_diff** - creates a map of callgraphs differences between two source code releases.
+* **complexity_plan** - creates a report of functions metrics reflecting their complexity.
+* **headers** - creates an "inclusion" map for header files.
+* **calls** - the tool for analyzing and collecting statistics of functions and macros calls in a kernel module.
+* **lsm_diff** - the tool for analyzing the LSM interface of the kernel and its use in a kernel module.
+* **stapgen** - based on the source codes creates a script for SystemTap. The script dynamically intercepts the LSM interface calls, logs the arguments and a context of a function call. Allows one to keep track of what actions in the OS lead to calls of specific LSM functions.
+* **get_preprocessed** - performs partial (only kernel macros are inlined) or full preprocessing of of a kernel module source code.
+* **recursion** - the tool for detecting a direct and an indirect recursion in a kernel module source code.
+* **count_specifications** - counts number of lines of ACSL specifications in sources.
+* **list_functions** - outputs a "flat" list of a module functions in accordance with verification priorities.
 
-Форматы конфигурационных файлов для этих программ описываются в отдельном файле [doc/FORMAT.md](doc/FORMAT.md)
+Formats of configuration files for these tools are described in a separate file [doc/FORMAT.md](doc/FORMAT.md)
 
-# Интерактивная карта
+# Interactive callgraph map
 
-## Пример карты для файловой системы fs/ext2
+## Callgraph example for the fs/ext2 module
 
-Разворачивается через docker. После карта доступна локально через проброс портов.
+The example is deployment through the Docker. The callgraph map is available at localhost via port forwarding.
 ```bash
 docker build -t ext2_callgraph .
 docker run -d -p 127.0.0.1:8889:80 ext2_callgraph
@@ -62,37 +81,42 @@ firefox http://localhost:8889/graph
 
 [![ext2 web callgraph demo](https://img.youtube.com/vi/AuUsaleib9M/0.jpg)](https://www.youtube.com/watch?v=AuUsaleib9M)
 
-## Адрес
+## Address
 
-* только изображение: [http://localhost:8889/graph/image](http://localhost:8889/graph/image)
+* only image: [http://localhost:8889/graph/image](http://localhost:8889/graph/image)
 * html: [http://localhost:8889/graph](http://localhost:8889/graph)
 
-Передвижение по карте - передвинуть указатель к границе окна. Изменить масштаб - колёсико мышки.
+Here is a brief overview of the tools, their functionality, and purpose.
+To move across the map one needs to move the mouse pointer to borders.
+To change a scale - mouse wheel.
 
-## GET параметры
+## GET parameters
 
-* fmt=fmt - формат (svg|png|jpeg)
-* func=func1,func2,... - функции через запятую (отображать не всю карту, а только от заданных функций)
-* level=n - строить карту от функций приоритета n
-* no-display-done=(0|1) - не отображать на карте проверифицированные функции (по умолчанию 0)
-* reverse=(0|1) - строить карту не сверху вниз(какие функции вызываются из функций), а снизу вверх (какие функции могут вызвать функции) (по умолчанию 0)
-* from-done=(0|1) - строить карту от проверифицированных функций (по умолчанию 0)
-* available=(0|1) - показать доступные для верификации функции, исходя из проверифицированных к текущему моменту функций (по умолчанию 0)
-* legenda=(0|1) - отображать список приоритетов на карте (по умолчанию 1)
+* fmt=fmt - image format (svg|png|jpeg)
+* func=func1,func2,... - functions separated by commas (display not a whole callgraph, but only from the functions)
+* level=n - display a map for a set of functions of verification priority n
+* no-display-done=(0|1) - don't display verified functions (default - 0)
+* from-done=(0|1) - display a callgraph starting from verified functions (default - 0)
+* reverse=(0|1) - display a callgraph (caller->callee) in the reversed order (callee->caller) (default - 0)
+* available=(0|1) - display functions available for verification, based on a set of currently verified functions (default - 0)
+* legenda=(0|1) - display priority list on the map (default - 1)
 
-Пример: [http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod](http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod)
+Example: [http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod](http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod)
 
-Карта генерируется по коду для каждого запроса. Соответственно, если код/настройки уровней приоритетов меняются, то это будет отображено при следующем запросе. По умолчанию формат - svg. Если кликнуть мышкой по вершине, то будет осуществлён переход по адресу http://localhost:8889/graph/image?func={имя_вершины}
+A callgraph map is generated for each request. If priorities settings,
+set of verified functions or code is changed it will be displayed on a
+next request (for example, page reload). The default format is svg.
+If you click on a node, page will be reloaded with request
+http://localhost:8889/graph/image?func={node_name}
 
 # How to Contribute
 
-* Проще всего начать исправлять замечания с [kritika.io](https://kritika.io/users/evdenis/repos/9148422910107407/)
-* Убрать все experimental конструкции
-* Вычистить smart-matching
-* Минимизировать использование lib/Local функций, заменить их на функции из других библиотек (List::Utils, List::MoreUtils)
-* Добавить тестов на другие модули ядра для extricate
-* Добавить тестов на другие утилиты (например, сравнение генерируемых dot файлов для graph)
-* Использовать Dist::Zilla или другую систему и залить исходных код в CPAN
-* Добавить ```--help``` для описания параметров утилит, в которых это еще не сделано
-* Упростить кастомизацию регулярок из ```*Set.p``` модулей (добавить возможность их конфигурации на основе выделения стандартных конструкций и типовых использований макросов)
+* The easiest thing is to start fix the warnings [kritika.io](https://kritika.io/users/evdenis/repos/9148422910107407/)
+* Remove all experimental constructions
+* Get rid of smart-matching
+* Minimize use of lib/Local functions, replace them with functions from other libraries (List::Utils, List::MoreUtils)
+* Add tests for other tools (for example, comparing of dot files generated by graph)
+* Use Dist::Zilla or another system and upload the source code to CPAN
+* Add ```--help``` to describe tools parameters where this has not yet been done
+* Simplify the customization of regular expressions from ```* Set.p``` modules (add the ability to configure them based on the selection of standard constructions and macro use patterns)
 * ...
