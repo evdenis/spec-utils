@@ -4,7 +4,7 @@
 [![Kritika Analysis Status](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/status.svg)](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/)
 
 ---
-![ext2 callgraph](doc/ext2_callgraph_banner.png)
+![ext2 callgraph](ext2_callgraph_banner.png)
 
 В данном репозитории собран ряд утилит для изучения исходных кодов модуля ядра Linux и для работы с ними. Программы имеют внешние по perl модулям и другим программам. Для того, чтобы установить perl модули необходимо выполнить команды:
 <pre>
@@ -12,7 +12,7 @@ cpan cpanm
 cpanm --with-all-features --installdeps .
 </pre>
 
-Зависимости по иным программам описываются на отдельной странице [doc/EXTERNAL_DEPS.md](doc/EXTERNAL_DEPS.md)
+Зависимости по иным программам описываются на отдельной странице [EXTERNAL_DEPS.md](EXTERNAL_DEPS.md)
 
 Для удобства работы с программами можно задать переменные окружения:
 * **CURRENT_PROJECT** - директория с исходными кодами исследуемого модуля ядра Linux
@@ -47,7 +47,7 @@ cpanm --with-all-features --installdeps .
 * **count_specifications** - программа для подсчета количества строк спецификаций на языке ACSL.
 * **list_functions** - программа для вывода "плоского" списка функций модуля в соответствии с приоритетом.
 
-Форматы конфигурационных файлов для этих программ описываются в отдельном файле [doc/FORMAT.md](doc/FORMAT.md)
+Форматы конфигурационных файлов для этих программ описываются в отдельном файле [FORMAT.md](FORMAT.md)
 
 # Интерактивная карта
 
