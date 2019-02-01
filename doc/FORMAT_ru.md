@@ -1,8 +1,6 @@
-# Configuration files format
-
-## Verification Priorities
-
-YAML format. The example:
+# Формат конфигурационных файлов
+## Priority
+Используется YAML. Структура в общем виде:
 ```YAML
 priority:
    lists:
@@ -31,21 +29,16 @@ priority:
         ...
         *n : <color>
 ```
-Where:
-   - **\<function\>** - a function name, e.g., "main"
-   - **\<color\>** - color for priority, e.g., "lightcyan"
+Где:
+   - **\<function\>** - имя функции в исходных кодах, например, "main"
+   - **\<color\>** - имя цвета в тестовой нотации, например, "lightcyan"
 
-The number of priorities is not fixed.
-The number of colors should correspond to the number of priorities.
-Color names can be taken from [graphviz documentation](http://www.graphviz.org/content/color-names).
-A function name can occur only once in configuration (should be unique).
+Количество приоритетов произвольно. Количество цветов должно соответствовать количеству приоритетов. Имена цветов можно брать из [документации программы dot](http://www.graphviz.org/content/color-names). Функции должны быть уникальны в каждом приоритете.
 
-[The example for ext2 fs driver](config/priority_ext2.conf.sample).
+[Пример конфигурации](/config/priority_ext2.conf.sample).
 
 ## Issues
-
-YAML format. The example:
-
+Используется YAML. Структура в общем виде:
 ```YAML
 issues:
    <name>:
@@ -56,16 +49,13 @@ issues:
       re: '<regexp>'
    ...
 ```
+Где:
+   - **\<name\>** - краткое имя-идентификатор, например, '#41'
+   - **\<description\>** - развёрнутое описание проблемы, например, 'Проблемы с моделированием аллокации памяти'
+   - **\<regexp\>** - регулярное выражение для поиска по коду функции, например, '\bmalloc\b'
 
-Where:
-   - **\<name\>** - issue id number, e.g., '#41'
-   - **\<description\>** - description, e.g., "Can't verify functions with allocation"
-   - **\<regexp\>** - regular expression to check the body of a function, e.g., '\bmalloc\b'
-
-## Verification Status
-
-YAML format. The example:
-
+## Status
+Используется YAML. Структура в общем виде:
 ```YAML
 done:
    - <function>
@@ -87,17 +77,16 @@ specs-only:
    - <function>
    ...
 ```
-
-Where:
-   - **done** - list of fully-verified functions
-   - **lemma-proof-required** - list of fully-verified functions, except proofs for lemmas they rely on
-   - **partial-specs** - list of functions with draft contracts
-   - **specs-only** - list of functions with contracts, that we can't prove for some reason
-   - **\<function\>** - a function name, e.g., "main"
+Где:
+   - **done** - доказанные функции
+   - **lemma-proof-required** - функции, доказанные без доказательства лемм
+   - **partial-specs** - функции с не до конца разработанными(частичными) спецификациями
+   - **specs-only** - функции с разработанными спецификациями, которые не могут быть доказаны
+   - **\<function\>** - имя функции в исходных кодах, например, "main"
 
 Функция не может одновременно присутствовать в разных категориях.
 
-[The sample confoguration for ext2 driver](/config/status_ext2.conf.sample).
+[Пример конфигурации](/config/status_ext2.conf.sample).
 
 ## Extricate
 ```
