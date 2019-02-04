@@ -9,19 +9,24 @@ use Exporter qw(import);
 use IPC::Open2;
 use Carp;
 use Cwd qw(realpath);
+use Configuration::Linux qw(
+   get_include_paths
+   add_defines
+   add_includes
+);
 
 use constant SPECIAL_MARK => '#pragma <special_mark>';
 
 our @EXPORT_OK = qw(
-  get_macro
-  preprocess
-  preprocess_directives_noincl
-  preprocess_directives
-  preprocess_as_kernel_module
-  preprocess_as_kernel_module_simpl
-  preprocess_as_kernel_module_nocomments
-  preprocess_as_kernel_module_directives
-  preprocess_as_kernel_module_get_macro_simpl
+   get_macro
+   preprocess
+   preprocess_directives_noincl
+   preprocess_directives
+   preprocess_as_kernel_module
+   preprocess_as_kernel_module_simpl
+   preprocess_as_kernel_module_nocomments
+   preprocess_as_kernel_module_directives
+   preprocess_as_kernel_module_get_macro_simpl
 );
 
 sub call_gcc
@@ -146,17 +151,6 @@ sub preprocess_directives
    _generic_preprocess_directives('-E -CC -fdirectives-only -nostdinc ', @_);
 }
 
-my @kernel_include_path = qw(
-  arch/x86/include/
-  arch/x86/include/generated/
-  include/
-  include/generated/
-  arch/x86/include/uapi/
-  arch/x86/include/generated/uapi/
-  include/uapi/
-  include/generated/uapi/
-);
-
 my $last_path        = '';
 my $gcc_include_path = undef;
 my $stdlib           = undef;
@@ -175,7 +169,7 @@ sub form_gcc_kernel_include_path
    $last_path        = $kdir_path;
    $gcc_include_path = '';
 
-   $gcc_include_path .= "-I ${kdir_path}/${_} " foreach @kernel_include_path;
+   $gcc_include_path .= "-I ${kdir_path}/${_} " foreach get_include_paths();
 
    unless (defined $stdlib) {
       my @str = split "\n", qx(gcc -print-search-dirs);
@@ -185,16 +179,6 @@ sub form_gcc_kernel_include_path
    $gcc_include_path .= "-I $stdlib";
 
    $gcc_include_path;
-}
-
-sub _add_kernel_kconfig
-{
-   $_[0] = "#include <linux/kconfig.h>\n\n" . $_[0];
-}
-
-sub _add_kernel_defines
-{
-   $_[0] = "#define __KERNEL__ 1\n#define MODULE 1\n\n" . $_[0];
 }
 
 # kernel directory
@@ -207,8 +191,8 @@ sub __generic_preprocess_as_kernel_module
 
    return ([], {}) unless ${$_[0]};
 
-   _add_kernel_kconfig(${$_[0]});
-   _add_kernel_defines(${$_[0]});
+   add_includes(${$_[0]});
+   add_defines(${$_[0]});
 
    my $argline = pop @_;
    $argline .= ' ' . form_gcc_kernel_include_path($kdir);
@@ -243,8 +227,8 @@ sub preprocess_as_kernel_module_simpl
       return $_[2] ? [] : \undef;
    }
 
-   _add_kernel_kconfig(${$_[1]});
-   _add_kernel_defines(${$_[1]});
+   add_includes(${$_[1]});
+   add_defines(${$_[1]});
    call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
@@ -254,8 +238,8 @@ sub preprocess_as_kernel_module_get_macro_simpl
       return $_[2] ? [] : \undef;
    }
 
-   _add_kernel_kconfig(${$_[1]});
-   _add_kernel_defines(${$_[1]});
+   add_includes(${$_[1]});
+   add_defines(${$_[1]});
    call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
