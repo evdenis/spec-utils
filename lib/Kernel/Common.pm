@@ -7,6 +7,7 @@ use feature qw(state);
 use Local::List::Util qw(any);
 use File::Spec::Functions qw(catfile);
 use Exporter qw(import);
+use Configuration::Linux qw(get_files_to_check_repo);
 
 our @EXPORT_OK = qw(check_kernel_dir check_kernel_files_readable autodetect_kernel_directory);
 
@@ -24,8 +25,8 @@ sub check_kernel_dir ($)
       my @files = readdir $kdir;
       closedir $kdir;
 
-      #Check for standard files
-      foreach (qw(Kconfig Makefile drivers include arch kernel security)) {
+      # Check for standard files
+      foreach (get_files_to_check_repo()) {
          goto OUT
            unless any($_, \@files);
       }

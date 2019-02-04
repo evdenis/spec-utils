@@ -6,10 +6,22 @@ use warnings;
 use Exporter qw(import);
 
 our @EXPORT_OK = qw(
+   use_stdlib
+   get_files_to_check_repo
    get_include_paths
    add_defines
    add_includes
 );
+
+sub use_stdlib
+{
+   return ' -nostdinc ';
+}
+
+sub get_files_to_check_repo
+{
+   return qw(Kconfig Makefile drivers include arch kernel security);
+}
 
 sub get_include_paths
 {

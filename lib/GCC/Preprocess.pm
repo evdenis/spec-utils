@@ -10,6 +10,7 @@ use IPC::Open2;
 use Carp;
 use Cwd qw(realpath);
 use Configuration::Linux qw(
+   use_stdlib
    get_include_paths
    add_defines
    add_includes
@@ -88,7 +89,7 @@ sub preprocess_directives_noincl
 
    _comment_includes(\$code);
 
-   $code = call_gcc('-E -P -C -fdirectives-only -nostdinc ', \$code, $_[2]);
+   $code = call_gcc('-E -P -C -fdirectives-only ' . use_stdlib(), \$code, $_[2]);
 
    _uncomment_includes($code);
 
@@ -148,7 +149,7 @@ sub _generic_preprocess_directives
 # additional directives
 sub preprocess_directives
 {
-   _generic_preprocess_directives('-E -CC -fdirectives-only -nostdinc ', @_);
+   _generic_preprocess_directives('-E -CC -fdirectives-only ' . use_stdlib(), @_);
 }
 
 my $last_path        = '';
@@ -162,9 +163,6 @@ sub form_gcc_kernel_include_path
    if ($last_path eq $kdir_path && defined $gcc_include_path) {
       return $gcc_include_path;
    }
-
-   croak("$kdir_path is not a kernel directory.")
-     unless -e "$kdir_path/Kconfig";
 
    $last_path        = $kdir_path;
    $gcc_include_path = '';
@@ -205,19 +203,19 @@ sub __generic_preprocess_as_kernel_module
 
 sub preprocess_as_kernel_module_directives
 {
-   push @_, '-E -CC -fdirectives-only -nostdinc ';
+   push @_, '-E -CC -fdirectives-only ' . use_stdlib();
    goto \&__generic_preprocess_as_kernel_module;
 }
 
 sub preprocess_as_kernel_module
 {
-   push @_, '-E -CC -nostdinc ';
+   push @_, '-E -CC ' . use_stdlib();
    goto \&__generic_preprocess_as_kernel_module;
 }
 
 sub preprocess_as_kernel_module_nocomments
 {
-   push @_, '-E -nostdinc ';
+   push @_, '-E ' . use_stdlib();
    goto \&__generic_preprocess_as_kernel_module;
 }
 
@@ -229,7 +227,7 @@ sub preprocess_as_kernel_module_simpl
 
    add_includes(${$_[1]});
    add_defines(${$_[1]});
-   call_gcc('-E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
+   call_gcc('-E -P ' . use_stdlib() . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
 sub preprocess_as_kernel_module_get_macro_simpl
@@ -240,7 +238,7 @@ sub preprocess_as_kernel_module_get_macro_simpl
 
    add_includes(${$_[1]});
    add_defines(${$_[1]});
-   call_gcc('-dM -E -P -nostdinc ' . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
+   call_gcc('-dM -E -P ' . use_stdlib() . form_gcc_kernel_include_path($_[0]), @_[1, 2]);
 }
 
 1;
