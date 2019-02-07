@@ -64,8 +64,8 @@ merge - Переложение спецификаций с одной верси
 
  merge [options]
  Options:
-  -f|--from dir         - откуда переносятся спецификации
-  -t|--to dir           - куда переносятся спецификации
+  -f|--from file|dir    - откуда переносятся спецификации
+  -t|--to file|dir      - куда переносятся спецификации
   -s|--skip f1,f2,f3... - пропустить функции f1, f2, f3 ...
   -v|--verbose          - более детальные сообщения
   -m|--manual           - не пытаться переносить спецификации внутри функций автоматически
@@ -77,11 +77,11 @@ merge - Переложение спецификаций с одной верси
 
 =over 8
 
-=item B<-f|--from dir>
+=item B<-f|--from file|dir>
 
 Указание на директорию, откуда переносятся спецификации. По умолчанию - текущая директория.
 
-=item B<-t|--to dir>
+=item B<-t|--to file|dir>
 
 Указание на директорию, куда переносятся спецификации. По умолчанию директория берётся из переменной окружения CURRENT_PROJECT.
 
@@ -154,7 +154,8 @@ if (@ARGV) {
 @skip = split(/,/, join(',', @skip));
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({-msg => "Wrong arguments.\n", -exitval => 2}) unless -d $module_dir && -d $specs_dir;
+pod2usage({-msg => "Wrong arguments.\n", -exitval => 2})
+   unless -r $module_dir && -r $specs_dir;
 
 my (undef, $col) = window_size();
 my $delimeter = '-' x $col;
