@@ -12,15 +12,19 @@ our @EXPORT_OK = qw(find_all merge merge_all);
 
 sub find_all ($$)
 {
-   my $dir  = shift;
+   my $dirs = shift;
    my $mask = shift;
    my @files;
+
+   if (ref($dirs) ne 'ARRAY') {
+      $dirs = [ $dirs ];
+   }
 
    finddepth(
       {
          wanted => sub {push @files, realpath($File::Find::name) if m/${mask}/}
       },
-      realpath($dir)
+      map { realpath $_ } @$dirs
    );
 
    @files;

@@ -124,9 +124,8 @@ merge - Переложение спецификаций с одной верси
 =cut
 
 my $help = 0;
-# '' need for -d checking
-my $module_dir = $ENV{CURRENT_PROJECT} // '';
-my $specs_dir  = '.';
+my @module_dir;
+my @specs_dir;
 my $strict     = 1;
 my $kdiff      = 0;
 my $tr_wh      = 0;
@@ -135,8 +134,8 @@ my $manual     = 1;
 my @skip;
 
 GetOptions(
-   'from|f=s'     => \$specs_dir,
-   'to|t=s'       => \$module_dir,
+   'from|f=s'     => \@specs_dir,
+   'to|t=s'       => \@module_dir,
    'skip|s=s{1,}' => \@skip,
    'strict!'      => \$strict,
    'kdiff|k!'     => \$kdiff,
@@ -146,6 +145,12 @@ GetOptions(
    'help|h'       => \$help,
 ) or pod2usage(1);
 
+# Default value for from/to arguments
+@module_dir = ($ENV{CURRENT_PROJECT} // '')
+   unless @module_dir;
+@specs_dir = ('.')
+   unless @specs_dir;
+
 if (@ARGV) {
    warn "Unknown options '@ARGV'\n";
    pod2usage(1);
@@ -154,15 +159,18 @@ if (@ARGV) {
 @skip = split(/,/, join(',', @skip));
 
 pod2usage({-verbose => 2, -exitval => 0}) if $help;
-pod2usage({-msg => "Wrong arguments.\n", -exitval => 2})
-   unless -r $module_dir && -r $specs_dir;
+
+foreach (@module_dir, @specs_dir) {
+   pod2usage({ -msg => "Can't read file/dir $_.\n", -exitval => 2 })
+      unless -r $_;
+}
 
 my (undef, $col) = window_size();
 my $delimeter = '-' x $col;
 
 #Global variables from C::Util::Transformation
 my $comment_re = $comment_t{pattern};
-my $macro_re   = $macro_t{pattern};
+# my $macro_re   = $macro_t{pattern};
 
 sub call_meld
 {
@@ -371,13 +379,13 @@ sub move_pre_function_specs
    @exclude_specs;
 }
 
-### Fetching specifications from dir: $specs_dir
-my %specs = fetch_specifications($specs_dir);
+### Fetching specifications from files/dirs: @specs_dir
+my %specs = fetch_specifications(\@specs_dir);
 die(RED . "Can't find specifications sources." . RESET . "\n")
   unless %specs;
 
-### Fetching module sources from dir: $module_dir
-my %module = fetch_module_sources($module_dir);
+### Fetching module sources from files/dirs: @module_dir
+my %module = fetch_module_sources(\@module_dir);
 die(RED . "Can't find module sources." . RESET . "\n")
   unless %module;
 
