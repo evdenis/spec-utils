@@ -6,6 +6,7 @@ use strict;
 use Pod::Usage;
 use Pod::Find qw(pod_where);
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
+use RE::Common qw($varname);
 
 =encoding utf8
 
@@ -68,7 +69,7 @@ sub process_options
    my %rewrite;
    foreach (@rewrite) {
       chomp;
-      if (m/\A([a-zA-Z_]\w+)\^(.*)\Z/) {
+      if (m/\A$varname\^(.*)\Z/) {
          $rewrite{$1} = $2;
       } else {
          die "Can't parse rewrite id '$_'\n";

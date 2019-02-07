@@ -51,7 +51,7 @@ sub process_options
 sub level
 {
    return (
-      post_output => 99,
+      post_output => 90,
       before_exit => 99
    );
 }
