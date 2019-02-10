@@ -405,8 +405,8 @@ foreach (0 .. $#comments) {
    }
 }
 
-my %s;
-my %m;
+my %from;
+my %to;
 {
    my $special_chars = join('', uniq(@comment_t{qw/L R/}));
    my $ret           = qr/(?<ret>[\w${special_chars}][\w\s\*${special_chars}]+)/;
@@ -427,24 +427,24 @@ my %m;
         if $body;
 
       if (@specs_ids) {
-         if (exists $s{$name}) {
+         if (exists $from{$name}) {
             delete @acsl_specs{@specs_ids};
             print BLUE . "Specifications for function $name have been already parsed: ignoring." . RESET . "\n";
             if ($verbose > 1) {
                print join("\n", map {$comments[$_]} sort {$a <=> $b} @specs_ids) . "\n";
             }
          } else {
-            $s{$name}{ret}  = $ret;
-            $s{$name}{args} = $args;
+            $from{$name}{ret}  = $ret;
+            $from{$name}{args} = $args;
 
-            $s{$name}{body} = $body
+            $from{$name}{body} = $body
               if $body;
          }
       }
    }
 
    #Most efficient way to do this.
-   delete @s{@skip};
+   delete @from{@skip};
 
    foreach (keys %module) {
       while ($module{$_}{code} =~ m/$func_re/g) {
@@ -455,32 +455,32 @@ my %m;
             next;
          }
 
-         if (exists $s{$name} && !exists $m{$name}) {
-            if ($exists_body == exists $s{$name}{body}) {
+         if (exists $from{$name} && !exists $to{$name}) {
+            if ($exists_body == exists $from{$name}{body}) {
                if ($exists_body) {
-                  $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
-                  $m{$name}{body} = $body;
+                  $to{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
+                  $to{$name}{body} = $body;
                } else {
                   next
                     unless contains_specs $ret, $module{$_}{i};
                }
 
-               $m{$name}{file} = $_;
+               $to{$name}{file} = $_;
 
-               $m{$name}{ret_idx} = [$-[1], $+[1] - $-[1]];
-               $m{$name}{ret}     = $ret;
-               $m{$name}{args}    = $args;
+               $to{$name}{ret_idx} = [$-[1], $+[1] - $-[1]];
+               $to{$name}{ret}     = $ret;
+               $to{$name}{args}    = $args;
             }
          }
       }
    }
 }
 
-foreach (keys %s) {
-   next unless exists $m{$_};
+foreach (keys %from) {
+   next unless exists $to{$_};
 
-   my $cs   = $s{$_};
-   my $cm   = $m{$_};
+   my $cs   = $from{$_};
+   my $cm   = $to{$_};
    my $file = $cm->{file};
 
    #additional checks
