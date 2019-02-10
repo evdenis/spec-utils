@@ -414,13 +414,11 @@ my %to;
    my $args          = qr'(?>(?<args>\((?:(?>[^\(\)]+)|(?&args))*\)))';
    my $body          = qr'(?>(?<body>\{(?:(?>[^\{\}]+)|(?&body))*\}))';
    my $func_re       = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
+   my $skip_func     = qr/else|return|(?:\A${s}++\z)/;
 
    while ($code =~ m/$func_re/g) {
       my ($name, $ret, $args, $body) = @+{qw(name ret args body)};
-
-      if ($ret =~ m/else|return/ || index($args, '=') != -1) {
-         next;
-      }
+      next if $ret =~ $skip_func;
 
       my @specs_ids = get_specs_ids($ret, \%acsl_specs);
       push @specs_ids, get_specs_ids($body, \%acsl_specs)
