@@ -416,10 +416,15 @@ my %m;
    my $func_re       = qr/$ret${s}*+\b$name${s}*+$args${s}*+(?:$body|;)/;
 
    while ($code =~ m/$func_re/g) {
-      my $name = $+{name};
-      my @specs_ids = get_specs_ids($+{ret}, \%acsl_specs);
-      push @specs_ids, get_specs_ids($+{body}, \%acsl_specs)
-        if exists $+{body};
+      my ($name, $ret, $args, $body) = @+{qw(name ret args body)};
+
+      if ($ret =~ m/else|return/ || index($args, '=') != -1) {
+         next;
+      }
+
+      my @specs_ids = get_specs_ids($ret, \%acsl_specs);
+      push @specs_ids, get_specs_ids($body, \%acsl_specs)
+        if $body;
 
       if (@specs_ids) {
          if (exists $s{$name}) {
@@ -429,11 +434,11 @@ my %m;
                print join("\n", map {$comments[$_]} sort {$a <=> $b} @specs_ids) . "\n";
             }
          } else {
-            $s{$name}{ret}  = $+{ret};
-            $s{$name}{args} = $+{args};
+            $s{$name}{ret}  = $ret;
+            $s{$name}{args} = $args;
 
-            $s{$name}{body} = $+{body}
-              if exists $+{body};
+            $s{$name}{body} = $body
+              if $body;
          }
       }
    }
@@ -443,22 +448,28 @@ my %m;
 
    foreach (keys %module) {
       while ($module{$_}{code} =~ m/$func_re/g) {
-         my $name = $+{name};
+         my ($name, $ret, $args, $body) = @+{qw(name ret args body)};
+         my $exists_body = exists $+{body};
+
+         if ($ret =~ m/else|return/ || index($args, '=') != -1) {
+            next;
+         }
+
          if (exists $s{$name} && !exists $m{$name}) {
-            if (exists $+{body} == exists $s{$name}{body}) {
-               if (exists $+{body}) {
+            if ($exists_body == exists $s{$name}{body}) {
+               if ($exists_body) {
                   $m{$name}{body_idx} = [$-[4], $+[4] - $-[4]];
-                  $m{$name}{body} = $+{body};
+                  $m{$name}{body} = $body;
                } else {
                   next
-                    unless contains_specs $+{ret}, $module{$_}{i};
+                    unless contains_specs $ret, $module{$_}{i};
                }
 
                $m{$name}{file} = $_;
 
                $m{$name}{ret_idx} = [$-[1], $+[1] - $-[1]];
-               $m{$name}{ret}     = $+{ret};
-               $m{$name}{args}    = $+{args};
+               $m{$name}{ret}     = $ret;
+               $m{$name}{args}    = $args;
             }
          }
       }
