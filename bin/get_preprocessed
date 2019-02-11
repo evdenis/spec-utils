@@ -27,6 +27,7 @@ package TS {
    use MooseX::App::Simple qw(Color);
 
    use Kernel::Module qw(prepare_module_sources preprocess_module_sources);
+   use Configuration qw(switch_system);
    use C::Util::Transformation;
 
    option 'preprocess' => (
@@ -60,6 +61,14 @@ package TS {
       required      => 0,
       cmd_aliases   => [qw(mn)],
       documentation => 'module name (e.g. fat vfat msdos)'
+   );
+
+   option 'type' => (
+      is            => 'ro',
+      isa           => 'Str',
+      required      => 0,
+      cmd_aliases   => [qw(t)],
+      documentation => 'System type: Linux Kernel, Contiki-NG'
    );
 
    option 'strings' => (
@@ -98,6 +107,11 @@ package TS {
         unless -d $self->kernel;
       die "Please, provide valid path to module.\n"
         unless -d $self->module;
+
+      if ($self->type) {
+         die "Unknown system type " . $self->type . "\n"
+            unless switch_system($self->type);
+      }
 
       my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;
       my $source = ($func->($self->kernel, $self->module, $self->mname, ["#define SPECIFICATION 1\n"]))[1];

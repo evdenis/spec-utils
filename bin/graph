@@ -36,6 +36,7 @@ use Local::Config qw(find_config load_config merge_config_keys);
 use Local::Config::Format qw(check_issues_format check_priority_format check_status_format);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use App::Graph;
+use Configuration qw(switch_system);
 
 BEGIN {
    eval {
@@ -277,6 +278,7 @@ my %args;
 $args{kernel_dir}       = undef;
 $args{module_dir}       = undef;
 $args{mname}            = undef;
+$args{type}             = undef;
 $args{functions}        = [];
 $args{format}           = 'svg';
 $args{out}              = 'graph';
@@ -319,6 +321,7 @@ GetOptions(
    'module|m=s'        => \$args{module_dir},
    'kernel|k=s'        => \$args{kernel_dir},
    'mname=s'           => \$args{mname},
+   'type|t=s'          => \$args{type},
    'cache!'            => \$args{cache},
    'renew-cache'       => \$args{renew_cache},
    'done!'             => \$args{done},
@@ -340,6 +343,13 @@ GetOptions(
    'help|h'            => \$help
 ) or pod2usage(1);
 
+pod2usage({-verbose => 2, -exitval => 0}) if $help;
+
+if ($args{type}) {
+   die "Unknown system type $args{type}\n"
+      unless switch_system($args{type});
+}
+
 unless ($dot_exists) {
    $args{view}     = 0;
    $args{keep_dot} = 1;
@@ -355,7 +365,6 @@ if ($args{view}) {
    $args{view} = undef;
 }
 
-pod2usage({-verbose => 2, -exitval => 0}) if $help;
 unless ($args{preprocessed}) {
    $args{module_dir} //= $ENV{CURRENT_PROJECT} // '.';
    $args{kernel_dir} //= autodetect_kernel_directory(dirs => ['..']);

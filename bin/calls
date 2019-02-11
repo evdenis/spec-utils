@@ -43,6 +43,7 @@ use File::C::Merge qw(merge_all_files_simple);
 use C::Util::Parsing qw(parse_calls);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
 use Local::Config qw(find_config);
+use Configuration qw(switch_system);
 
 BEGIN {
    eval {
@@ -59,6 +60,7 @@ BEGIN {
 
 my $kdir      = $ENV{CURRENT_KERNEL};
 my $moduledir = $ENV{CURRENT_PROJECT};
+my $type;
 my $preprocessed;
 
 my $kernel_sw  = 1;
@@ -85,6 +87,7 @@ my $only_macro     = 0;
 GetOptions(
    'kernel|k=s'       => \$kdir,
    'module|m=s'       => \$moduledir,
+   'type|t=s'         => \$type,
    'preprocessed|p=s' => \$preprocessed,
    'kernel-data!'     => \$kernel_sw,
    'module-data!'     => \$modules_sw,
@@ -105,6 +108,11 @@ GetOptions(
 ) or die "Incorrect usage!\n";
 
 exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 $kdir //= autodetect_kernel_directory();
 die("You should provide proper kernel directory with --kernel option\n") unless check_kernel_dir($kdir);

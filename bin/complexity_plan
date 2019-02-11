@@ -45,6 +45,7 @@ use Kernel::Module qw(preprocess_module_sources prepare_module_sources);
 use C::Util::Transformation;
 use Local::Config qw(find_config load_config merge_config_keys);
 use Local::Config::Format qw(check_priority_format check_status_format);
+use Configuration qw(switch_system);
 
 unless (which('lizard')) {
    die "Please, install lizard python package. This program required to measure SLOC and CCN.\n";
@@ -56,12 +57,14 @@ my %config_file = (status => find_config('status'), priority => find_config('pri
 my $output_file = undef;
 my $force       = 0;
 my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
+my $type;
 my $exact_module = undef;
 
 GetOptions(
    "modified!"                  => \$modified,
    "kernel|k=s"                 => \$kernel,
    "module|m=s"                 => \$module,
+   "type|t=s"                   => \$type,
    "mname=s"                    => \$exact_module,
    "force!"                     => \$force,
    "conf-status|status|s=s"     => \$config_file{status},
@@ -74,6 +77,11 @@ die "Please, provide valid path to kernel.\n"
   unless -d $kernel;
 die "Please, provide valid path to module.\n"
   unless -d $module;
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 my $conf_status = load_config($config_file{status});
 die("Can't read status config file.\n")

@@ -38,18 +38,26 @@ use Kernel::Module qw(preprocess_module_sources);
 use C::Util::Transformation;
 use Local::Config qw(find_config load_config merge_config_keys);
 use Local::Config::Format qw(check_priority_format check_status_format);
+use Configuration qw(switch_system);
 
 my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
 my $exact_module = undef;
+my $type = undef;
 
 GetOptions(
    "kernel|k=s"                 => \$kernel,
    "module|m=s"                 => \$module,
    "mname=s"                    => \$exact_module,
+   "type|t=s"                   => \$type,
    "conf-status|status|s=s"     => \$config_file{status},
    "conf-priority|priority|p=s" => \$config_file{priority},
 ) or die("Error in command line arguments\n");
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 die "Please, provide valid path to kernel.\n"
   unless -d $kernel;

@@ -24,6 +24,7 @@ use Kernel::Module::Graph qw(
   get_predecessors_subgraph
   get_strict_predecessors_subgraph
 );
+use Configuration qw(switch_system);
 
 use C::FunctionSet;
 use Carp;
@@ -47,6 +48,7 @@ sub run
       kernel_dir       => {required => 1, defined => 1},
       module_dir       => {required => 1, defined => 1},
       mname            => {required => 0, default => undef},
+      type             => {required => 0, default => undef},
       cache            => {required => 0, defined => 1},
       cache_file       => {required => 1, defined => 1},
       config           => {default  => undef},
@@ -73,6 +75,11 @@ sub run
 
    $args = check($tmpl, $args, 1)
      or croak "Arguments could not be parsed.\n";
+
+   if ($args->{type}) {
+      croak "Unknown system type " . $args->{type} . "\n"
+        unless switch_system($args->{type});
+   }
 
    if (defined $args->{level}) {
       croak "Can't handle arguments --functions and --level simultaneously.\n"

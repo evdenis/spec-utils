@@ -29,20 +29,28 @@ use lib::abs '../lib';
 use C::AcslcommentSet;
 use Kernel::Module qw(preprocess_module_sources);
 use C::Util::Transformation;
+use Configuration qw(switch_system);
 
 my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
 my $exact_module = undef;
+my $type;
 
 GetOptions(
    "kernel|k=s" => \$kernel,
    "module|m=s" => \$module,
-   "mname=s"    => \$exact_module
+   "mname=s"    => \$exact_module,
+   "type|t=s"   => \$type
 ) or die("Error in command line arguments\n");
 
 die "Please, provide valid path to kernel.\n"
   unless -d $kernel;
 die "Please, provide valid path to module.\n"
   unless -d $module;
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 #BEGIN OF A PROGRAM
 my @comments;

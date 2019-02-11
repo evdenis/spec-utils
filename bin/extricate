@@ -53,6 +53,7 @@ use Kernel::Module::Graph qw(
   get_predecessors_subgraph
   output_sources_graph
 );
+use Configuration qw(switch_system);
 
 BEGIN {
    eval {
@@ -227,6 +228,7 @@ $config{'remove-fields'} = 0;
 $config{module}          = $ENV{CURRENT_PROJECT} // '.';
 $config{kernel}          = undef;
 $config{mname}           = undef;
+$config{type}            = undef;
 $config{'output-dir'}    = 'result';
 $config{'output-file'}   = undef;
 $config{editor}          = 0;
@@ -282,6 +284,7 @@ GetOptions(
    'module|m=s'        => \$config{module},
    'kernel|k=s'        => \$config{kernel},
    'mname=s'           => \$config{mname},
+   'type|t=s'          => \$config{type},
    'cache|c:2'         => \$cache,
    'renew-cache'       => \$renew_cache_and_exit,
    'single|s!'         => \$config{single},
@@ -297,6 +300,15 @@ GetOptions(
    'list-plugins'      => \$list_plugins,
    'help|h'            => \$help
 ) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0})
+   if $help;
+
+if ($config{type}) {
+   die "Unknown system type $config{type}\n"
+      unless switch_system($config{type});
+}
+
 $cache = 0
   if $renew_cache_and_exit;
 @functions = split(/,/, join(',', @functions));
@@ -321,9 +333,6 @@ if ($config{asmodule}) {
    $config{full}       = 1;
    $config{fullkernel} = 1;
 }
-
-pod2usage({-verbose => 2, -exitval => 0})
-  if $help;
 
 if ($list_plugins) {
    my @plugins =

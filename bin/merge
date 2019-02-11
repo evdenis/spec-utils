@@ -36,6 +36,7 @@ use File::Temp qw(tempfile);
 use Algorithm::Diff qw(traverse_sequences);
 use Digest::MD5 qw(md5_hex);
 
+use Configuration qw(switch_system);
 use Local::String::Util qw(trim is_blank ne_spaces normalize remove_spaces);
 use Local::List::Util qw(str_to_list uniq);
 use Local::Terminal qw(window_size);
@@ -126,6 +127,7 @@ merge - Переложение спецификаций с одной верси
 my $help = 0;
 my @module_dir;
 my @specs_dir;
+my $type;
 my $strict     = 1;
 my $kdiff      = 0;
 my $tr_wh      = 0;
@@ -136,6 +138,7 @@ my @skip;
 GetOptions(
    'from|f=s'     => \@specs_dir,
    'to|t=s'       => \@module_dir,
+   'type=s'       => \$type,
    'skip|s=s{1,}' => \@skip,
    'strict!'      => \$strict,
    'kdiff|k!'     => \$kdiff,
@@ -144,6 +147,13 @@ GetOptions(
    'verbose|v+'   => \$verbose,
    'help|h'       => \$help,
 ) or pod2usage(1);
+
+pod2usage({-verbose => 2, -exitval => 0}) if $help;
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 # Default value for from/to arguments
 @module_dir = ($ENV{CURRENT_PROJECT} // '')
@@ -157,8 +167,6 @@ if (@ARGV) {
 }
 
 @skip = split(/,/, join(',', @skip));
-
-pod2usage({-verbose => 2, -exitval => 0}) if $help;
 
 foreach (@module_dir, @specs_dir) {
    pod2usage({ -msg => "Can't read file/dir $_.\n", -exitval => 2 })

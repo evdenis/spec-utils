@@ -11,6 +11,7 @@ our @EXPORT_OK = qw(
    get_include_paths
    add_defines
    add_includes
+   switch_system
 );
 
 our %SYSTEM_SWITCH = (

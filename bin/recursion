@@ -33,6 +33,7 @@ use Getopt::Long qw(:config gnu_compat no_bundling no_permute no_getopt_compat);
 
 use lib::abs '../lib';
 
+use Configuration qw(switch_system);
 use C::Util::Transformation;
 use Local::List::Util qw(any);
 use Kernel::Common qw(check_kernel_dir autodetect_kernel_directory);
@@ -50,6 +51,7 @@ BEGIN {
 
 my $module_dir;
 my $kernel_dir;
+my $type;
 my $direct       = 1;
 my $indirect     = 1;
 my $exact_module = undef;
@@ -58,9 +60,15 @@ GetOptions(
    'module|m=s'  => \$module_dir,
    'kernel|k=s'  => \$kernel_dir,
    'mname=s'     => \$kernel_dir,
+   'type|t=s'    => \$type,
    'direct|d!'   => \$direct,
    'indirect|i!' => \$indirect,
 ) or die("Wrong usage.\n");
+
+if ($type) {
+   die "Unknown system type $type\n"
+      unless switch_system($type);
+}
 
 die("Kernel directory is not properly specified.\n") unless check_kernel_dir $kernel_dir;
 die("Module directory is not properly specified.\n") unless -d $module_dir;
