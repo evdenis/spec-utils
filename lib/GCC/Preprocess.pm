@@ -9,7 +9,7 @@ use Exporter qw(import);
 use IPC::Open2;
 use Carp;
 use Cwd qw(realpath);
-use Configuration::Contiki qw(
+use Configuration qw(
    use_stdlib
    get_include_paths
    add_defines
