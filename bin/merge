@@ -376,12 +376,12 @@ sub move_pre_function_specs
 
       push @exclude_specs, restore_specs_only($spec, $_[1], $_[2]);
       filter $spec;
-      next
-        if is_blank $spec;
-      $spec = trim $spec;
-      $spec .= "\n";
+      unless (is_blank $spec) {
+         $spec = trim $spec;
+         $spec .= "\n";
 
-      move_specs($_[3], $spec, $_[4]);
+         move_specs($_[3], $spec, $_[4]);
+      }
    }
 
    @exclude_specs;
@@ -456,10 +456,7 @@ my %to;
       while ($module{$_}{code} =~ m/$func_re/g) {
          my ($name, $ret, $args, $body) = @+{qw(name ret args body)};
          my $exists_body = exists $+{body};
-
-         if ($ret =~ m/else|return/ || index($args, '=') != -1) {
-            next;
-         }
+         next if $ret =~ $skip_func;
 
          if (exists $from{$name} && !exists $to{$name}) {
             if ($exists_body == exists $from{$name}{body}) {
