@@ -669,7 +669,7 @@ foreach my $f (keys %module) {
    }
 
    delete @acsl_specs{@eq};
-   if ($verbose) {
+   if ($verbose && @eq) {
       print BLUE . "Following specifications already exists in code. Ignoring.\n" . RESET;
       print join("\n" . BLUE . $delimeter . RESET, map {$comments[$_]} sort {$a <=> $b} @eq) . "\n";
       print "\n\n";
