@@ -25,6 +25,7 @@ requires 'utf8::all';
 
 feature 'merge', 'Move Specs Between Sources Verions' => sub {
   requires 'Algorithm::Diff';
+  requires 'Term::Clui';
 };
 
 feature 'report', 'Reports Generation' => sub {
