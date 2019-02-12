@@ -18,19 +18,23 @@ use Local::List::Util qw(intersection difference);
 our @EXPORT_OK =
   qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files_simple merge_all_files);
 
-sub find_headers ($)
+#Find functions
+# $dir or [$dirs]
+# $recursive flag
+
+sub find_headers ($;$)
 {
-   find_all($_[0], qr/\.h$/);
+   find_all($_[0], qr/\.h$/, $_[1]);
 }
 
-sub find_sources ($)
+sub find_sources ($;$)
 {
-   find_all($_[0], qr/\.c$/);
+   find_all($_[0], qr/\.c$/, $_[1]);
 }
 
-sub find_all_files ($)
+sub find_all_files ($;$)
 {
-   find_all($_[0], qr/\.[ch]$/);
+   find_all($_[0], qr/\.[ch]$/, $_[1]);
 }
 
 sub merge_headers ($;$)
