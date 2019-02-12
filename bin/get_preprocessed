@@ -110,7 +110,7 @@ package TS {
 
       if ($self->type) {
          die "Unknown system type " . $self->type . "\n"
-            unless switch_system($self->type);
+           unless switch_system($self->type);
       }
 
       my $func = $self->preprocess ? \&preprocess_module_sources : \&prepare_module_sources;

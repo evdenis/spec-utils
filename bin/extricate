@@ -302,11 +302,11 @@ GetOptions(
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0})
-   if $help;
+  if $help;
 
 if ($config{type}) {
    die "Unknown system type $config{type}\n"
-      unless switch_system($config{type});
+     unless switch_system($config{type});
 }
 
 $cache = 0

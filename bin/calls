@@ -111,7 +111,7 @@ exit if !$kernel_sw && !$modules_sw && !$unknown_sw;
 
 if ($type) {
    die "Unknown system type $type\n"
-      unless switch_system($type);
+     unless switch_system($type);
 }
 
 $kdir //= autodetect_kernel_directory();

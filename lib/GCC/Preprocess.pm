@@ -10,24 +10,24 @@ use IPC::Open2;
 use Carp;
 use Cwd qw(realpath);
 use Configuration qw(
-   use_stdlib
-   get_include_paths
-   add_defines
-   add_includes
+  use_stdlib
+  get_include_paths
+  add_defines
+  add_includes
 );
 
 use constant SPECIAL_MARK => '#pragma <special_mark>';
 
 our @EXPORT_OK = qw(
-   get_macro
-   preprocess
-   preprocess_directives_noincl
-   preprocess_directives
-   preprocess_as_kernel_module
-   preprocess_as_kernel_module_simpl
-   preprocess_as_kernel_module_nocomments
-   preprocess_as_kernel_module_directives
-   preprocess_as_kernel_module_get_macro_simpl
+  get_macro
+  preprocess
+  preprocess_directives_noincl
+  preprocess_directives
+  preprocess_as_kernel_module
+  preprocess_as_kernel_module_simpl
+  preprocess_as_kernel_module_nocomments
+  preprocess_as_kernel_module_directives
+  preprocess_as_kernel_module_get_macro_simpl
 );
 
 sub call_gcc

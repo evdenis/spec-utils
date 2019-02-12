@@ -275,31 +275,31 @@ unless (which('dot')) {
 }
 
 my %args;
-$args{kernel_dir}       = undef;
-$args{module_dir}       = undef;
-$args{mname}            = undef;
-$args{type}             = undef;
-$args{functions}        = [];
-$args{format}           = 'svg';
-$args{out}              = 'graph';
-$args{cache_file}       = 'graph_map.cache';
-$args{done}             = 1;
-$args{display_done}     = 1;
-$args{priority}         = 1;
-$args{issues}           = 0;
-$args{statistics}       = 1;                               # Always print level statistics
-$args{mark_anyway}      = 0;
-$args{view}             = 1;
-$args{async}            = 1;
-$args{keep_dot}         = defined $ENV{DISPLAY} ? 0 : 1;
-$args{reverse}          = 0;
-$args{level}            = undef;
-$args{cache}            = 0;
-$args{renew_cache}      = 0;
-$args{priority_legend}  = 1;
-$args{issues_legend}    = 1;
-$args{config}           = undef;
-$args{from_done}        = 0;
+$args{kernel_dir}      = undef;
+$args{module_dir}      = undef;
+$args{mname}           = undef;
+$args{type}            = undef;
+$args{functions}       = [];
+$args{format}          = 'svg';
+$args{out}             = 'graph';
+$args{cache_file}      = 'graph_map.cache';
+$args{done}            = 1;
+$args{display_done}    = 1;
+$args{priority}        = 1;
+$args{issues}          = 0;
+$args{statistics}      = 1;                               # Always print level statistics
+$args{mark_anyway}     = 0;
+$args{view}            = 1;
+$args{async}           = 1;
+$args{keep_dot}        = defined $ENV{DISPLAY} ? 0 : 1;
+$args{reverse}         = 0;
+$args{level}           = undef;
+$args{cache}           = 0;
+$args{renew_cache}     = 0;
+$args{priority_legend} = 1;
+$args{issues_legend}   = 1;
+$args{config}          = undef;
+$args{from_done}       = 0;
 
 my $open_with = 'xdg-open';
 
@@ -347,7 +347,7 @@ pod2usage({-verbose => 2, -exitval => 0}) if $help;
 
 if ($args{type}) {
    die "Unknown system type $args{type}\n"
-      unless switch_system($args{type});
+     unless switch_system($args{type});
 }
 
 unless ($dot_exists) {

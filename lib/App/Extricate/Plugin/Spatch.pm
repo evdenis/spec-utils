@@ -50,9 +50,9 @@ sub process_options
    my $wait = 1;
 
    GetOptions(
-      'plugin-spatch=s'      => \@files,
-      'plugin-spatch-wait!'  => \$wait,
-      'plugin-spatch-help'   => \$help,
+      'plugin-spatch=s'     => \@files,
+      'plugin-spatch-wait!' => \$wait,
+      'plugin-spatch-help'  => \$help,
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
@@ -73,7 +73,7 @@ sub process_options
    ) unless @files;
 
    die "Please, install coccinelle package.\n"
-      unless which('spatch');
+     unless which('spatch');
 
    my %files;
    foreach (@files) {
@@ -106,7 +106,7 @@ sub action
 {
    my ($self, $opts) = @_;
    my %cocci = %{$self->{cocci}};
-   my $func = $opts->{function};
+   my $func  = $opts->{function};
 
    return undef
      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
@@ -127,7 +127,7 @@ sub action
 
       my $pid = fork();
       die "FAIL: can't fork $!"
-         unless defined $pid;
+        unless defined $pid;
 
       unless ($pid) {
          open(STDIN, '</dev/null');

@@ -17,14 +17,16 @@ sub find_all ($$)
    my @files;
 
    if (ref($dirs) ne 'ARRAY') {
-      $dirs = [ $dirs ];
+      $dirs = [$dirs];
    }
 
    finddepth(
       {
          wanted => sub {push @files, realpath($File::Find::name) if m/${mask}/}
       },
-      map { realpath $_ } @$dirs
+      map {
+         realpath $_
+      } @$dirs
    );
 
    @files;

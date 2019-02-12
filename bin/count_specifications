@@ -49,7 +49,7 @@ die "Please, provide valid path to module.\n"
 
 if ($type) {
    die "Unknown system type $type\n"
-      unless switch_system($type);
+     unless switch_system($type);
 }
 
 #BEGIN OF A PROGRAM

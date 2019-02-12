@@ -67,7 +67,7 @@ GetOptions(
 
 if ($type) {
    die "Unknown system type $type\n"
-      unless switch_system($type);
+     unless switch_system($type);
 }
 
 die("Kernel directory is not properly specified.\n") unless check_kernel_dir $kernel_dir;

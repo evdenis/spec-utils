@@ -45,32 +45,32 @@ sub run
    my $args = (ref $_[0] eq 'HASH') ? shift : {@_};
 
    my $tmpl = {
-      kernel_dir       => {required => 1, defined => 1},
-      module_dir       => {required => 1, defined => 1},
-      mname            => {required => 0, default => undef},
-      type             => {required => 0, default => undef},
-      cache            => {required => 0, defined => 1},
-      cache_file       => {required => 1, defined => 1},
-      config           => {default  => undef},
-      renew_cache      => {required => 0},
-      done             => {required => 0},
-      from_done        => {required => 0, default => 0},
-      display_done     => {default  => 1},
-      preprocessed     => {required => 0},
-      functions        => {required => 0},
-      mark_anyway      => {default  => 1},
-      statistics       => {default  => 0},
-      keep_dot         => {default  => 0},
-      issues           => {default  => 0},
-      async            => {default  => 0},
-      view             => {default  => undef},
-      priority         => {default  => 1},
-      reverse          => {default  => 0},
-      priority_legend  => {default  => 1},
-      issues_legend    => {default  => 1},
-      level            => {default  => undef},
-      out              => {default  => 'graph'},
-      format           => {default  => 'svg'},
+      kernel_dir      => {required => 1, defined => 1},
+      module_dir      => {required => 1, defined => 1},
+      mname           => {required => 0, default => undef},
+      type            => {required => 0, default => undef},
+      cache           => {required => 0, defined => 1},
+      cache_file      => {required => 1, defined => 1},
+      config          => {default  => undef},
+      renew_cache     => {required => 0},
+      done            => {required => 0},
+      from_done       => {required => 0, default => 0},
+      display_done    => {default  => 1},
+      preprocessed    => {required => 0},
+      functions       => {required => 0},
+      mark_anyway     => {default  => 1},
+      statistics      => {default  => 0},
+      keep_dot        => {default  => 0},
+      issues          => {default  => 0},
+      async           => {default  => 0},
+      view            => {default  => undef},
+      priority        => {default  => 1},
+      reverse         => {default  => 0},
+      priority_legend => {default  => 1},
+      issues_legend   => {default  => 1},
+      level           => {default  => undef},
+      out             => {default  => 'graph'},
+      format          => {default  => 'svg'},
    };
 
    $args = check($tmpl, $args, 1)
@@ -380,8 +380,7 @@ sub run
             push @legend, qq(    $edges [style = "invis"];\n);
          }
          foreach (keys %used_issues) {
-            push @legend,
-              qq(    "$_" [label = "$_: $args->{config}{issues}{$_}{description}", fillcolor = "white"];\n);
+            push @legend, qq(    "$_" [label = "$_: $args->{config}{issues}{$_}{description}", fillcolor = "white"];\n);
          }
          push @legend, qq(  }\n);
       }

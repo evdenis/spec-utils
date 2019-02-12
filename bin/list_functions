@@ -43,7 +43,7 @@ use Configuration qw(switch_system);
 my %config_file = (status => find_config('status'), priority => find_config('priority'));
 my ($kernel, $module) = @ENV{qw(CURRENT_KERNEL CURRENT_PROJECT)};
 my $exact_module = undef;
-my $type = undef;
+my $type         = undef;
 
 GetOptions(
    "kernel|k=s"                 => \$kernel,
@@ -56,7 +56,7 @@ GetOptions(
 
 if ($type) {
    die "Unknown system type $type\n"
-      unless switch_system($type);
+     unless switch_system($type);
 }
 
 die "Please, provide valid path to kernel.\n"

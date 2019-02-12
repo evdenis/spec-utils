@@ -153,14 +153,14 @@ pod2usage({-verbose => 2, -exitval => 0}) if $help;
 
 if ($type) {
    die "Unknown system type $type\n"
-      unless switch_system($type);
+     unless switch_system($type);
 }
 
 # Default value for from/to arguments
 @module_dir = ($ENV{CURRENT_PROJECT} // '')
-   unless @module_dir;
+  unless @module_dir;
 @specs_dir = ('.')
-   unless @specs_dir;
+  unless @specs_dir;
 
 if (@ARGV) {
    warn "Unknown options '@ARGV'\n";
@@ -170,8 +170,8 @@ if (@ARGV) {
 @skip = split(/,/, join(',', @skip));
 
 foreach (@module_dir, @specs_dir) {
-   pod2usage({ -msg => "Can't read file/dir $_.\n", -exitval => 2 })
-      unless -r $_;
+   pod2usage({-msg => "Can't read file/dir $_.\n", -exitval => 2})
+     unless -r $_;
 }
 
 my (undef, $col) = window_size();
@@ -460,20 +460,21 @@ my %to;
          my $exists_body = exists $+{body};
          next if $ret =~ $skip_func;
 
-         push @{$to_index{$name}}, {
+         push @{$to_index{$name}},
+           {
             file    => $_,
             ret     => $ret,
             args    => $args,
             ret_idx => [$-[1], $+[1] - $-[1]],
-            ($exists_body ?
-               (
+            (
+               $exists_body
+               ? (
                   body     => $body,
                   body_idx => [$-[4], $+[4] - $-[4]]
-               )
-            :
-               ()
+                 )
+               : ()
             )
-         };
+           };
       }
    }
 
@@ -486,12 +487,15 @@ my %to;
             my @defns;
             my @decls;
 
+            # check return values and arguments match
+            # sort declaration <-> definition
             foreach (@index) {
-               if (norm($_->{ret}) eq norm($from{$name}{ret})) {
+               if (  (norm($_->{ret}) eq norm($from{$name}{ret}))
+                  && (norm($_->{args}) eq norm($from{$name}{args})))
+               {
                   if (exists $_->{body}) {
                      push @defns, $_;
-                  }
-                  else {
+                  } else {
                      push @decls, $_;
                   }
                }
@@ -512,7 +516,7 @@ my %to;
          }
 
          $to{$name} = $func
-            if $func;
+           if $func;
       }
    }
 }
