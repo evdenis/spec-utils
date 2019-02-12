@@ -66,8 +66,8 @@ sub run
       view             => {default  => undef},
       priority         => {default  => 1},
       reverse          => {default  => 0},
-      priority_legenda => {default  => 1},
-      issues_legenda   => {default  => 1},
+      priority_legend  => {default  => 1},
+      issues_legend    => {default  => 1},
       level            => {default  => undef},
       out              => {default  => 'graph'},
       format           => {default  => 'svg'},
@@ -366,47 +366,47 @@ sub run
       Graph::Writer::Dot->new()->write_graph($graph, $dotfile);
    }
 
-   if ($args->{priority} && $args->{priority_legenda} || $args->{issues} && $args->{issues_legenda}) {
-      my @legenda;
+   if ($args->{priority} && $args->{priority_legend} || $args->{issues} && $args->{issues_legend}) {
+      my @legend;
 
-      if ($args->{issues} && $args->{issues_legenda} && %used_issues) {
-         push @legenda, qq(  subgraph "cluster_issues_legenda" {\n);
-         push @legenda, qq(    style = "filled";\n);
-         push @legenda, qq(    color = "lightgrey";\n);
-         push @legenda, qq(    label = "Issues legenda";\n);
-         push @legenda, qq(    node [shape = "box", style = "filled"];\n);
+      if ($args->{issues} && $args->{issues_legend} && %used_issues) {
+         push @legend, qq(  subgraph "cluster_issues_legend" {\n);
+         push @legend, qq(    style = "filled";\n);
+         push @legend, qq(    color = "lightgrey";\n);
+         push @legend, qq(    label = "Issues legend";\n);
+         push @legend, qq(    node [shape = "box", style = "filled"];\n);
          if (keys %used_issues > 1) {
             my $edges = join(' -> ', map {"\"$_\""} keys %used_issues);
-            push @legenda, qq(    $edges [style = "invis"];\n);
+            push @legend, qq(    $edges [style = "invis"];\n);
          }
          foreach (keys %used_issues) {
-            push @legenda,
+            push @legend,
               qq(    "$_" [label = "$_: $args->{config}{issues}{$_}{description}", fillcolor = "white"];\n);
          }
-         push @legenda, qq(  }\n);
+         push @legend, qq(  }\n);
       }
 
-      if ($args->{priority} && $args->{priority_legenda}) {
-         push @legenda, qq(  subgraph "cluster_priority_legenda" {\n);
-         push @legenda, qq(    style = "filled";\n);
-         push @legenda, qq(    color = "lightgrey";\n);
-         push @legenda, qq(    label = "Priority levels";\n);
-         push @legenda, qq(    node [shape = "box", style = "filled"];\n);
-         push @legenda,
+      if ($args->{priority} && $args->{priority_legend}) {
+         push @legend, qq(  subgraph "cluster_priority_legend" {\n);
+         push @legend, qq(    style = "filled";\n);
+         push @legend, qq(    color = "lightgrey";\n);
+         push @legend, qq(    label = "Priority levels";\n);
+         push @legend, qq(    node [shape = "box", style = "filled"];\n);
+         push @legend,
              '    '
            . join(' -> ', map {"\"$_\""} (1 .. @{$args->{config}{priority}{lists}}))
            . ' [ style = "invis" ];' . "\n";
          my @colors = map {$args->{config}{priority}{colors}{$_}} @{$args->{config}{priority}{lists}};
          while (my ($idx, $color) = each @colors) {
             ++$idx;
-            push @legenda, qq(    "$idx" [fillcolor = "$color"];\n);
+            push @legend, qq(    "$idx" [fillcolor = "$color"];\n);
          }
-         push @legenda, qq(  }\n);
+         push @legend, qq(  }\n);
       }
 
-      if (@legenda) {
+      if (@legend) {
          my @dot = read_file($dotfile, {binmode => ':utf8'});
-         splice @dot, 2, 0, @legenda;
+         splice @dot, 2, 0, @legend;
          write_file($dotfile, {binmode => ':utf8'}, @dot);
       }
    }

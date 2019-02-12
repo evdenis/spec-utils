@@ -99,7 +99,7 @@ To change a scale - mouse wheel.
 * from-done=(0|1) - display a callgraph starting from verified functions (default - 0)
 * reverse=(0|1) - display a callgraph (caller->callee) in the reversed order (callee->caller) (default - 0)
 * available=(0|1) - display functions available for verification, based on a set of currently verified functions (default - 0)
-* legenda=(0|1) - display priority list on the map (default - 1)
+* legend=(0|1) - display priority list on the map (default - 1)
 
 Example: [http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod](http://localhost:8889/graph/image?fmt=png&func=ext2_setattr,ext2_mknod)
 
