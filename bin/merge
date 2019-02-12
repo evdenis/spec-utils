@@ -37,10 +37,10 @@ use Algorithm::Diff qw(traverse_sequences);
 use Digest::MD5 qw(md5_hex);
 
 use Configuration qw(switch_system);
-use Local::String::Util qw(trim is_blank ne_spaces normalize remove_spaces);
+use Local::String::Util qw(trim is_blank normalize remove_spaces);
 use Local::List::Util qw(str_to_list uniq);
 use Local::Terminal qw(window_size);
-use C::Util::Transformation qw(adapt restore filter filter_dup restore_macro restore_comments :RE :TYPES);
+use C::Util::Transformation qw(adapt restore filter restore_macro restore_comments norm :RE :TYPES);
 use GCC::Preprocess qw(preprocess_directives_noincl);
 use File::Merge qw(merge);
 use File::C::Merge qw(merge_all_files_simple find_all_files);
@@ -310,11 +310,11 @@ sub check_functions_compliance
 {
    my $res = 0;
 
-   if (ne_spaces(filter_dup($_[0]->{args}), filter_dup($_[1]->{args}))) {
+   if (norm($_[0]->{args}) ne norm($_[1]->{args})) {
       $res = 1;
    }
 
-   if (ne_spaces(filter_dup($_[0]->{ret}), filter_dup($_[1]->{ret}))) {
+   if (norm($_[0]->{ret}) ne norm($_[1]->{ret})) {
       $res = 2;
    }
 
