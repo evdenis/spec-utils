@@ -90,7 +90,7 @@ sub action_test
    my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
    unless ($pid) {
       open(STDIN, '</dev/null');
-      exec("gcc -c -w $cfile");
+      exec("gcc -c -w -o /dev/null $cfile");
    }
 
    waitpid $pid, 0;
