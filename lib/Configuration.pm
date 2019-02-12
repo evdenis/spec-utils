@@ -11,13 +11,15 @@ our @EXPORT_OK = qw(
   get_include_paths
   add_defines
   add_includes
+  recursive_search
   switch_system
 );
 
 our %SYSTEM_SWITCH = (
    linux => {
-      use_stdlib   => 0,
-      detect_files => [
+      default_recursive => 1,
+      use_stdlib        => 0,
+      detect_files      => [
          qw(
            Kconfig
            Makefile
@@ -44,8 +46,9 @@ our %SYSTEM_SWITCH = (
       ]
    },
    contiki => {
-      use_stdlib   => 1,
-      detect_files => [
+      default_recursive => 0,
+      use_stdlib        => 1,
+      detect_files      => [
          qw(
            arch
            os
@@ -110,6 +113,11 @@ sub switch_system
    }
 
    return 0;
+}
+
+sub recursive_search
+{
+   return $SYSTEM->{default_recursive};
 }
 
 sub use_stdlib
