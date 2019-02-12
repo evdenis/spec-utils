@@ -179,7 +179,6 @@ my $delimeter = '-' x $col;
 
 #Global variables from C::Util::Transformation
 my $comment_re = $comment_t{pattern};
-# my $macro_re   = $macro_t{pattern};
 
 sub call_meld
 {
@@ -215,7 +214,7 @@ sub fetch_module_sources
 {
    my @module = find_all_files($_[0]);
 
-   return {}
+   return ()
      unless @module;
 
    my %module;
@@ -241,7 +240,7 @@ sub fetch_specifications
 {
    my $code = merge_all_files_simple($_[0]);
 
-   return {}
+   return ()
      unless $code;
 
    adapt(
