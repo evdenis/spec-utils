@@ -14,6 +14,7 @@ bin/stapgen
 lib/ACSL/Common.pm
 lib/App/Extricate/Plugin/Exec.pm
 lib/App/Extricate/Plugin/Filter.pm
+lib/App/Extricate/Plugin/FramaC.pm
 lib/App/Extricate/Plugin/Include.pm
 lib/App/Extricate/Plugin/Inline.pm
 lib/App/Extricate/Plugin/Modeline.pm

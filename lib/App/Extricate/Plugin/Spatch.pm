@@ -99,7 +99,7 @@ sub process_options
 
 sub level
 {
-   post_output => 80;
+   post_output => 70;
 }
 
 sub action
