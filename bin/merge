@@ -516,7 +516,7 @@ my %to;
             unless (@variants) {
                $func = undef;
             } else {
-               my $file = $variants[0];
+               my $file = $variants[0]{file};
                my %files = map {$_->{file} => $_} @variants;
                if (@variants > 1) {
                   $file = choose("Please select the function " . GREEN . $name . RESET . " to be used:", keys %files);
