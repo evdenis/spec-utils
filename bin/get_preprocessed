@@ -68,7 +68,7 @@ package TS {
       isa           => 'Str',
       required      => 0,
       cmd_aliases   => [qw(t)],
-      documentation => 'System type: Linux Kernel, Contiki-NG'
+      documentation => 'System type: linux, contiki'
    );
 
    option 'strings' => (
