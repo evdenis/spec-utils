@@ -1,0 +1,99 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use File::Slurp qw(read_file);
+
+if (@ARGV != 2) {
+	die "Usage: $0 file1 file2\n";
+}
+
+my $old = $ARGV[0];
+my $new = $ARGV[1];
+
+unless (-f $old && -r _) {
+	die "Can't read file $old\n"
+}
+
+unless (-f $new && -r _) {
+	die "Can't read file $new\n"
+}
+
+sub parse_verdicts ($)
+{
+	my ($file) = @_;
+	my %verdicts;
+
+	foreach (read_file $file) {
+		chomp;
+		if (m/^VERDICT:\h++
+				(?<name>\w++)\h++
+				(?<status>
+					(?:UN)?PROVED|
+					NOSPEC|
+					PARTIALLY\h++PROVED)\h*+
+				(?:\((?<proved>\d++)\h*+\/\h*+(?<total>\d++)\h*+\)\h*+)?
+			$/x) {
+			my ($name, $status, $proved, $total) = @+{qw(name status proved total)};
+			$verdicts{$name} = {
+				status => $status,
+				($proved ?
+					(
+						proved => $proved,
+						total  => $total
+					)
+					:
+					()
+				)
+			};
+		} else {
+			die "Can't parse status line '$_'\n";
+		}
+	}
+
+	return \%verdicts;
+}
+
+our %STATUS = (
+	'INSTRUMENT FAIL'  => -1,
+	'NOSPEC'           => 0,
+	'UNPROVED'         => 1,
+	'PARTIALLY PROVED' => 2,
+	'PROVED'           => 3
+);
+
+my %old_verdicts = %{parse_verdicts($old)};
+my %new_verdicts = %{parse_verdicts($new)};
+
+my @downgrade;
+foreach my $fname (keys %new_verdicts) {
+	my $newf = $new_verdicts{$fname};
+	my $oldf = $old_verdicts{$fname};
+
+	die "Unknown previous status for $fname in the $old file.\n"
+		unless $oldf;
+
+	my $old_status = $STATUS{$newf->{status}};
+	my $new_status = $STATUS{$oldf->{status}};
+	if ($old_status < $new_status) {
+		my $line = "$fname from $oldf->{status} to $newf->{status}";
+		if (exists $newf->{proved}) {
+			$line .= " ($newf->{proved}/$newf->{total})";
+		}
+		push @downgrade, $line;
+	} elsif ($old_status == $new_status) {
+		if ($old_status == $STATUS{'PARTIALLY PROVED'}) {
+			my $old_ratio = $oldf->{proved} / $oldf->{total};
+			my $new_ratio = $newf->{proved} / $newf->{total};
+			my $eq_total = $oldf->{total} == $newf->{total};
+			if ($eq_total && ($new_ratio < $old_ratio) || !$eq_total) {
+				push @downgrade, "$fname from $oldf->{status} ($oldf->{proved}/$oldf->{total}) to ($newf->{proved}/$newf->{total})";
+			}
+		}
+	}
+}
+
+if (@downgrade) {
+	die "Verification downgrade:\n" . join("\n", @downgrade) . "\n";
+}
