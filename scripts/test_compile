@@ -22,4 +22,4 @@ then
    exit 1
 fi
 
-gcc -c -w "$file"
+gcc -c -w -o /dev/null "$file"
