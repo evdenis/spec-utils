@@ -420,6 +420,7 @@ foreach (0 .. $#comments) {
    }
 }
 
+my %specs_from;
 my %from;
 my %to;
 {
@@ -447,11 +448,14 @@ my %to;
                print join("\n", map {$comments[$_]} sort {$a <=> $b} @specs_ids) . "\n";
             }
          } else {
+            $from{$name}{name} = $name;
             $from{$name}{ret}  = $ret;
             $from{$name}{args} = $args;
 
             $from{$name}{body} = $body
               if $body;
+
+            $specs_from{$_} = $from{$name} foreach @specs_ids;
          }
       }
    }
@@ -684,6 +688,10 @@ foreach my $f (keys %module) {
 
 if (keys %acsl_specs) {
    warn RED, "Can't merge following specifications:" . RESET . "\n\n";
-   warn join("\n" . RED . $delimeter . RESET, map {$comments[$_]} sort {$a <=> $b} keys %acsl_specs) . "\n";
+   my @specs_ids = sort {$a <=> $b} keys %acsl_specs;
+   my @specs = map {{name => ($specs_from{$_}{name} // '#unknown'), spec => $comments[$_]}} @specs_ids;
+   warn
+     join("\n" . RED . $delimeter . RESET, map {"From function " . GREEN . $_->{name} . RESET . "\n$_->{spec}"} @specs)
+     . "\n";
 }
 
