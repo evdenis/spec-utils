@@ -16,7 +16,8 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::FramaC
 
-Plugin::FramaC - run Frama-C on an extricated file
+Plugin::FramaC - run Frama-C on an extricated file. By default the cli will be used
+"frama-c -wp -wp-rte -wp-model "Typed+Cast" -wp-prover alt-ergo,cvc4,z3 extricated_file.c"
 
 =head1 OPTIONS
 
@@ -227,7 +228,7 @@ sub action_run_framac
 
    if ($?) {
       $VERDICT{$func} = {status => 'INSTRUMENT FAIL'};
-      die "FRAMA-C: failed to run with code $?: $!\n";
+      die "FRAMA-C: failed to run with code $?: $!\n" . ($output // '');
    }
 
    if ($cli_args =~ m/-(?:wp|jessie)\b/) {
