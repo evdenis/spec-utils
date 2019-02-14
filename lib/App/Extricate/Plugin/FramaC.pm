@@ -148,7 +148,7 @@ sub action_output_verdicts
    my ($self, $opts) = @_;
 
    if (%VERDICT && ($self->{print_verdicts} || $self->{verdicts_file})) {
-      my @keys = sort {$STATUS{$VERDICT{$a}{status}} <=> $STATUS{$VERDICT{$b}{status}}} keys %VERDICT;
+      my @keys = sort {$STATUS{$VERDICT{$a}{status}} <=> $STATUS{$VERDICT{$b}{status}} || $a cmp $b} keys %VERDICT;
       my $output = join(
          "\n",
          map {
@@ -235,6 +235,7 @@ sub action_run_framac
       my $result = process_output($output, $func);
       if ($verbose || !$result) {
          print $output;
+         print $result if $result;
       } else {
          print $result;
       }
