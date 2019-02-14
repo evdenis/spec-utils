@@ -513,6 +513,8 @@ if ($cache == 2) {
 
 print "\n";
 
+my $exit_code = 0;
+
 sub call_plugins
 {
    my %opts = (@_, config => \%config);
@@ -524,7 +526,11 @@ sub call_plugins
             $plugin->action(\%opts);
          } catch {
             when (/^FAIL:/) {die $_}
-            default {$res = 1; warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n"}
+            default {
+               $res = 1;
+               $exit_code += 1;
+               warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n";
+            }
          };
       }
    }
@@ -763,3 +769,5 @@ if ($config{editor}) {
       die "Can't find application from EDITOR env variable.\n";
    }
 }
+
+exit $exit_code;
