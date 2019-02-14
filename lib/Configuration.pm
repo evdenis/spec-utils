@@ -56,6 +56,12 @@ our %SYSTEM_SWITCH = (
            Makefile.identify-target
            )
       ],
+      defines => join("\n",
+         '#define CONTIKI 1',
+         '#define CONTIKI_TARGET_NATIVE 1',
+         '#define NETSTACK_CONF_WITH_IPV6 1',
+         '#define CONTIKI_VERSION_STRING "Contiki-Frama-C"')
+        . "\n\n",
       include_paths => [
          qw(
            arch/cpu/native
