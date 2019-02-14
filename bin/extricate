@@ -272,6 +272,8 @@ if ($config_exists) {
          } else {
             unshift @ARGV, "--$1=$2";
          }
+      } elsif (m/\A([\w-]++)\h*+\Z/) {
+         unshift @ARGV, "--$1";
       } else {
          warn "Wrong config format in line $.: '$_'\n";
       }
