@@ -166,7 +166,7 @@ sub action_output_verdicts
 
 sub process_output
 {
-   my ($output, $func) = @_;
+   my ($output, $func, $verbose) = @_;
    my $result = '';
 
    $result .= "VERDICT: $func ";
@@ -196,7 +196,7 @@ sub process_output
             $result .= "PARTIALLY PROVED ($proved / $total)\n";
             $VERDICT{$func} = {status => 'PARTIALLY PROVED', proved => $proved, total => $total};
          }
-         $result .= "<--\n$report\n-->\n";
+         $result .= "<--\n$report\n-->\n" unless $verbose;
       } else {
          return '';    # ERROR
       }
@@ -232,7 +232,7 @@ sub action_run_framac
    }
 
    if ($cli_args =~ m/-(?:wp|jessie)\b/) {
-      my $result = process_output($output, $func);
+      my $result = process_output($output, $func, $verbose);
       if ($verbose || !$result) {
          print $output;
          print $result if $result;
