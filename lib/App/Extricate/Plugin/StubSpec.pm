@@ -56,7 +56,7 @@ sub process_options
 
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 99;
+   (($_[0]->{reduced} ? 'reduced_graph' : 'full_graph'), 99);
 }
 
 my %processed_objects;

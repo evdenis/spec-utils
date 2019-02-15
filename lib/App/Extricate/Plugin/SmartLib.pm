@@ -82,7 +82,10 @@ sub process_options
 
 sub level
 {
-   'reduced_graph' => 70, 'raw_data' => 70;
+   return (
+      'reduced_graph' => 70,
+      'raw_data'      => 70
+   );
 }
 
 sub action

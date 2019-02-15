@@ -39,7 +39,7 @@ sub process_options
 {
    my ($self, $config) = @_;
    my @filter;
-   my $reduced = @{$config->{functions}} > 1 || $config->{all} ? 0 : 1;
+   my $reduced = (@{$config->{functions}} > 1 || $config->{all}) ? 0 : 1;
    my $help = 0;
 
    GetOptions(
@@ -72,7 +72,7 @@ sub process_options
 
 sub level
 {
-   $_[0]->{reduced} ? 'reduced_graph' : 'full_graph', 0;
+   (($_[0]->{reduced} ? 'reduced_graph' : 'full_graph'), 0);
 }
 
 sub action
