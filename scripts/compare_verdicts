@@ -70,6 +70,7 @@ my %new_verdicts = %{parse_verdicts($new)};
 my @unknown_prev_status;
 my @fails;
 my @downgrade;
+my @success;
 foreach my $fname (keys %new_verdicts) {
    my $newf = $new_verdicts{$fname};
    my $oldf = $old_verdicts{$fname};
@@ -101,10 +102,19 @@ foreach my $fname (keys %new_verdicts) {
             push @downgrade, "$fname from $oldf->{status} ($oldf->{proved}/$oldf->{total}) to ($newf->{proved}/$newf->{total})";
          }
       }
+   } else {
+      my $old_count = exists $oldf->{proved} ? "($oldf->{proved}/$oldf->{total}) " : '';
+      my $new_count = exists $newf->{proved} ? "($newf->{proved}/$newf->{total})" : '';
+      my $line = "$fname from $oldf->{status} ${old_count}to $newf->{status} $new_count";
+      push @success, $line;
    }
 }
 
 my $ret = 0;
+
+if (@success) {
+   print "Verification upgrade:\n" . join("\n", @success) . "\n\n";
+}
 
 if (@unknown_prev_status) {
    warn "Unknown old status for functions:\n" . join("\n", @unknown_prev_status) . "\n\n";
