@@ -84,17 +84,13 @@ sub action
 
    my $g = $opts->{'graph'};
 
- FILTER: foreach my $name (@{$self->{filter}}) {
+   foreach my $name (@{$self->{filter}}) {
       print "plugin: filter: removing $name from graph\n";
-
       foreach ($g->vertices) {
          if ($g->get_vertex_attribute($_, 'object')->name eq $name) {
             $g->delete_vertex($_);    # delete only one vertex! Dependants will be filtered out later.
-            next FILTER;
          }
       }
-
-      warn "plugin: filter: vertex $name doesn't exist in graph\n";
    }
 
    undef;
