@@ -87,13 +87,13 @@ sub process_options
    my %framac;
    foreach (@configs) {
       chomp;
-      my $fname  = '#ALL';
+      my $fmask  = '#ALL';
       my $config = $_;
-      if (m/\A(?<fname>$varname)\^(?<config>.*)\Z/) {
-         $fname  = $+{fname};
+      if (m/\A(?<mask>[\w_*.+?]++)\^(?<config>.*)\Z/) {
+         $fmask  = $+{mask};
          $config = $+{config};
       }
-      $framac{$fname} = $config;
+      $framac{$fmask} = $config;
    }
 
    unless (exists $framac{'#ALL'}) {
@@ -193,7 +193,7 @@ sub process_output
             $result .= "UNPROVED\n";
             $VERDICT{$func} = {status => 'UNPROVED'};
          } else {
-            $result .= "PARTIALLY PROVED ($proved / $total)\n";
+            $result .= "PARTIALLY PROVED (${proved}/${total})\n";
             $VERDICT{$func} = {status => 'PARTIALLY PROVED', proved => $proved, total => $total};
          }
          $result .= "<--\n$report\n-->\n" unless $verbose;
@@ -217,7 +217,13 @@ sub action_run_framac
    return undef
      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
 
-   my $cli_args = $framac{$func} || $framac{'#ALL'};
+   my $cli_args = $framac{'#ALL'};
+   foreach my $mask (keys %framac) {
+      if ($func =~ $mask) {
+         $cli_args = $framac{$mask};
+         last;
+      }
+   }
 
    my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
 
