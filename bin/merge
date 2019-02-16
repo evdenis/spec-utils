@@ -505,8 +505,8 @@ my %to;
             # check return values and arguments match
             # sort declaration <-> definition
             foreach (@index) {
-               if (  (norm($_->{ret}) eq norm($from{$name}{ret}))
-                  && (norm($_->{args}) eq norm($from{$name}{args})))
+               if (!$strict
+                  || (norm($_->{ret}) eq norm($from{$name}{ret})) && (norm($_->{args}) eq norm($from{$name}{args})))
                {
                   if (exists $_->{body}) {
                      push @defns, $_;
@@ -559,7 +559,7 @@ foreach (keys %from) {
    my @exclude_specs =
      move_pre_function_specs($cs->{ret}, \@comments, \%acsl_specs, $cm, $module{$file}{i});
 
-   if ($cs->{body}) {
+   if ($cs->{body} && $cm->{body}) {
       my $fbody_saved = $cs->{body};
 
       restore_macro($cs->{body}, \@macro);
