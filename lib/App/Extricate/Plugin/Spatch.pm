@@ -78,10 +78,10 @@ sub process_options
    my %files;
    foreach (@files) {
       chomp;
-      my $fname = '#ALL';
+      my $fmask = '#ALL';
       my $cocci = $_;
-      if (m/\A(?<fname>$varname)\^(?<cocci>.*)\Z/) {
-         $fname = $+{fname};
+      if (m/\A(?<mask>[\w_*.+?]++)\^(?<cocci>.*)\Z/) {
+         $fmask = $+{mask};
          $cocci = $+{cocci};
       }
 
@@ -89,7 +89,7 @@ sub process_options
          die "FAIL: Can't access file $cocci.\n";
       }
 
-      push @{$files{$fname}}, $cocci;
+      push @{$files{$fmask}}, $cocci;
    }
 
    $config->{'spatch'} = \%files;
@@ -113,7 +113,7 @@ sub action
 
    my @patches;
    foreach (keys %cocci) {
-      if ($_ eq $func) {
+      if ($func =~ $_) {
          push @patches, @{$cocci{$_}};
       } elsif ($_ eq '#ALL') {
          push @patches, @{$cocci{$_}};
