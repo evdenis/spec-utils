@@ -23,12 +23,12 @@ sub not_special_label
 }
 
 our @keywords_to_filter = grep {not_special_label($_)} @keywords;
-our %c_keywords_filter = map {$_ => undef} @keywords_to_filter;
+our %c_keywords_filter = map {$_ => 1} @keywords_to_filter;
 
 sub prepare_tags
 {
    my $code   = $_[0];
-   my %filter = map {$_ => undef} @{$_[1]};
+   my %filter = map {$_ => 1} @{$_[1]};
    my $name   = qr/\b($varname)\b/;
 
    # All strings should be already removed at least at module part.
@@ -54,12 +54,12 @@ sub prepare_tags
       if (ref $_ eq 'ARRAY') {
          $id = $_->[0] . ' ' . $_->[1];
       } else {
-         next if exists $c_keywords_filter{$_};
+         next if $c_keywords_filter{$_};
          $id = $_;
       }
 
       push @tags, $_
-        if !$uniq{$id}++ && !exists $filter{$id};
+        if !$uniq{$id}++ && !$filter{$id};
    }
 
    \@tags;

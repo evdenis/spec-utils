@@ -85,14 +85,14 @@ my @acsl_keywords = qw(
   LoopCurrent
 );
 
-my %acsl_keywords_filter = map {$_ => undef} @acsl_keywords;
+my %acsl_keywords_filter = map {$_ => 1} @acsl_keywords;
 
 sub is_acsl_keyword
 {
    my $r = 0;
    if (index($_[0], '\\') == 0) {
       $r = 1;
-   } elsif (exists $acsl_keywords_filter{$_[0]}) {
+   } elsif ($acsl_keywords_filter{$_[0]}) {
       $r = 1;
    }
 
@@ -116,7 +116,7 @@ sub is_assert
 
 sub prepare_tags
 {
-   my %filter = map {$_ => undef} @{$_[1]};
+   my %filter = map {$_ => 1} @{$_[1]};
    my $token = qr/($acsl_varname)\b/;    # don't append \b to the beginning
 
    my $code = substr($_[0], 3);
@@ -152,7 +152,7 @@ sub prepare_tags
       }
 
       push @tags, $_
-        if !$uniq{$id}++ && !exists $filter{$id};
+        if !$uniq{$id}++ && !$filter{$id};
    }
 
    \@tags;
