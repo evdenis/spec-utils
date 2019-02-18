@@ -104,6 +104,12 @@ our %SYSTEM_SWITCH = (
            os/sys
            )
       ]
+   },
+   test => {
+      default_recursive => 1,
+      use_stdlib        => 1,
+      detect_files      => [],
+      include_paths     => []
    }
 );
 
