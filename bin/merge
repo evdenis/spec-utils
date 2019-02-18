@@ -214,6 +214,8 @@ sub call_meld
 
    @{$_[1]} = read_file($f[1])
      unless $ret;
+   # remove the newline
+   chomp $_[1]->[$#{$_[1]}];
 
    unlink $f[$_] for 0 .. $#_;
 
