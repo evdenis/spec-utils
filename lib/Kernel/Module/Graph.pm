@@ -256,9 +256,20 @@ sub _update_ids_index
    \%index;
 }
 
+my %___to_vertex = (
+   'C::Macro'       => 'macro',
+   'C::Structure'   => 'structure',
+   'C::Enum'        => 'enum',
+   'C::Typedef'     => 'typedef',
+   'C::Acslcomment' => 'acslcomment',
+   'C::Declaration' => 'declaration',
+   'C::Global'      => 'global',
+   'C::Function'    => 'function'
+);
+
 sub __to_vertex
 {
-   $_[0]->area . '_' . lcfirst(substr(blessed($_[0]), 3));
+   $_[0]->area . '_' . $___to_vertex{blessed($_[0])};
 }
 
 #label type
