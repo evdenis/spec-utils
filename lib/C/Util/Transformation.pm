@@ -228,7 +228,14 @@ sub adapt
 #TODO: return value? delete elements of array?
 sub generic_restore
 {
-   $_[0] =~ s!$_[2]!$_[1]->[$1]!g;
+   my $type = ref($_[1]);
+   if ($type eq 'ARRAY') {
+      $_[0] =~ s!$_[2]!$_[1]->[$1]!g;
+   } elsif ($type eq 'HASH') {
+      $_[0] =~ s!$_[2]!$_[1]->{$1} // ${^MATCH}!peg;
+   } else {
+      croak "Incorrect ref '$type' of the attributes to restore.";
+   }
 }
 
 sub restore_comments

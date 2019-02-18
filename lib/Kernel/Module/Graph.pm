@@ -139,6 +139,7 @@ sub _update_ids_index
 {
    my %index    = %{$_[0]};
    my $iterator = $_[1];
+   my $comments = $_[2];
 
    while (my $set = $iterator->()) {
       my $ids = $set->ids();
@@ -159,7 +160,7 @@ sub _update_ids_index
                   if ($tn eq 'C::Declaration') {
                      if (exists $index{$_}{'C::Function'}) {
                         if ($n->spec_ids()) {
-                           $index{$_}{'C::Function'}->attach_declaration($n);
+                           $index{$_}{'C::Function'}->attach_declaration($n, $comments);
                         }
                         next;
                      }
@@ -167,7 +168,7 @@ sub _update_ids_index
                      if (exists $index{$_}{'C::Declaration'}) {
                         my $decl = $index{$_}{'C::Declaration'};
                         if ($decl->spec_ids()) {
-                           $n->attach_declaration($decl);
+                           $n->attach_declaration($decl, $comments);
                            # Just in case
                            # $decl->remove_contract();
                         }
@@ -450,13 +451,21 @@ sub build_sources_graph
       $sources->{kernel}         = $k;
       $sources->{kernel_strings} = $ks;
    } else {
-      $index = _update_ids_index({}, _dependencies_graph_iterator_kernel($sources));
+      $index = _update_ids_index({}, _dependencies_graph_iterator_kernel($sources), undef);
 
       store([$index, $sources->{kernel}, $sources->{kernel_strings}, $vname, $_orderp], $opts->{cache}{file})
         if $opts->{cache}{file};
    }
 
-   $index = _update_ids_index($index, _dependencies_graph_iterator_module($sources));
+   my %specs;
+   my %spec_index = $sources->{module}{acslcomment}->map(
+      sub {
+         my $id = $_->replacement_id;
+         $specs{$id} = $_->code;
+         return ($id => $_);
+      }
+   );
+   $index = _update_ids_index($index, _dependencies_graph_iterator_module($sources), \%specs);
 
    my $graph = Graph::Directed->new();
    __add_vertices($graph, _dependencies_graph_iterator_kernel($sources));
@@ -468,7 +477,6 @@ sub build_sources_graph
 
    # ACSL handling specs to functions edge
    if ($sources->{module}{acslcomment}) {
-      my %spec_index = $sources->{module}{acslcomment}->map(sub {$_->replacement_id => $_});
       foreach (@{$sources->{module}{function}->set}, @{$sources->{module}{declaration}->set}) {
          foreach my $id (@{$_->spec_ids}) {
             if (exists $spec_index{$id}) {

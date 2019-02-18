@@ -3,7 +3,7 @@ use Moose;
 
 use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);
-use C::Util::Transformation qw(:RE %comment_t filter_comments_dup);
+use C::Util::Transformation qw(:RE %comment_t filter_comments_dup restore_comments norm);
 use Local::List::Util qw(difference);
 use ACSL::Common qw(is_acsl_spec is_contract);
 
@@ -144,19 +144,45 @@ sub detach_specification
 
 sub attach_declaration
 {
-   my $self = $_[0];
-   my $decl = $_[1];
+   my ($self, $decl, $specs) = @_;
+   my $contract_re = qr/\A\s*+(?<contract>${s}*)/;
 
-   if ($decl->code =~ m/\A\s*+(?<contract>${s}*)/) {
-      my $contract = $+{contract};
+   if ($decl->code =~ $contract_re) {
+      my $decl_contract = $+{contract};
+      my $code          = $self->code();
+      my $contract      = $decl_contract;
+      my $defn_start    = 0;
 
-      my $code = $self->code();
-      $code =~ m/\A${s}*+/;
-      my $sep_pos         = $+[0];
-      my $before_function = substr($code, 0, $sep_pos);
-      my $function        = substr($code, $sep_pos);
+      if ($code =~ $contract_re) {
+         my $defn_contract = $+{contract};
+         $defn_start = $-[0];
 
-      $self->code($before_function . $contract . $function);
+         if ($defn_contract) {
+            restore_comments($decl_contract, $specs);
+            restore_comments($defn_contract, $specs);
+            my $norm_defn_contract = norm($defn_contract);
+            my $norm_decl_contract = norm($decl_contract);
+
+            return
+              if !$norm_decl_contract && $norm_defn_contract
+              || !$norm_defn_contract && !$norm_decl_contract;
+
+            if (  $norm_defn_contract
+               && $norm_decl_contract
+               && ($norm_defn_contract ne $norm_decl_contract))
+            {
+               warn "Function "
+                 . $self->name
+                 . " has the decl contract and the defn contract that differs: \n"
+                 . "Declaration:\n$decl_contract"
+                 . "Definition:\n$defn_contract"
+                 . "The definition contract will be used.\n";
+               return;
+            }
+         }
+      }
+
+      $self->code($contract . substr($code, $defn_start));
    }
 }
 
