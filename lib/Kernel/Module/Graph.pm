@@ -986,12 +986,10 @@ digraph g
       kernel_declaration -> module_macro;
       kernel_declaration -> module_global;
       kernel_declaration -> module_function;
-      kernel_declaration -> module_acslcomment;
       //
       kernel_function -> module_macro;
       kernel_function -> module_global;
       kernel_function -> module_function;
-      kernel_function -> module_acslcomment;
 
       module_declaration -> module_macro;
       module_declaration -> module_global;
@@ -1049,5 +1047,6 @@ digraph g
       kernel_global -> module_global;
 
       module_acslcomment -> module_acslcomment;
+      module_acslcomment -> module_macro;
    }
 }
