@@ -54,6 +54,7 @@ sub _build_code_ids
 
    my @ids = $code =~ m/(?|
                            (?:predicate\s++($varname))|
+                           (?:inductive\s++($varname))|
                            (?:type\s++($varname))|
                            (?:logic[\wℤ𝔹\s\*]+\b($varname)\s*+[(={])
                         )/gx;
