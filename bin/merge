@@ -505,14 +505,35 @@ my %to;
             # check return values and arguments match
             # sort declaration <-> definition
             foreach (@index) {
-               if (!$strict
-                  || (norm($_->{ret}) eq norm($from{$name}{ret})) && (norm($_->{args}) eq norm($from{$name}{args})))
-               {
-                  if (exists $_->{body}) {
-                     push @defns, $_;
-                  } else {
-                     push @decls, $_;
+               if ($strict && (my $c = check_functions_compliance($_, $from{$name}))) {
+                  my $file = $_->{file};
+                  if ($c == 1) {
+                     warn "$file: "
+                       . RED
+                       . 'arguments'
+                       . RESET
+                       . " of function "
+                       . GREEN
+                       . $name
+                       . RESET
+                       . " doesn't match.\n";
+                  } elsif ($c == 2) {
+                     warn "$file: "
+                       . RED
+                       . 'return type'
+                       . RESET
+                       . " of function "
+                       . GREEN
+                       . $name
+                       . RESET
+                       . " doesn't match.\n";
                   }
+                  next;
+               }
+               if (exists $_->{body}) {
+                  push @defns, $_;
+               } else {
+                  push @decls, $_;
                }
             }
 
