@@ -16,6 +16,7 @@ use File::Spec::Functions qw(catfile);
 use List::Util qw(min);
 
 use Local::List::Util qw(any);
+use Local::String::Util qw(eq_spaces);
 use C::Util::Transformation qw(restore);
 use C::Util::Cycle qw(resolve);
 
@@ -134,11 +135,6 @@ sub __add_vertices
    }
 }
 
-sub _norm
-{
-   $_[0] =~ s/\s++//gr;
-}
-
 sub _update_ids_index
 {
    my %index    = %{$_[0]};
@@ -183,7 +179,7 @@ sub _update_ids_index
                      $index{$_}{$tn} = $n;
                   } elsif ($index{$_}{$tn} == $n) {
                   } elsif (($tn eq 'C::Macro') || ($tn eq 'C::Typedef')) {
-                     unless (_norm($index{$_}{$tn}->code) eq _norm($n->code)) {
+                     unless (eq_spaces($index{$_}{$tn}->code, $n->code)) {
                         warn("$tn '" . $n->name . "' redefinition\n");
                         $index{$_}{$tn} = $n if ($index{$_}{$tn}->area eq 'kernel') && ($n->area eq 'module');
                      }
@@ -194,7 +190,7 @@ sub _update_ids_index
                      my ($old, $new) = ($index{$_}{$tn}, $n);
                      my $die = 1;
 
-                     unless (_norm($old->type) eq _norm($new->type)) {
+                     unless (eq_spaces($old->type, $new->type)) {
                         warn "$tn type conflict. Trying to resolve...\n";
                         # Checking for 'typedef struct name1 {} name2'
                         if ($old->type =~ m/\bstruct\b/ || $new->type =~ m/\bstruct\b/) {
