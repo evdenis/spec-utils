@@ -35,6 +35,14 @@ has 'function_spec' => (
    init_arg => undef
 );
 
+has 'is_ghost' => (
+   is       => 'ro',
+   isa      => 'Bool',
+   lazy     => 1,
+   builder  => '_build_is_ghost',
+   init_arg => undef
+);
+
 has 'number_of_lines' => (
    isa      => 'Int',
    is       => 'ro',
@@ -73,6 +81,12 @@ sub _build_code_ids
 sub _count_lines
 {
    scalar $_[0]->code =~ tr/\n// + 1;
+}
+
+sub _build_is_ghost
+{
+   # first word is ghost
+   return ($_[0]->code =~ m/\w++/p && ${^MATCH} eq 'ghost');
 }
 
 sub get_code_tags

@@ -267,9 +267,15 @@ my %___to_vertex = (
    'C::Function'    => 'function'
 );
 
-sub __to_vertex
+sub __to_edge
 {
-   $_[0]->area . '_' . $___to_vertex{blessed($_[0])};
+   my $v1 = blessed($_[0]);
+   my $v2 = blessed($_[1]);
+
+   $v2 = 'C::Function'
+     if $v2 eq 'C::Acslcomment' && $_[1]->is_ghost;
+
+   return ($_[0]->area . '_' . $___to_vertex{$v1}, $_[1]->area . '_' . $___to_vertex{$v2});
 }
 
 #label type
@@ -314,11 +320,11 @@ sub _create_edges
 
       foreach (@keys) {
          if (ref $index->{$_} eq ARRAY) {
-            if ($dg->has_edge(__to_vertex($index->{$_}[0]), __to_vertex($to))) {
+            if ($dg->has_edge(__to_edge($index->{$_}[0], $to))) {
                push @possible, @{$index->{$_}};
             }
          } else {
-            if ($dg->has_edge(__to_vertex($index->{$_}), __to_vertex($to))) {
+            if ($dg->has_edge(__to_edge($index->{$_}, $to))) {
                push @possible, $index->{$_};
             }
          }
@@ -394,7 +400,7 @@ sub _form_graph
                if (ref $from eq HASH) {
                   _create_edges($graph, $from, $to, $label, $tag);
                } else {
-                  if ($dg->has_edge(__to_vertex($from), __to_vertex($to))) {
+                  if ($dg->has_edge(__to_edge($from, $to))) {
                      if ($label) {
                         my $type = blessed($from);
 
@@ -988,7 +994,6 @@ digraph g
       module_function -> module_macro;
       module_function -> module_global;
       module_function -> module_function;
-      module_function -> module_acslcomment;
       //
       kernel_declaration -> module_macro;
       kernel_declaration -> module_global;
@@ -1001,7 +1006,6 @@ digraph g
       module_declaration -> module_macro;
       module_declaration -> module_global;
       module_declaration -> module_function;
-      module_declaration -> module_acslcomment;
 
       module_declaration -> kernel_macro;
       module_declaration -> kernel_global;
