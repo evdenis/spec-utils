@@ -60,7 +60,7 @@ sub _build_code_ids
    #remove oneline comments; nested multile are not possible
    $code =~ s!//.*!!g;
 
-   my @ids = $code =~ m/(?|
+   my @ids = $code =~ m/\b(?|
                            (?:predicate\s++($varname))|
                            (?:inductive\s++($varname))|
                            (?:type\s++($varname))|
