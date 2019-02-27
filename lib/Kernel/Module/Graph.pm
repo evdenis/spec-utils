@@ -966,6 +966,10 @@ digraph g
       module_global;
       module_acslcomment;
 
+      // Not sure this is a good idea.
+      // In most cases inline plugin should be used instead.
+      module_macro -> kernel_macro;
+
       module_macro -> module_macro;
       module_macro -> module_structure;
       module_macro -> module_function;
