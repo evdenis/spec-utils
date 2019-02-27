@@ -6,6 +6,7 @@ use RE::Common qw($varname);
 use C::Util::Parsing qw(_get_structure_wo_field_names);
 use C::Util::Transformation qw(:RE);
 use C::Keywords qw(prepare_tags);
+use C::Enum;
 use namespace::autoclean;
 
 use re '/aa';
@@ -23,7 +24,7 @@ has 'inside' => (
 #only to mimic struct
 has 'type' => (
    is       => 'ro',
-   isa      => enum([qw(struct union)]),
+   isa      => enum([qw(empty struct union enum)]),
    lazy     => 1,
    builder  => '_get_type',
    init_arg => undef
@@ -43,7 +44,8 @@ sub _get_type
    if ($_[0]->inside) {
       return @{$_[0]->inside}[0];
    }
-   undef;
+
+   'empty';
 }
 
 sub get_code_ids
@@ -52,8 +54,15 @@ sub get_code_ids
    my @result = ($_[0]->name);
 
    my $i = $_[0]->inside;
-   push @result, $i->[1]
-     if $i && @$i == 2;
+   if ($i) {
+      push @result, $i->[1]
+        if @$i == 2;
+
+      if ($i->[0] eq 'enum') {
+         my $ids = C::Enum->new(name => $i->[1], code => $code, area => $_[0]->area)->get_code_ids;
+         push @result, @$ids;
+      }
+   }
 
    \@result;
 }
@@ -61,7 +70,7 @@ sub get_code_ids
 sub get_code_tags
 {
    my $code   = $_[0]->code;
-   my $filter = [$_[0]->name];
+   my $filter = $_[0]->get_code_ids;
 
    my $i = $_[0]->inside;
    if ($i) {
