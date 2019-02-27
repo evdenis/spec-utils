@@ -60,7 +60,7 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my @globals;
-   my $name         = qr/(?<name>${varname})/;
+   my $name         = qr/(?<name>\b${varname})/;
    my $sbody        = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
    my $fargs        = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
    my $array        = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
@@ -119,7 +119,7 @@ sub parse
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               |
-                              (?<type>${type})${name}${optional_asm}${optional_ainit}
+                              (?<type>${type})${s}*+${name}${optional_asm}${optional_ainit}
                            )
                         )(*SKIP)
                         ${s}*+;
