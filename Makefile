@@ -3,7 +3,7 @@ default:
 prove:
 	prove --jobs 1 --shuffle --lib --recurse t/
 
-export KERNEL_VERSION?=4.16.8
+export KERNEL_VERSION?=4.19.26
 export KERNEL=linux-$(KERNEL_VERSION)
 export KERNEL_ARCHIVE=$(KERNEL).tar.xz
 
@@ -31,9 +31,16 @@ kernel: $(MODULE) prepare_kernel
 		$(MODULE_FUNCTIONS)                         \
 		--kernel $(KERNEL) --module $(MODULE)
 
+kernel_no_cover: $(MODULE) prepare_kernel
+	bin/extricate                                       \
+		--full --single --cache=0                   \
+		--plugin=testcompile                        \
+		$(MODULE_FUNCTIONS)                         \
+		--kernel $(KERNEL) --module $(MODULE)
+
 test: prove kernel
 
 clean:
 	-rm -fr $(KERNEL) $(KERNEL_ARCHIVE) result/
 
-.PHONY: default test prove kernel prepare_kernel
+.PHONY: default test prove kernel kernel_no_cover prepare_kernel
