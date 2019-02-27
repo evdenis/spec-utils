@@ -27,7 +27,15 @@ my %type_alias = (
    DECLARE_DELAYED_WORK    => 'struct delayed_work',
    DECLARE_DEFERRABLE_WORK => 'struct delayed_work',
    LIST_HEAD               => 'struct list_head',
-   GFS2_ATTR               => {
+   LIST                    => {                        # for Contiki-NG
+      modifier => 'static',
+      type     => 'list_t'
+   },
+   MEMB => {                                           # for Contiki-NG
+      modifier => 'static',
+      type     => 'struct memb'
+   },
+   GFS2_ATTR => {
       modifier => 'static',
       type     => 'struct gfs2_attr',
       name     => sub {'gfs2_attr_' . $_[0]}
@@ -108,9 +116,11 @@ sub parse
                               |
                               (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_asm}${optional_init}
                               |
-                              (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX|SRCU|STATIC_SRCU)|LIST_HEAD)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
+                              (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX|SRCU|STATIC_SRCU)|LIST(?:_HEAD)?)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
                               (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                              |
+                              (?<type>\bMEMB)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
                               (?<type>\bDECLARE_(?:DELAYED_|DEFERRABLE_)?WORK)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
