@@ -505,6 +505,9 @@ CACHED_GRAPH:
 if ($cache == 2) {
    $g = retrieve($cache_file[2]);
 } else {
+   # Disable recursion check for Storable
+   $Storable::recursion_limit      = -1;
+   $Storable::recursion_limit_hash = -1;
    store($g, $cache_file[2]);
 
    exit 0
