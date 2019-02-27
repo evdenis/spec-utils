@@ -7,16 +7,14 @@ addons:
       - libelf-dev
 matrix:
    include:
-      - perl: '5.26'
+      - perl: '5.28'
         env: KERNEL_VERSION=4.20.13 MODULE_TO_TEST=fs/exportfs
-      - perl: '5.24'
+      - perl: '5.26'
         env: KERNEL_VERSION=4.19.26 MODULE_TO_TEST=fs/efivarfs
-      - perl: '5.20'
+      - perl: '5.24'
         env: KERNEL_VERSION=4.14.104 MODULE_TO_TEST=fs/tracefs
-      - perl: '5.18'
+      - perl: '5.22'
         env: KERNEL_VERSION=4.9.161 MODULE_TO_TEST=fs/ramfs
-      - perl: '5.16'
-        env: KERNEL_VERSION=4.4.176 MODULE_TO_TEST=fs/sysfs
 
 cache:
   directories:
