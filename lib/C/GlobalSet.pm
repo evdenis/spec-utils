@@ -60,16 +60,19 @@ sub parse
    my $self = shift;
    my $area = $_[1];
    my @globals;
-   my $name         = qr/(?<name>\b${varname})/;
-   my $sbody        = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
-   my $fargs        = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
-   my $array        = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
-   my $optional_asm = qr/(?:${s}*+asm${s}*+\(${s}*+[^\)]*+${s}*+\))?/;
-   my $decl         = qr/(?:${s}*+${sbody})/;
-   my $init         = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/;          # requires strings to be previously hided
-   my $ptr          = qr/(\*|${s}++|const)*+/;
-   my $standard_type =
-     qr/(?>(?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?(?:char|short|int|long|float|double|long${s}++long))/;
+   my $name          = qr/(?<name>\b${varname})/;
+   my $sbody         = qr/(?<sbody>\{(?:(?>[^\{\}]+)|(?&sbody))*\})/;
+   my $fargs         = qr/(?<fargs>\((?:(?>[^\(\)]+)|(?&fargs))*\))/;
+   my $array         = qr/(?:${s}*+(?:\[[^\]]*+\]\h*+)+)/;
+   my $optional_asm  = qr/(?:${s}*+asm${s}*+\(${s}*+[^\)]*+${s}*+\))?/;
+   my $decl          = qr/(?:${s}*+${sbody})/;
+   my $init          = qr/(?:${s}*+=${s}*+(?:${sbody}|[^;]*+))/;          # requires strings to be previously hided
+   my $ptr           = qr/(\*|${s}++|const)*+/;
+   my $standard_type = qr/(?>
+      (?:long${s}++)?
+      (?:(?:unsigned|(?:__)?signed(?:__)?)${s}++)?
+      (?:char|short|int|long|float|double|long${s}++long)
+   )/x;
    my $common_typedef =
      qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t|atomic_t)/;
    my $simple_type = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;

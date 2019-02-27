@@ -150,3 +150,5 @@ static struct security_hook_list smack_hooks[] __lsm_ro_after_init = {
 };
 
 int_t;
+
+typedef long unsigned int size_t;
