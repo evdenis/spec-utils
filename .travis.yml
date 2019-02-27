@@ -1,5 +1,6 @@
 language: perl
 sudo: false
+dist: xenial
 addons:
   apt:
     packages:
