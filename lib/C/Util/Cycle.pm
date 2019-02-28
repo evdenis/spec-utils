@@ -104,7 +104,20 @@ sub resolve_structure_typedef ($$$)
    my ($graph, @obj) = @_;
 
    unless (defined $obj[1]->inside) {
-      $graph->delete_edge($obj[0]->id, $obj[1]->id);
+      my $sid   = $obj[0]->id;
+      my $tid   = $obj[1]->id;
+      my $sname = $obj[0]->name;
+      my $stype = $obj[0]->type;
+      $graph->delete_edge($sid, $tid);
+      # cycle and no pointer
+      if ($graph->has_edge($tid, $sid) && $obj[1]->code !~ m/${stype}${s}++${sname}${s}*+\*/) {
+         foreach my $id ($graph->successors($tid)) {
+            next
+              if $id eq $sid;
+            $graph->delete_edge($tid, $id);
+            $graph->add_edge($sid, $id);
+         }
+      }
       return 1;
    } else {
       my $t = $obj[1]->inside->[0];
