@@ -27,6 +27,8 @@ my %type_alias = (
    DECLARE_DELAYED_WORK    => 'struct delayed_work',
    DECLARE_DEFERRABLE_WORK => 'struct delayed_work',
    LIST_HEAD               => 'struct list_head',
+   PROCESS_NAME            => 'struct process',        # for Contiki-NG
+   PROCESS                 => 'struct process',        # for Contiki-NG
    LIST                    => {                        # for Contiki-NG
       modifier => 'static',
       type     => 'list_t'
@@ -118,9 +120,11 @@ sub parse
                               |
                               (?<type>\b(?:DEFINE_(?:SPINLOCK|RWLOCK|MUTEX|SRCU|STATIC_SRCU)|LIST(?:_HEAD)?)|DECLARE_WAIT_QUEUE_HEAD)${s}*+\(${s}*+${name}${s}*+\)
                               |
-                              (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                              (?<type>\b(?<special_declare>PROCESS_NAME))${s}*+\(${s}*+${name}${s}*+\)
                               |
-                              (?<type>\bMEMB)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                              (?<type>\b(?:MEMB|PROCESS))${s}*+\(${s}*+${name}${s}*+,[^)]++\)
+                              |
+                              (?<type>\bDEFINE_DEBUGFS_ATTRIBUTE)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
                               (?<type>\bDECLARE_(?:DELAYED_|DEFERRABLE_)?WORK)${s}*+\(${s}*+${name}${s}*+,[^)]++\)
                               |
