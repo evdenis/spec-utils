@@ -19,7 +19,7 @@ sub parse
    my $area = $_[1];
    my %typedefs;
 
-   my $name = qr/(?:[\*\s]+)?(?<name>$varname)\b${s}*+(?:\[[^\]]*\])?/;
+   my $name = qr/(?:[\*\s]+)?(?<name>\b$varname)\b${s}*+(?:\[[^\]]*\])?/;
 
    while (
       ${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
@@ -28,7 +28,7 @@ sub parse
             |
             (?:.*?(?:\($name\)|$name)${s}*+(?<nrec>\((?:(?>[^()]+)|(?&nrec))+\)))
             |
-            (?:(?:.*?)${s}*+(?:$name))
+            (?:.*?${s}*+$name)
          )${s}*+;
       /gmpx
      )
