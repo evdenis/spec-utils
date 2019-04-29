@@ -12,6 +12,15 @@ use Local::String::Util qw(trim);
 
 our @EXPORT = qw(resolve);
 
+sub resolve_global_macro ($$$)
+{
+   my ($graph, @obj) = @_;
+
+   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+
+   1;
+}
+
 sub resolve_macro_macro ($$$)
 {
    my ($graph, @obj) = @_;
