@@ -45,8 +45,12 @@ sub parse
          next;
       }
 
-      if ($functions{$name} && (norm($functions{$name}{code}) ne norm($code))) {
-         warn "Repeated defenition of function $name\n";
+      if ($functions{$name}) {
+         if (norm($functions{$name}{code}) ne norm($code)) {
+            warn "Repeated defenition of function $name\n";
+         } else {
+            warn "Repeated defenition of function $name. Missing header guard?\n";
+         }
       }
 
       @{$functions{$name}}{qw(code declaration ret args body)} = ($code, $decl, $ret, $args, $fbody);
