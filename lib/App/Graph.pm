@@ -415,7 +415,7 @@ sub run
          fork and return;
       }
       my $output = $args->{out} . '.' . $args->{format};
-      system('dot', "-T" . $args->{format}, "$dotfile", "-o${output}");
+      system('dot', '-T' . $args->{format}, "$dotfile", "-o${output}");
       unlink $dotfile
         unless $args->{keep_dot};
 

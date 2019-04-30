@@ -156,33 +156,36 @@ sub attach_declaration
       if ($code =~ $contract_re) {
          my $defn_contract = $+{contract};
          $defn_start = $-[0];
+         my $defn_end = $+[0];
 
          if ($defn_contract) {
             restore_comments($decl_contract, $specs);
-            restore_comments($defn_contract, $specs);
-            my $norm_defn_contract = norm($defn_contract);
             my $norm_decl_contract = norm($decl_contract);
 
             return
-              if !$norm_decl_contract && $norm_defn_contract
-              || !$norm_defn_contract && !$norm_decl_contract;
+              if !$norm_decl_contract;
 
-            if (  $norm_defn_contract
-               && $norm_decl_contract
-               && ($norm_defn_contract ne $norm_decl_contract))
-            {
-               warn "Function "
-                 . $self->name
-                 . " has the decl contract and the defn contract that differs: \n"
-                 . "Declaration:\n$decl_contract"
-                 . "Definition:\n$defn_contract"
-                 . "The definition contract will be used.\n";
-               return;
+            restore_comments($defn_contract, $specs);
+            my $norm_defn_contract = norm($defn_contract);
+
+            if ($norm_defn_contract && $norm_decl_contract) {
+               if ($norm_defn_contract ne $norm_decl_contract) {
+                  warn "Function "
+                    . $self->name
+                    . " has the decl contract and the defn contract that differs: \n"
+                    . "Declaration:\n$decl_contract"
+                    . "Definition:\n$defn_contract"
+                    . "The definition contract will be used.\n";
+                  return;
+               } else {
+                  $defn_start = $defn_end;
+               }
             }
          }
       }
 
-      $self->code($contract . substr($code, $defn_start));
+      $self->code($contract . substr($code, $defn_start))
+        if $contract;
    }
 }
 
