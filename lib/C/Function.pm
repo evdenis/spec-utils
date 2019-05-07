@@ -5,6 +5,7 @@ use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup restore_comments norm);
 use Local::List::Util qw(difference);
+use Local::String::Util qw(ltrim rtrim);
 use ACSL::Common qw(is_acsl_spec is_contract);
 
 use namespace::autoclean;
@@ -152,6 +153,7 @@ sub attach_declaration
       my $code          = $self->code();
       my $contract      = $decl_contract;
       my $defn_start    = 0;
+      my @comment_ids;
 
       if ($code =~ $contract_re) {
          my $defn_contract = $+{contract};
@@ -160,13 +162,17 @@ sub attach_declaration
 
          if ($defn_contract) {
             restore_comments($decl_contract, $specs);
+            $decl_contract =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
             my $norm_decl_contract = norm($decl_contract);
 
             return
               if !$norm_decl_contract;
 
             restore_comments($defn_contract, $specs);
+            $defn_contract =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
             my $norm_defn_contract = norm($defn_contract);
+
+            @comment_ids = sort {$a <=> $b} @comment_ids;
 
             if ($norm_defn_contract && $norm_decl_contract) {
                if ($norm_defn_contract ne $norm_decl_contract) {
@@ -184,8 +190,24 @@ sub attach_declaration
          }
       }
 
-      $self->code($contract . substr($code, $defn_start))
-        if $contract;
+      if ($contract) {
+         # disable to_string crop to work
+         if (@comment_ids) {
+            my $remove_comments = "\Q$comment_t{L}\E" . '(?:' . join('|', @comment_ids) . ')' . "\Q$comment_t{R}\E";
+            $remove_comments = qr/$remove_comments/;
+
+            $contract =~ s/$remove_comments//g;
+            $code =~ s/$remove_comments//g;
+
+            $code       = ltrim $code;
+            $contract   = rtrim $contract;
+            $defn_start = 0;
+
+            $contract = join("\n", map {$comment_t{L} . $_ . $comment_t{R}} @comment_ids) . "\n" . $contract . "\n";
+         }
+
+         $self->code($contract . substr($code, $defn_start));
+      }
    }
 }
 
@@ -201,20 +223,20 @@ sub to_string
 
    #crop to first spec comment
    my $prior = index($code, '{');
-   foreach (@cmnt) {
-      if (is_acsl_spec($comments->[$_])) {
-         my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
-         $code = substr($code, $pos)
-           if $pos < $prior;
-         goto FW_DECL;
-      }
-   }
+   #foreach (@cmnt) {
+   #   if (is_acsl_spec($comments->[$_])) {
+   #      my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
+   #      $code = substr($code, $pos)
+   #        if $pos < $prior;
+   #      goto FW_DECL;
+   #   }
+   #}
    # remove all comments since there is no specification binded to function
    # note that specification in function will be removed since they have no
    # meaning
-   $code =~ s/^${s}++//;
-
- FW_DECL:
+   #$code =~ s/^${s}++//;
+   #
+   # FW_DECL:
 
    unless ($full) {
       $prior = rindex(substr($code, 0, index($code, '{')), ')') + 1;
