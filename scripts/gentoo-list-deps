@@ -1,0 +1,24 @@
+#!/usr/bin/env perl
+
+my $cpanfile = shift @ARGV;
+
+if ($cpanfile) {
+   die "usage: gentoo-list-deps <abs-path-to-cpanfile> <cpanfile-dump args>"
+   unless -r $cpanfile;
+} else {
+   die "usage: gentoo-list-deps <abs-path-to-cpanfile> <cpanfile-dump args>";
+}
+
+unless (@ARGV) {
+   push @ARGV, '--with-all-features';
+}
+my $cpanfile_dump_args = join(' ',  @ARGV);
+
+my @deps;
+foreach (qx(cpanfile-dump $cpanfile_dump_args $cpanfile)) {
+   chomp;
+   my $package = 'dev-perl/' . ($_ =~ s/::/-/gr);
+   push @deps, $package
+     if -d '/usr/portage/' . $package;
+}
+print join("\n", sort @deps) . "\n";
