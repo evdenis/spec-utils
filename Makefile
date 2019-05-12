@@ -3,9 +3,12 @@ default:
 prove:
 	prove --jobs 1 --shuffle --lib --recurse t/
 
-export KERNEL_VERSION?=4.19.26
+export KERNEL_VERSION?=4.19.42
 export KERNEL=linux-$(KERNEL_VERSION)
 export KERNEL_ARCHIVE=$(KERNEL).tar.xz
+
+KM=$(shell echo $(KERNEL) | grep -o '[[:digit:]]*' | head -1)
+KMVER=v$(KM).x
 
 export MODULE_TO_TEST?=fs/ramfs
 export MODULE=$(KERNEL)/$(MODULE_TO_TEST)
@@ -13,7 +16,7 @@ export MODULE=$(KERNEL)/$(MODULE_TO_TEST)
 export MODULE_FUNCTIONS?=--all
 
 $(KERNEL_ARCHIVE):
-	wget --quiet https://cdn.kernel.org/pub/linux/kernel/v4.x/$@
+	wget --quiet https://cdn.kernel.org/pub/linux/kernel/$(KMVER)/$@
 	touch --date=@0 $@
 
 $(MODULE): $(KERNEL_ARCHIVE)
