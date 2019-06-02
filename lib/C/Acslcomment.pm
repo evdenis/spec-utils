@@ -60,7 +60,7 @@ sub _build_code_ids
    #remove oneline comments; nested multile are not possible
    $code =~ s!//.*!!g;
 
-   my @ids = $code =~ m/\b(?:predicate|inductive|type|logic[\wℤ𝔹\s\*]+)\s++($varname)\s*+[(={]/g;
+   my @ids = $code =~ m/\b(?:predicate|inductive|type|logic[\wℤ𝔹\s\*\\<>]+)\s++($varname)\s*+[(={]/g;
 
    if ((my $i = index($code, 'ghost')) != -1) {
       $i += 5;
