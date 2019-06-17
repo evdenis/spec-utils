@@ -68,44 +68,44 @@ BEGIN {
 
 =head1 extricate
 
-extricate - программа для выборки из общего набора исходных кодов ядра и модуля ядра минимального объёма кода для конкретной функции с зависимостями, достаточного для компиляции в объектный файл
+extricate - single out a function with its dependencies to a separate compilation unit from a set of sources. Can handle ACSL specifications and respects logic dependencies.
 
 =head1 SYNOPSIS
 
  extricate [options]
 
  Options:
-  -k|--kernel dir         - директория с исходными кодами ядра
-  -m|--module dir         - директория с исходными кодами модуля
-  --mname <name>          - имя модуля (например: fat, vfat, msdos)
-  -t|--type linux|contiki - переключение типа проекта
-  --config <file>         - использовать файл конфигурации file
-  --plugin <name>         - загрузить плагин name
+  -k|--kernel dir         - path to the directory with kernel sources
+  -m|--module dir         - path to the directory with module sources
+  --mname <name>          - module name (e.g., fat, vfat, msdos)
+  -t|--type linux|contiki - type of the project
+  --config <file>         - use the configuration file "file"
+  --plugin <name>         - use the plugin "name"
 
   -f|--functions f1 -f f2 ...
   -f|--functions f1,f2,...
-  -f|--functions f1 f2 ...    - построить выборки для функций f1,f2,...
-  -a|--all                    - построить выборки для всех функций модуля ядра
-  -d|--done <conf>            - построить выборки для функций из конфигурации
-  -s|--single                 - поместить все зависимости функции -f в единый файл
-  --double                    - поместить все зависимости функции -f в два файла
-  --merge                     - объединить вывод для нескольких функций
-  --full                      - не сокращать нецелевые функции модуля до деклараций
-  --asmodule                  - перекомбинировать исходные коды в собираемый модуль ядра
-  -r|--remove-fields          - адаптивно убрать неиспользуемые поля из enum
+  -f|--functions f1 f2 ...    - extricate the functions f1,f2,...
+  -a|--all                    - extricate all functions
+  -d|--done <conf>            - extricate functions from the configuration file
+  -s|--single                 - extricate code to a single file
+  --double                    - extricate code to a .c and .h files
+  --merge                     - process all functions simultaniously (merge code)
+  --full                      - output definitions (not declarations) for functions
+  --asmodule                  - recombine sources to a kernel module
+  -r|--remove-fields          - remove unused constants from enum definitions
 
-  -o|--output-file file       - задаёт файл для вывода результатов
-  --output-dir dir            - задаёт директорию для вывода результатов
+  -o|--output-file file       - use the file "file" for output
+  --output-dir dir            - use the directory with name "dir" for output
 
-  -c|--cache num - три уровня кэша:
-                      0 - отсутствует,
-                      1 - ядро не менялось,
-                      2 - ядро и модуль ядра не менялись
-  --renew-cache  - обновить кэш и закончить работу программы
-  -e|--editor    - по окончании работы программы запустить редактор (EDITOR)
+  -c|--cache num - three levels of caching:
+                      0 - don't use cache,
+                      1 - use cache only for kernel part,
+                      2 - use cache for the kernel and the module
+  --renew-cache  - update the caches and exit
+  -e|--editor    - run the the editor (ENV: EDITOR) at the final step
 
-  -h|--help      - выводит полное описание программы
-  --list-plugins - вывести доступные для загрузки плагины
+  -h|--help      - outputs this text
+  --list-plugins - list available plugins
 
 =head1 OPTIONS
 
