@@ -8,6 +8,7 @@ use re '/aa';
 use Exporter qw(import);
 use File::Spec::Functions qw(splitpath catfile);
 use File::Slurp qw(read_file);
+use File::Basename qw(dirname);
 use Cwd qw(realpath);
 use Carp qw(croak);
 
@@ -44,16 +45,30 @@ our @EXPORT_OK =
 sub __get_module_folder_c_contents
 {
    my ($mdir, $kdir, $exact_module) = @_;
-   my $code;
+   my $code = '';
    my $includes = [];
 
-   if (-f $mdir) {
-      $code = read_file($mdir);
-   } elsif (-d $mdir) {
-      my $makefile = catfile $mdir, 'Makefile';
+   $mdir = [ $mdir ]
+      unless ref($mdir) eq 'ARRAY';
+
+   foreach my $f (@{$mdir}) {
+      my $is_file = 0;
+      my $dir;
+      if (-d $f) {
+         $dir     = $f;
+      } elsif (-f $f) {
+         $dir     = dirname $f;
+	 $is_file = 1;
+      } else {
+         croak "$dir is not a file or a directory.";
+      }
+
+      my $makefile = catfile $dir, 'Makefile';
       if (-r $makefile) {
          my $files;
          ($files, $includes) = get_modules_deps($makefile, $kdir);
+         push @{$includes}, $dir;
+
          if (%$files) {
             my $mod;
             unless ($exact_module) {
@@ -66,19 +81,19 @@ sub __get_module_folder_c_contents
                  unless exists $files->{$mod};
             }
             my @cfiles = @{$files->{$mod}};
+	    @cfiles = grep {$_ eq $f} @cfiles
+               if $is_file;
             goto FALLBACK
               unless @cfiles;
-            $code = merge(uniq @cfiles);
+            $code .= merge(uniq @cfiles);
          } else {
             goto FALLBACK;
          }
       } else {
        FALLBACK:
          warn "Can't find or parse module Makefile. Will use all *.c files.\n";
-         $code = merge_sources($_[0]);
+         $code .= merge_sources($f);
       }
-   } else {
-      croak "$mdir is not a file or a directory.";
    }
 
    (\$code, $includes);
@@ -173,7 +188,11 @@ sub _generic_handle_sources
    my ($kdir, $mdir, $exact_module, $defines, $func) = @_;
 
    $kdir = realpath $kdir;
-   $mdir = realpath $mdir;
+   if (ref $mdir eq 'ARRAY') {
+      $mdir = [ map { realpath $_ } @{$mdir} ];
+   } else {
+      $mdir = realpath $mdir;
+   }
 
    my ($code, $includes) = __get_module_folder_c_contents($mdir, $kdir, $exact_module);
 

@@ -230,7 +230,7 @@ $config{single}          = 0;
 $config{double}          = 0;
 $config{merge}           = 0;
 $config{'remove-fields'} = 0;
-$config{module}          = $ENV{CURRENT_PROJECT} // '.';
+$config{module}          = [$ENV{CURRENT_PROJECT} // '.'];
 $config{kernel}          = undef;
 $config{mname}           = undef;
 $config{type}            = undef;
@@ -283,12 +283,20 @@ if ($config_exists) {
 
 my $help         = 0;
 my $list_plugins = 0;
+my $module_init  = 1;
 my @args_plugins;
 GetOptions(
    'all|a!'            => \$config{all},
    'done|d=s'          => \$config{done},
    'functions|f=s{1,}' => \@functions,
-   'module|m=s'        => \$config{module},
+   'module|m=s{1,}'    => sub {
+                             if ($module_init) {
+                                $config{module} = [$_[1]]
+                             } else {
+                                push @{$config{module}}, $_[1]
+                             }
+			     $module_init = 0
+                          },
    'kernel|k=s'        => \$config{kernel},
    'mname=s'           => \$config{mname},
    'type|t=s'          => \$config{type},
@@ -354,7 +362,7 @@ pod2usage({-msg => "You should provide proper kernel directory with --kernel opt
   unless check_kernel_dir($config{kernel});
 
 $config{kernel} = realpath $config{kernel};
-$config{module} = realpath $config{module};
+$config{module} = [map { realpath $_} @{$config{module}}];
 
 ### KERNEL DIRECTORY: $config{kernel}
 ### MODULE DIRECTORY: $config{module}
