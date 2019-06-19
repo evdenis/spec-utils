@@ -27,10 +27,10 @@ Plugin::FramaC - run Frama-C on an extricated file. By default the cli will be u
 
 Run Frama-C on a "function" with command line arguments "cli_arguments".
 If the "function^" part will be omitted then "cli_arguments" will be used
-as default for any function. Please note, that if you use --full option
+as default for any function. Please note, that if you use the --full option
 to extricate a function B ("Bcli_arguments") that calls a function A
-("Acli_arguments") then for B file "Bcli_arguments" despite the file
-contains also the function A.
+("Acli_arguments") then the option "Bcli_arguments" will be applied despite
+the file contains also the function A.
 
 =item B<--[no-]plugin-framac-verbose>
 
@@ -39,8 +39,8 @@ verification status in case WP or Jessie plugins are used.
 
 =item B<--[no-]plugin-framac-verdicts>
 
-Output the list of verification verdicts (WP/Jessie) at the end. By default
-enabled. Applicable to WP/Jessie plugins output.
+Output the list of verification verdicts (WP/Jessie) at the end. Enabled by default.
+Applicable to WP/Jessie plugins output.
 
 =item B<--plugin-framac-verdicts-file file>
 
@@ -49,7 +49,7 @@ Applicable to WP/Jessie plugins output.
 
 =item B<--plugin-framac-help>
 
-Prints full documentation for the plugin.
+Display this information.
 
 =back
 

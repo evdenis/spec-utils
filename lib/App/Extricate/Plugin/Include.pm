@@ -18,7 +18,7 @@ use Cwd qw(abs_path);
 
 =head1 Plugin::Include
 
-Plugin::Include - плагин для добавления директивы #include <file.h> в выводимые файлы
+Plugin::Include - adds #include <file.h> to the output files
 
 =head1 OPTIONS
 
@@ -26,15 +26,20 @@ Plugin::Include - плагин для добавления директивы #i
 
 =item B<--plugin-include-file string>
 
-В string содержится указание на то, в какой файл добавлять директиву #include и путь до самого файла. string имеет формат 'file^path', где file - это kernel_h(1), external_h(2), module_h(3), module_c(4), а path - это путь до подключаемого файла. Плагин копирует файл из path в директорию к остальным файлам и дописывает '#include "$(basename path)"' в файл area.
+The "string" argument is of format 'to_file^incl_path', where the to_file is
+kernel_h(1), external_h(2), module_h(3), module_c(4), and the incl_path is
+a path to the desired include file. The plugin copies the include file to
+the output directory and adds '#include "$(basename path)"' directive to
+the specified file.
 
 =item B<--plugin-include-link>
 
-Изменяет поведение опции plugin-include-file. Вместо копирования подключаемого файла происходит создания симлинка на него.
+Changes the behavior of the option "plugin-include-file". Instead of
+copying the plugin it will create a symlink to a header file.
 
 =item B<--plugin-include-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

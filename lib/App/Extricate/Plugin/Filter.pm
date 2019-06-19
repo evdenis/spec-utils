@@ -13,7 +13,7 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::Filter
 
-Plugin::Filter - плагин для исключения из вывода структур, функций, макросов и т. д.
+Plugin::Filter - filter out structures, functions, macro, etc from output
 
 =head1 OPTIONS
 
@@ -21,15 +21,19 @@ Plugin::Filter - плагин для исключения из вывода ст
 
 =item B<--plugin-filter-name name>
 
-Исключить из вывода сущность name.
+Filter out the definition "name" from output.
 
 =item B<--[no-]plugin-filter-reduced>
 
-Опция определяет уровень работы плагина. Для всего графа либо для урезанного графа конкретной функции. По умолчанию, когда extricate запускается с несколькими функциями в опции --functions, плагин работает на уровне всего графа, в обратном случае на уровне урезанного графа конкретной функции. Опция влияет на быстродействие.
+Defines the plugin level of operating. The plugin will run either on a full
+graph of sources or a reduced one for a particular function. The plugin
+works with a full graph by default then there is more than one function in
+the --functions argument, on a reduced graph otherwise. The option affects
+performance only.
 
 =item B<--plugin-filter-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

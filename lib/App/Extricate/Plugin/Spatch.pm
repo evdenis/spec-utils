@@ -15,7 +15,7 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::Spatch
 
-Plugin::Spatch - run spatch for a function
+Plugin::Spatch - run spatch on an extricated function
 
 =head1 OPTIONS
 
@@ -25,18 +25,18 @@ Plugin::Spatch - run spatch for a function
 
 Apply a patch "patch" to an extricated function "function". If the
 "function^" part will be omitted then patch will be applied to any
-function. Please note, that if you use --full option to extricate a
+function. Please note, that if you use the --full option to extricate a
 function B that calls a function A and use "A^patch.cocci"
-configuration that patch.cocci will not be applied. In such a case
+configuration then patch.cocci will not be applied. In such a case
 you should use "B^patch.cocci" configuration or just "patch.cocci".
 
 =item B<--[no-]plugin-spatch-wait>
 
-Wait until spatch finishes to work. Will wait by default.
+Wait until spatch will finish to work. Will wait by default.
 
 =item B<--plugin-spatch-help>
 
-Prints full documentation for the plugin.
+Display this information.
 
 =back
 

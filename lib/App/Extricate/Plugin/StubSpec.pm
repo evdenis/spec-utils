@@ -14,7 +14,8 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::StubSpec
 
-Plugin::StubSpec - плагин для добавления спецификаций-заглушек к декларациям функций и функциям
+Plugin::StubSpec - add stub ACSL specification to declarations and definitions
+of functions
 
 =head1 OPTIONS
 
@@ -22,11 +23,15 @@ Plugin::StubSpec - плагин для добавления спецификац
 
 =item B<--[no-]plugin-stubspec-reduced>
 
-Опция определяет уровень работы плагина. Для всего графа либо для урезанного графа конкретной функции. По умолчанию, когда extricate запускается с несколькими функциями в опции --functions, плагин работает на уровне всего графа, в обратном случае на уровне урезанного графа конкретной функции. Опция влияет на быстродействие.
+Defines the plugin level of operating. The plugin will run either on a full
+graph of sources or a reduced one for a particular function. The plugin
+works with a full graph by default then there is more than one function
+in the --functions argument, on a reduced graph otherwise. The option affects
+performance only.
 
 =item B<--plugin-stubspec-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

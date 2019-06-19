@@ -18,7 +18,8 @@ use C::Util::Transformation qw(adapt restore);
 
 =head1 Plugin::SmartLib
 
-Plugin::SmartLib - плагин для избирательного включения спецификаций на декларации функций из файла библиотеки в выводимые данные
+Plugin::SmartLib - selectively include ACSL specifications from functions
+declarations in a file to the output
 
 =head1 OPTIONS
 
@@ -26,11 +27,14 @@ Plugin::SmartLib - плагин для избирательного включе
 
 =item B<--plugin-smartlib-file file>
 
-Плагин считывает файл file. Парсит декларации функций в нём и спецификации к ним. Если в выводимых данных присутствуют вызовы одной из декларируемых в файле file функций, то эта декларация включается в выводимые данные вместе со своей спецификацией.
+The plugin reads the library file then parses functions declarations and
+their contracts. If there is a function call to one of the functions from
+the library file, then the declaration with the specification for this
+function will be included in the output.
 
 =item B<--plugin-smartlib-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

@@ -13,7 +13,7 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
 =head1 Plugin::Exec
 
-Plugin::Exec - плагин для запуска программы после вывода результатов работы extricate для конкретной функции
+Plugin::Exec - execute a command on the extricated files
 
 =head1 OPTIONS
 
@@ -21,15 +21,17 @@ Plugin::Exec - плагин для запуска программы после 
 
 =item B<--plugin-exec-file path>
 
-Путь до исполняемого файла. В качестве аргументов командной строки передаются все зарегестрированные опции предыдущих плагинов и опция --dir path, где path - это путь до директории с файлами.
+The option specifies the path to an executable file. All previously registered
+arguments are passed to the program. In addition the option --dir <path> is
+passed, where the <path> is the path to the directory with generated files.
 
 =item B<--[no-]plugin-exec-wait>
 
-Ожидать или не ожидать конца исполнения вызываемой программы. По умолчанию плагин ожидает конца выполнения запускаемой программы.
+Wait or not for a command to finish. The plugin will wait by default.
 
 =item B<--plugin-exec-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

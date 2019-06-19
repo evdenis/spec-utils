@@ -17,7 +17,7 @@ use Cwd qw(abs_path);
 
 =head1 Plugin::Inline
 
-Plugin::Inline - плагин для включения указанных данных в выводимые файлы
+Plugin::Inline - inlines data to the output files
 
 =head1 OPTIONS
 
@@ -25,15 +25,19 @@ Plugin::Inline - плагин для включения указанных да�
 
 =item B<--plugin-inline-file string>
 
-В string содержится указание на то, в какой файл и какую его часть добавлять данные и путь до файла с данными. string имеет формат 'area^file^path', где area - begin или end, file - это kernel_h(1), external_h(2), module_h(3), module_c(4), а path - это путь до файла с включаемым содержимым.
+The "string" argument is of format 'area^to_file^path', where the area is 'begin' or 'end',
+the to_file is kernel_h(1), external_h(2), module_h(3), module_c(4), and the path is a valid
+path to the desired include file with text you want to be inlined.
 
 =item B<--plugin-inline-text string>
 
-В string содержится указание на то, в какой файл и какую его часть добавлять данные и сами данные. string имеет формат 'area^file^text', где area - begin или end, file - это kernel_h(1), external_h(2), module_h(3), module_c(4), а text - это данные для включения.
+The "string" argument is of format 'area^to_file^text', where the area is 'begin' or 'end',
+the to_file is kernel_h(1), external_h(2), module_h(3), module_c(4), and the text is a text
+you want to be inlined.
 
 =item B<--plugin-inline-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

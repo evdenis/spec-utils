@@ -16,7 +16,7 @@ use Cwd qw(abs_path);
 
 =head1 Plugin::Modeline
 
-Plugin::Modeline - плагин для добавления строки modeline в файлы
+Plugin::Modeline - add modeline to files
 
 =head1 OPTIONS
 
@@ -24,11 +24,11 @@ Plugin::Modeline - плагин для добавления строки modelin
 
 =item B<--plugin-modeline-string string>
 
-Строка modeline. Добавляется в конец файлов.
+Use the string as modeline. Will be added to the files ends.
 
 =item B<--plugin-modeline-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 

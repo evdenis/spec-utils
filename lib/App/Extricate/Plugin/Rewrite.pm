@@ -14,7 +14,7 @@ use RE::Common qw($varname);
 
 =head1 Plugin::Rewrite
 
-Plugin::Rewrite - плагин для переписывания определений структур, функций, макросов и т. д.
+Plugin::Rewrite - rewrite definitions of structures, functions, macro, etc
 
 =head1 OPTIONS
 
@@ -22,15 +22,20 @@ Plugin::Rewrite - плагин для переписывания определ�
 
 =item B<--plugin-rewrite-id string>
 
-Переписать определение сущности из string. string имеет формат 'entity_name^new_entity_definition'
+Rewrite definition of an entity from the argument "string". The argument should
+be of the format 'entity_name^new_entity_definition'.
 
 =item B<--[no-]plugin-rewrite-reduced>
 
-Опция определяет уровень работы плагина. Для всего графа либо для урезанного графа конкретной функции. По умолчанию, когда extricate запускается с несколькими функциями в опции --functions, плагин работает на уровне всего графа, в обратном случае на уровне урезанного графа конкретной функции. Опция влияет на быстродействие.
+Defines the plugin level of operating. The plugin will run either on a full
+graph of sources or a reduced one for a particular function. The plugin
+works with a full graph by default then there is more than one function in
+the --functions argument, on a reduced graph otherwise. The option affects
+performance only.
 
 =item B<--plugin-rewrite-help>
 
-Выводит полное описание плагина.
+Display this information.
 
 =back
 
