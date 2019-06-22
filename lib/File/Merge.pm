@@ -55,7 +55,7 @@ sub find_all ($$;$)
 
 sub merge (@)
 {
-   my $code;
+   my $code = '';
    $code .= read_file($_, err_mode => 'carp') foreach @_;
 
    $code;
