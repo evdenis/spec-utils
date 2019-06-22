@@ -58,16 +58,18 @@ sub __get_module_folder_c_contents
          $dir     = $f;
       } elsif (-f $f) {
          $dir     = dirname $f;
-	 $is_file = 1;
+         $is_file = 1;
       } else {
          croak "$dir is not a file or a directory.";
       }
+      push @{$includes}, $dir;
 
       my $makefile = catfile $dir, 'Makefile';
       if (-r $makefile) {
          my $files;
-         ($files, $includes) = get_modules_deps($makefile, $kdir);
-         push @{$includes}, $dir;
+         my $module_includes;
+         ($files, $module_includes) = get_modules_deps($makefile, $kdir);
+         push @{$includes}, @{$module_includes};
 
          if (%$files) {
             my $mod;
@@ -81,7 +83,7 @@ sub __get_module_folder_c_contents
                  unless exists $files->{$mod};
             }
             my @cfiles = @{$files->{$mod}};
-	    @cfiles = grep {$_ eq $f} @cfiles
+            @cfiles = grep {$_ eq $f} @cfiles
                if $is_file;
             goto FALLBACK
               unless @cfiles;
@@ -196,11 +198,7 @@ sub _generic_handle_sources
 
    my ($code, $includes) = __get_module_folder_c_contents($mdir, $kdir, $exact_module);
 
-   my %include_dirs;
-   foreach (find_headers($mdir)) {
-      $include_dirs{realpath((splitpath($_))[1])} = undef;
-   }
-   my @sorted_includes = uniq keys %include_dirs, @$includes;
+   my @sorted_includes = uniq @$includes;
    @sorted_includes = reverse sort @sorted_includes;
    #FIXME: /include should go last in the same level path sequence
    #because we need special handling for #include ""
@@ -216,13 +214,18 @@ sub _generic_handle_sources
       my @mo;
       my @ko;
 
-      foreach (@$o) {
-         if (index($_, $mdir) != -1) {
-            push @mo, $_;
-         } elsif ($_ eq '<stdin>') {
-            push @mo, $_;
+NEXT:
+      foreach my $file (@$o) {
+         foreach my $i (@sorted_includes) {
+            if (index($file, $i) != -1) {
+               push @mo, $file;
+	       next NEXT;
+	    }
+	 }
+	 if ($file eq '<stdin>') {
+            push @mo, $file;
          } else {
-            push @ko, $_;
+            push @ko, $file;
          }
       }
 
