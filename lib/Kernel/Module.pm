@@ -45,22 +45,22 @@ our @EXPORT_OK =
 sub __get_module_folder_c_contents
 {
    my ($mdir, $kdir, $exact_module) = @_;
-   my $code = '';
+   my $code     = '';
    my $includes = [];
 
-   $mdir = [ $mdir ]
-      unless ref($mdir) eq 'ARRAY';
+   $mdir = [$mdir]
+     unless ref($mdir) eq 'ARRAY';
 
    foreach my $f (@{$mdir}) {
       my $is_file = 0;
       my $dir;
       if (-d $f) {
-         $dir     = $f;
+         $dir = $f;
       } elsif (-f $f) {
          $dir     = dirname $f;
          $is_file = 1;
       } else {
-         croak "$dir is not a file or a directory.";
+         croak "$f is not a file or a directory.";
       }
       push @{$includes}, $dir;
 
@@ -84,7 +84,7 @@ sub __get_module_folder_c_contents
             }
             my @cfiles = @{$files->{$mod}};
             @cfiles = grep {$_ eq $f} @cfiles
-               if $is_file;
+              if $is_file;
             goto FALLBACK
               unless @cfiles;
             $code .= merge(uniq @cfiles);
@@ -125,10 +125,10 @@ sub _get_module_data
 
 sub _get_kernel_data
 {
-   my $dir = shift;
+   my $dir      = shift;
    my $includes = join("\n", @{$_[0]});
 
-   my $code = preprocess_as_kernel_module_simpl($dir, \$includes);
+   my $code  = preprocess_as_kernel_module_simpl($dir, \$includes);
    my $macro = preprocess_as_kernel_module_get_macro_simpl($dir, \$includes, 1);
 
    @$macro = grep !/\A#define __STDC_(HOSTED_)?_\N+\Z/, @$macro;
@@ -191,7 +191,7 @@ sub _generic_handle_sources
 
    $kdir = realpath $kdir;
    if (ref $mdir eq 'ARRAY') {
-      $mdir = [ map { realpath $_ } @{$mdir} ];
+      $mdir = [map {realpath $_ } @{$mdir}];
    } else {
       $mdir = realpath $mdir;
    }
@@ -214,15 +214,15 @@ sub _generic_handle_sources
       my @mo;
       my @ko;
 
-NEXT:
+    NEXT:
       foreach my $file (@$o) {
          foreach my $i (@sorted_includes) {
             if (index($file, $i) != -1) {
                push @mo, $file;
-	       next NEXT;
-	    }
-	 }
-	 if ($file eq '<stdin>') {
+               next NEXT;
+            }
+         }
+         if ($file eq '<stdin>') {
             push @mo, $file;
          } else {
             push @ko, $file;
