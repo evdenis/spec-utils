@@ -12,7 +12,7 @@ use File::Basename qw(dirname);
 use Cwd qw(realpath);
 use Carp qw(croak);
 
-use File::C::Merge qw(merge_headers merge_sources find_headers);
+use File::C::Merge qw(merge_headers merge_sources merge_all_files find_headers);
 use File::Merge qw(merge);
 use C::Util::Transformation qw(adapt);
 use Local::List::Util qw(uniq);
@@ -94,7 +94,11 @@ sub __get_module_folder_c_contents
       } else {
        FALLBACK:
          warn "Can't find or parse module Makefile. Will use all *.c files.\n";
-         $code .= merge_sources($f);
+         my $upd_code = merge_sources($f);
+         unless ($upd_code) {
+            $upd_code = merge_all_files($f);
+         }
+	 $code .= $upd_code;
       }
    }
 
