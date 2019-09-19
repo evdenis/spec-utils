@@ -7,6 +7,7 @@ use strict;
 use RE::Common qw($varname);
 use File::Slurp qw(write_file);
 use File::Which;
+use Hash::Ordered;
 
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
@@ -84,7 +85,9 @@ sub process_options
    die "Please, install Frama-C package.\n"
      unless which('frama-c');
 
-   my %framac;
+   @configs = reverse @configs;
+
+   my $framac = Hash::Ordered->new();
    foreach (@configs) {
       chomp;
       my $fmask  = '#ALL';
@@ -93,19 +96,19 @@ sub process_options
          $fmask  = $+{mask};
          $config = $+{config};
       }
-      $framac{$fmask} = $config;
+      $framac->set($fmask => $config);
    }
 
-   unless (exists $framac{'#ALL'}) {
+   unless ($framac->exists('#ALL')) {
       my $default = ' -wp -wp-rte -wp-model "Typed+Cast" -wp-prover alt-ergo,cvc4,z3 ';
       warn "FRAMA-C: default configuration will be '$default'\n";
-      $framac{'#ALL'} = $default;
+      $framac->set('#ALL' => $default);
    }
 
-   $config->{'framac'} = \%framac;
+   $config->{'framac'} = $framac;
 
    bless {
-      framac         => \%framac,
+      framac         => $framac,
       verbose        => $verbose,
       verdicts_file  => $verdicts_file,
       print_verdicts => $print_verdicts
@@ -148,7 +151,7 @@ sub action_output_verdicts
    my ($self, $opts) = @_;
 
    if (%VERDICT && ($self->{print_verdicts} || $self->{verdicts_file})) {
-      my @keys = sort {$STATUS{$VERDICT{$a}{status}} <=> $STATUS{$VERDICT{$b}{status}} || $a cmp $b} keys %VERDICT;
+      my @keys   = sort {$STATUS{$VERDICT{$a}{status}} <=> $STATUS{$VERDICT{$b}{status}} || $a cmp $b} keys %VERDICT;
       my $output = join(
          "\n",
          map {
@@ -210,17 +213,17 @@ sub process_output
 sub action_run_framac
 {
    my ($self, $opts) = @_;
-   my %framac  = %{$self->{framac}};
+   my $framac  = $self->{framac};
    my $verbose = $self->{verbose};
    my $func    = $opts->{function};
 
    return undef
      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
 
-   my $cli_args = $framac{'#ALL'};
-   foreach my $mask (keys %framac) {
+   my $cli_args = $framac->get('#ALL');
+   foreach my $mask ($framac->keys) {
       if ($func =~ $mask) {
-         $cli_args = $framac{$mask};
+         $cli_args = $framac->get($mask);
          last;
       }
    }

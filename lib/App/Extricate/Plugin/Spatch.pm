@@ -6,6 +6,7 @@ use warnings;
 use strict;
 use RE::Common qw($varname);
 use File::Which;
+use Hash::Ordered;
 
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 
@@ -75,26 +76,28 @@ sub process_options
    die "Please, install coccinelle package.\n"
      unless which('spatch');
 
-   my %files;
+   @files = reverse @files;
+
+   my $cocci = Hash::Ordered->new();
    foreach (@files) {
       chomp;
       my $fmask = '#ALL';
-      my $cocci = $_;
-      if (m/\A(?<mask>[\w_*.+?]++)\^(?<cocci>.*)\Z/) {
+      my $file  = $_;
+      if (m/\A(?<mask>[\w_*.+?]++)\^(?<file>.*)\Z/) {
          $fmask = $+{mask};
-         $cocci = $+{cocci};
+         $file  = $+{file};
       }
 
-      unless (-f $cocci && -r _) {
-         die "FAIL: Can't access file $cocci.\n";
+      unless (-f $file && -r _) {
+         die "FAIL: Can't access file $file.\n";
       }
 
-      push @{$files{$fmask}}, $cocci;
+      $cocci->set($fmask => [@{$cocci->get($fmask) // []}, $file]);
    }
 
-   $config->{'spatch'} = \%files;
+   $config->{'spatch'} = $cocci;
 
-   bless {cocci => \%files, wait => $wait}, $self;
+   bless {cocci => $cocci, wait => $wait}, $self;
 }
 
 sub level
@@ -105,24 +108,24 @@ sub level
 sub action
 {
    my ($self, $opts) = @_;
-   my %cocci = %{$self->{cocci}};
+   my $cocci = $self->{cocci};
    my $func  = $opts->{function};
 
    return undef
      if !(exists $opts->{'dir'}) || !(exists $opts->{'file'});
 
    my @patches;
-   foreach (keys %cocci) {
+   foreach ($cocci->keys) {
       if ($func =~ $_) {
-         push @patches, @{$cocci{$_}};
+         push @patches, @{$cocci->get($_)};
       } elsif ($_ eq '#ALL') {
-         push @patches, @{$cocci{$_}};
+         push @patches, @{$cocci->get($_)};
       }
    }
 
    foreach my $patch (@patches) {
       my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
-      my @args = ('--in-place', '--sp-file', $patch, $cfile);
+      my @args  = ('--in-place', '--sp-file', $patch, $cfile);
       print "SPATCH: spatch @args\n";
 
       my $pid = fork();
