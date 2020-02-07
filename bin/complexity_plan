@@ -112,7 +112,7 @@ if ($output_file && -f $output_file && !$force) {
 }
 
 #BEGIN OF A PROGRAM
-my $preprocessed = get_preprocessed_sources($kernel, $module, $exact_module);
+my $preprocessed   = get_preprocessed_sources($kernel, $module, $exact_module);
 my $unpreprocessed = get_prepared_sources($kernel, $module, $exact_module);
 
 #Initializing the library
@@ -176,7 +176,7 @@ sub get_metrics
    my $items       = $ref->{measure}[0]{item};
    my %metrics;
    foreach (keys %$items) {
-      my $name = ($_ =~ m/(^[^\(]++)/)[0];
+      my $name  = ($_ =~ m/(^[^\(]++)/)[0];
       my @value = @{$items->{$_}{value}}[1, 2];
       $metrics{$name} = {SLOC => $value[0], CCN => $value[1]};
    }
@@ -255,8 +255,8 @@ sub resolve_function_function_cycles($graph)
 sub mark_levels($graph)
 {
    my %vertices = map {$_ => undef} $graph->vertices;
-   my %vd = map {($_, $graph->in_degree($_))} keys %vertices;
-   my $level = 1;
+   my %vd       = map {($_, $graph->in_degree($_))} keys %vertices;
+   my $level    = 1;
    while (%vertices) {
       my @zv;
 
@@ -265,7 +265,7 @@ sub mark_levels($graph)
       }
 
       unless (@zv) {
-         die "There is no possibility to continue. Cycle.\n";
+         die "It's impossible to proceed because of a cycle.\n";
          last;
       }
 
@@ -292,7 +292,7 @@ sub create_table ($graph, $preprocessed, $modified, $functions, $config)
    my %vertices = map {$_ => undef} $graph->vertices;
 
    foreach (keys %vertices) {
-      my $obj = $graph->get_vertex_attribute($_, 'object');
+      my $obj          = $graph->get_vertex_attribute($_, 'object');
       my @calls        = grep {!m/^__builtin/} @{$obj->calls};                       # filter builtin compiler functions
       my @module_calls = grep {exists $vertices{$_}} @calls;
       my @kernel_calls = grep {!exists $vertices{$_}} @calls;
@@ -306,7 +306,7 @@ sub create_table ($graph, $preprocessed, $modified, $functions, $config)
       }
       $metrics->{$_}{priority} = $graph->get_vertex_attribute($_, 'priority');
       $metrics->{$_}{level}    = $graph->get_vertex_attribute($_, 'level');
-      $metrics->{$_}{status}   = $status{$_} // '';
+      $metrics->{$_}{status}       = $status{$_} // '';
       $metrics->{$_}{module_calls} = scalar @module_calls;
       $metrics->{$_}{kernel_calls} = scalar @kernel_calls;
       $metrics->{$_}{args}         = scalar @args;
