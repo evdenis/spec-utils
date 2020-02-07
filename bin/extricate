@@ -290,30 +290,30 @@ GetOptions(
    'done|d=s'          => \$config{done},
    'functions|f=s{1,}' => \@functions,
    'module|m=s{1,}'    => sub {
-                             if ($module_init) {
-                                $config{module} = [$_[1]]
-                             } else {
-                                push @{$config{module}}, $_[1]
-                             }
-			     $module_init = 0
-                          },
-   'kernel|k=s'        => \$config{kernel},
-   'mname=s'           => \$config{mname},
-   'type|t=s'          => \$config{type},
-   'cache|c:2'         => \$cache,
-   'renew-cache'       => \$renew_cache_and_exit,
-   'single|s!'         => \$config{single},
-   'double'            => sub {$config{double} = 1; $config{single} = 0;},
-   'merge!'            => \$config{merge},
-   'full'              => \$config{full},
-   'asmodule'          => \$config{asmodule},
-   'remove-fields|r!'  => \$config{'remove-fields'},
-   'output-file|o=s'   => \$config{'output-file'},
-   'output-dir=s'      => \$config{'output-dir'},
-   'editor|e!'         => \$config{editor},
-   'plugin=s@'         => \@args_plugins,
-   'list-plugins'      => \$list_plugins,
-   'help|h'            => \$help
+      if ($module_init) {
+         $config{module} = [$_[1]];
+      } else {
+         push @{$config{module}}, $_[1];
+      }
+      $module_init = 0;
+   },
+   'kernel|k=s'       => \$config{kernel},
+   'mname=s'          => \$config{mname},
+   'type|t=s'         => \$config{type},
+   'cache|c:2'        => \$cache,
+   'renew-cache'      => \$renew_cache_and_exit,
+   'single|s!'        => \$config{single},
+   'double'           => sub {$config{double} = 1; $config{single} = 0;},
+   'merge!'           => \$config{merge},
+   'full'             => \$config{full},
+   'asmodule'         => \$config{asmodule},
+   'remove-fields|r!' => \$config{'remove-fields'},
+   'output-file|o=s'  => \$config{'output-file'},
+   'output-dir=s'     => \$config{'output-dir'},
+   'editor|e!'        => \$config{editor},
+   'plugin=s@'        => \@args_plugins,
+   'list-plugins'     => \$list_plugins,
+   'help|h'           => \$help
 ) or pod2usage(1);
 
 pod2usage({-verbose => 2, -exitval => 0})
@@ -328,7 +328,7 @@ $cache = 0
   if $renew_cache_and_exit;
 @functions = split(/,/, join(',', @functions));
 $config{functions} = \@functions;
-$config{plugin} = [split(/,/, join(',', @{$config{plugin}}))];
+$config{plugin}    = [split(/,/, join(',', @{$config{plugin}}))];
 push @{$config{plugin}}, @args_plugins;
 
 if ($config{'output-file'}) {
@@ -362,7 +362,7 @@ pod2usage({-msg => "You should provide proper kernel directory with --kernel opt
   unless check_kernel_dir($config{kernel});
 
 $config{kernel} = realpath $config{kernel};
-$config{module} = [map { realpath $_} @{$config{module}}];
+$config{module} = [map {realpath $_} @{$config{module}}];
 
 ### KERNEL DIRECTORY: $config{kernel}
 ### MODULE DIRECTORY: $config{module}
@@ -396,7 +396,7 @@ my @plugins;
 my %level = (full_graph => 1, reduced_graph => 2, raw_data => 3, pre_output => 4, post_output => 5, before_exit => 6);
 if (@{$config{plugin}}) {
    my $loader = Module::Loader->new(max_depth => 1);
-   my %pmap = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Extricate::Plugin');
+   my %pmap   = map {lc(substr($_, rindex($_, ':') + 1)), $_} $loader->search('App::Extricate::Plugin');
    foreach my $p (@{$config{plugin}}) {
       if (any {$p eq $_} keys %pmap) {
          ### LOADING PLUGIN: $p
@@ -479,7 +479,7 @@ create_directory $config{'output-dir'};
    foreach my $dir (@cache_dir) {
       unless (create_directory($dir)) {
          @cache_file = map {defined $_ ? catfile($dir, $_) : $_} @cache_file;
-         $c = 1;
+         $c          = 1;
          last;
       }
    }
@@ -532,7 +532,7 @@ my $exit_code = 0;
 sub call_plugins
 {
    my %opts = (@_, config => \%config);
-   my $res = 0;
+   my $res  = 0;
 
    if (exists $schedule{$opts{level}}) {
       foreach my $plugin (@{$schedule{$opts{level}}}) {
@@ -722,7 +722,7 @@ my @all_output_files;
             }
 
             unless (@zv) {
-               warn "There is no possibility to continue. All available functions was generated.\n";
+               warn "It's impossible to proceed. All available functions were generated.\n";
                warn "Plugins execution fail:\n\t" . join("\n\t", map {$rindx{$_}} @all_failed) . "\n";
                print "\n\n";
                warn "Failed to generate:\n\t" . join("\n\t", map {$rindx{$_}} keys %vertices) . "\n";
