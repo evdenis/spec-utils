@@ -240,7 +240,7 @@ sub action_run_framac
       die "FRAMA-C: failed to run with code $?: $!\n" . ($output // '');
    }
 
-   if ($cli_args =~ m/-(?:wp|jessie)\b/) {
+   if ($cli_args =~ m/-(?:wp|jessie|av)\b/) {
       my $result = process_output($output, $func, $verbose);
       if ($verbose || !$result) {
          print $output;

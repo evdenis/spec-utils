@@ -20,7 +20,7 @@ fi
 
 FUNC=$(basename $dir)
 
-OUT=$(frama-c -jessie -jessie-target why3prove -jessie-why3-opt "\ -a split_goal_wp -P alt-ergo" "$dir/module.c" 2>&1)
+OUT=$(frama-c -av -av-target why3prove -av-why3-opt "\ -a split_goal_wp -P alt-ergo" "$dir/module.c" 2>&1)
 
 ERR=$?
 

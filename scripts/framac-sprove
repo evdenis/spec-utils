@@ -16,7 +16,7 @@ die("Can't read file $file\n")
 
 my $func = $args{'--function'} // 'unknown';
 
-my $output = qx(frama-c -jessie -jessie-target why3sprove -jessie-why3-opt ' --strategy proof_juicer ' "$file" 2>&1);
+my $output = qx(frama-c -av -av-target why3sprove -av-why3-opt ' --strategy proof_juicer ' "$file" 2>&1);
 
 die("Unable to launch external process: $!\n")
    if not defined $output;

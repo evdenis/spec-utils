@@ -18,4 +18,4 @@ then
    exit 1
 fi
 
-frama-c -jessie -jessie-target why3typecheck "$file"
+frama-c -av -av-target why3typecheck "$file"
