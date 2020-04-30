@@ -152,27 +152,17 @@ sub preprocess_directives
    _generic_preprocess_directives('-E -CC -fdirectives-only ' . use_stdlib(), @_);
 }
 
-my $last_path        = '';
-my $gcc_include_path = undef;
-my $stdlib           = undef;
-
 sub form_gcc_kernel_include_path
 {
-   my $kdir_path = shift;
+   my ($kdir_path) = @_;
+   my $gcc_include_path;
 
-   if ($last_path eq $kdir_path && defined $gcc_include_path) {
-      return $gcc_include_path;
+   foreach (get_include_paths()) {
+      $gcc_include_path .= "-I ${kdir_path}/${_} ";
    }
 
-   $last_path        = $kdir_path;
-   $gcc_include_path = '';
-
-   $gcc_include_path .= "-I ${kdir_path}/${_} " foreach get_include_paths();
-
-   unless (defined $stdlib) {
-      my @str = split "\n", qx(gcc -print-search-dirs);
-      $stdlib = substr($str[0], index($str[0], ': ') + 2) . 'include/';
-   }
+   my @str    = split "\n", qx(gcc -print-search-dirs);
+   my $stdlib = substr($str[0], index($str[0], ': ') + 2) . 'include/';
 
    $gcc_include_path .= "-I $stdlib";
 
