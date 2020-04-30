@@ -13,4 +13,4 @@ plugin-rewrite-id=container_of^#define container_of(ptr,type,member) ((type *)((
 plugin-rewrite-id=call_rcu^#define call_rcu(a,b) b(a)
 
 plugin=exec
-plugin-exec-file=/home/work/workspace/work/spec-utils/scripts/framac-sprove.pl
+plugin-exec-file=scripts/framac-sprove
