@@ -8,7 +8,7 @@ use re '/aa';
 use RE::Common qw($varname);
 use Local::String::Util qw(normalize);
 use File::Slurp qw(read_file);
-use File::Spec::Functions qw(catfile splitpath);
+use File::Spec::Functions qw(catfile splitpath catdir);
 use Cwd qw(realpath);
 
 use Exporter qw(import);
@@ -65,9 +65,15 @@ sub get_modules_deps
                           /gmx
         )
       {
-         push @{$struct{$module}}, map {realpath(catfile($makedir, substr($_, 0, -2) . '.c'))}
-           grep {/\.o\Z/}
-           split /\s++/, $+{deps} =~ tr/\\//dr;
+         foreach (grep {/\.o\Z/} split(/\s++/, ($+{deps} =~ tr/\\//dr))) {
+            my $cfile = substr($_, 0, -2) . '.c';
+            my (undef, $dir, undef) = splitpath($cfile);
+            if ($dir) {
+               push @includes, catdir($makedir, $dir);
+            }
+            my $fullpath = realpath(catfile($makedir, $cfile));
+            push @{$struct{$module}}, $fullpath;
+         }
       }
    }
 
@@ -88,7 +94,7 @@ sub get_modules_deps
       while ($ccflags =~ m/-I\h*+([^\s]++)/g) {
          my $include = $1;
          if ($include =~ s!\A\$\(src(?:tree)?\)/?!!) {
-            $include = catfile($kdir, $include);
+            $include = catdir($kdir, $include);
          }
          push @includes, $include;
       }
