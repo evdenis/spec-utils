@@ -90,7 +90,7 @@ sub action
          if ($type eq 'C::Acslcomment') {
             $g->delete_vertex($_);
          }
-         unless ($type eq 'C::Function') {
+         unless ($type eq 'C::Function' || $type eq 'C::Declaration') {
             next;
          }
       }
