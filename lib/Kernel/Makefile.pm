@@ -24,6 +24,18 @@ sub get_modules_deps
    my @modules;
    my @includes;
 
+   my %autoconfig;
+   my $autoconfig_path = catfile($kdir, 'include/generated/autoconf.h');
+   if (-r $autoconfig_path) {
+      foreach (read_file($autoconfig_path)) {
+         if (m/^#define\s++(?<id>CONFIG_\w++)\s++(?<val>\d++|"[^"]*+")/) {
+            $autoconfig{$+{id}} = $+{val};
+         }
+      }
+   } else {
+      warn "Can't find include/generated/autoconf.h. Assuming all options enabled in Kconfig.\n";
+   }
+
    while (
       $$data =~ m/
                         obj-(?:\$\($varname\)|[mny])
@@ -49,7 +61,11 @@ sub get_modules_deps
    foreach my $module (@modules) {
       while (
          $$data =~ m/
-                           \b${module}(?:-objs)?(?:-y|-\$\(CONFIG_\w++\))?
+                           \b(?:
+                                (?:${module}(?:-objs)?(?:-y|-(?<config>\$\(CONFIG_\w++\)))?)
+                                |
+                                (?:obj-(?<config>\$\(CONFIG_\w++\)))
+                           )
                            \h*+
                               [:+]?=
                            \h*+
@@ -65,14 +81,22 @@ sub get_modules_deps
                           /gmx
         )
       {
-         foreach (grep {/\.o\Z/} split(/\s++/, ($+{deps} =~ tr/\\//dr))) {
-            my $cfile = substr($_, 0, -2) . '.c';
-            my (undef, $dir, undef) = splitpath($cfile);
-            if ($dir) {
-               push @includes, catdir($makedir, $dir);
+         my $add = 1;
+         if ($+{config}) {
+            if (%autoconfig && !exists $autoconfig{$+{config}}) {
+               $add = 0;
             }
-            my $fullpath = realpath(catfile($makedir, $cfile));
-            push @{$struct{$module}}, $fullpath;
+         }
+         if ($add) {
+            foreach (grep {/\.o\Z/} split(/\s++/, ($+{deps} =~ tr/\\//dr))) {
+               my $cfile = substr($_, 0, -2) . '.c';
+               my (undef, $dir, undef) = splitpath($cfile);
+               if ($dir) {
+                  push @includes, catdir($makedir, $dir);
+               }
+               my $fullpath = realpath(catfile($makedir, $cfile));
+               push @{$struct{$module}}, $fullpath;
+            }
          }
       }
    }
