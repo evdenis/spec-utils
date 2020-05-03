@@ -24,7 +24,7 @@ sub parse
    while (
       ${$_[0]} =~ m/^${h}*+(?:__extension__)?${h}*+\Ktypedef${s}*+
          (?:
-            (?:(?:(?:struct|union|enum)${s}*+(?:$varname)?${s}*+(?<crec>\{(?:(?>[^\{\}]+)|(?&crec))+\}))(?:${s}*+PARSEC_PACKED)?${s}*+($name))
+            (?:(?:(?:struct|union|enum)${s}*+(?:$varname)?${s}*+(?<crec>\{(?:(?>[^\{\}]+)|(?&crec))+\}))(?:${s}*+(?:PARSEC_PACKED|__packed))?${s}*+($name))
             |
             (?:[^;()\[\]]*?(?:\($name\)|$name)${s}*+(?<nrec>\((?:(?>[^()]+)|(?&nrec))+\)))
             |
