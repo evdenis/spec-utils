@@ -230,7 +230,7 @@ $config{single}          = 0;
 $config{double}          = 0;
 $config{merge}           = 0;
 $config{'remove-fields'} = 0;
-$config{module}          = [$ENV{CURRENT_PROJECT} // '.'];
+$config{module}          = [];
 $config{kernel}          = undef;
 $config{mname}           = undef;
 $config{type}            = undef;
@@ -281,6 +281,10 @@ if ($config_exists) {
    close($conf);
 }
 
+unless (@{$config{module}}) {
+   $config{module} = [$ENV{CURRENT_PROJECT} // '.'];
+}
+
 my $help         = 0;
 my $list_plugins = 0;
 my $module_init  = 1;
@@ -326,7 +330,7 @@ if ($config{type}) {
 
 $cache = 0
   if $renew_cache_and_exit;
-@functions = split(/,/, join(',', @functions));
+@functions         = split(/,/, join(',', @functions));
 $config{functions} = \@functions;
 $config{plugin}    = [split(/,/, join(',', @{$config{plugin}}))];
 push @{$config{plugin}}, @args_plugins;
