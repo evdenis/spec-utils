@@ -25,6 +25,12 @@ Plugin::Rewrite - rewrite definitions of structures, functions, macro, etc
 Overwrite definition of an entity from the argument "string". The argument should
 be of the format 'name^new_definition'.
 
+=item B<--plugin-rewrite-name string>
+
+Rewrite definition of an entity from the argument "string". The argument should
+be of the format 'name^new_definition'. Main difference with C<--plugin-rewrite-id>
+is that all deps are detached from the node.
+
 =item B<--[no-]plugin-rewrite-reduced>
 
 Defines the plugin level of operating. The plugin will run either on a full
@@ -41,15 +47,33 @@ Display this information.
 
 =cut
 
+sub parse_rewrite_arg
+{
+   my $rewrite = {};
+
+   foreach (@_) {
+      chomp;
+      if (m/\A($varname)\^(.*)\Z/) {
+         $rewrite->{$1} = $2;
+      } else {
+         die "Can't parse rewrite id '$_'\n";
+      }
+   }
+
+   return $rewrite;
+}
+
 sub process_options
 {
    my ($self, $config) = @_;
    my @overwrite;
+   my @rewrite;
    my $help    = 0;
    my $reduced = @{$config->{functions}} > 1 || $config->{all} ? 0 : 1;
 
    GetOptions(
       'plugin-rewrite-id=s'     => \@overwrite,
+      'plugin-rewrite-name=s'   => \@rewrite,
       'plugin-rewrite-reduced!' => \$reduced,
       'plugin-rewrite-help'     => \$help,
    ) or die("Error in command line arguments\n");
@@ -66,24 +90,21 @@ sub process_options
    pod2usage(
       {
          -input   => $input,
-         -msg     => "Option --plugin-rewrite-id should be provided.\n",
+         -msg     => "Option --plugin-rewrite-{id,name} should be provided.\n",
          -exitval => 1
       }
-   ) unless @overwrite;
+   ) if !@overwrite && !@rewrite;
 
    my %overwrite;
-   foreach (@overwrite) {
-      chomp;
-      if (m/\A($varname)\^(.*)\Z/) {
-         $overwrite{$1} = $2;
-      } else {
-         die "Can't parse rewrite id '$_'\n";
-      }
-   }
 
-   $config->{'overwrite'} = \%overwrite;
+   $config->{'overwrite'} = parse_rewrite_arg @overwrite;
+   $config->{'rewrite'}   = parse_rewrite_arg @rewrite;
 
-   bless {overwrite => \%overwrite, reduced => $reduced}, $self;
+   bless {
+      overwrite => $config->{'overwrite'},
+      rewrite   => $config->{'rewrite'},
+      reduced   => $reduced
+   }, $self;
 }
 
 sub level
@@ -99,20 +120,28 @@ sub action
      unless exists $opts->{'graph'};
 
    my %overwrite = %{$self->{overwrite}};
+   my %rewrite   = %{$self->{rewrite}};
 
    my $g = $opts->{'graph'};
 
-   foreach ($g->vertices) {
-      my $o    = $g->get_vertex_attribute($_, 'object');
+   foreach my $id ($g->vertices) {
+      my $o    = $g->get_vertex_attribute($id, 'object');
       my $name = $o->name;
 
       if ($overwrite{$name}) {
-         print "plugin: rewrite: rewriting $name\n";
+         print "plugin: rewrite: overwriting $name\n";
          $o->code($overwrite{$name});
          delete $overwrite{$name};
       }
+
+      if ($rewrite{$name}) {
+         print "plugin: rewrite: rewriting $name\n";
+         $o->code($rewrite{$name});
+         $g->delete_edges($g->all_predecessors($id));
+         delete $rewrite{$name};
+      }
    }
-   foreach (sort keys %overwrite) {
+   foreach (sort (keys %overwrite, keys %rewrite)) {
       warn "plugin: rewrite: vertex $_ doesn't exist in graph\n";
    }
 
