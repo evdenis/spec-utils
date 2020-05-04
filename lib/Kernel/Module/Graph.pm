@@ -44,7 +44,7 @@ our %out_file = (
 
 our @out_order = ('kernel_h', 'extern_h', 'module_h', 'module_c',);
 
-my %_order = (0 => sub {@_}, 1 => sub {($_[1], $_[0])});
+my %_order  = (0 => sub {@_}, 1 => sub {($_[1], $_[0])});
 my $_orderp = 0;
 my ($order, $vname);
 
@@ -91,7 +91,7 @@ sub __dependencies_graph_iterator_generic
     NEXT:
       return undef if $l < 0;
       my @keys = split /_/, $vertices[$l--];
-      my $set = $sources->{$keys[0]}{$keys[1]};
+      my $set  = $sources->{$keys[0]}{$keys[1]};
       goto NEXT unless $set;
 
       return $set;
@@ -198,10 +198,10 @@ sub _update_ids_index
                            # FIXME: const
                            my @old_type_words = ($old->type =~ m/\w++/g);
                            my @new_type_words = ($old->type =~ m/\w++/g);
-                           my $old_type_id    = $#old_type_words > 1 ? $old_type_words[1] : $old_type_words[0];
-                           my $new_type_id    = $#new_type_words > 1 ? $new_type_words[1] : $new_type_words[0];
-                           my $type_old       = 1;
-                           my $type_new       = 2;
+                           my $old_type_id = $#old_type_words > 1 ? $old_type_words[1] : $old_type_words[0];
+                           my $new_type_id = $#new_type_words > 1 ? $new_type_words[1] : $new_type_words[0];
+                           my $type_old    = 1;
+                           my $type_new    = 2;
 
                            $type_old = $index{$old_type_id}
                              if exists $index{$old_type_id};
@@ -438,7 +438,7 @@ sub _form_graph
 sub build_sources_graph
 {
    my $sources = shift;
-   my $opts = (ref $_[0] eq HASH) ? shift : {@_};
+   my $opts    = (ref $_[0] eq HASH) ? shift : {@_};
 
    my $index;
    if ($opts->{cache}{use}) {
@@ -819,7 +819,7 @@ sub output_sources_graph
                type   => blessed($o),
                area   => $o->area
             }
-           )
+         )
       } @zv;
 
       my $sort_sub = sub {
