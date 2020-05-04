@@ -90,7 +90,8 @@ extricate - single out a function with its dependencies to a separate compilatio
   -s|--single                 - extricate code to a single file
   --double                    - extricate code to a .c and .h files
   --merge                     - process all functions simultaniously (merge code)
-  --full                      - output definitions (not declarations) for functions
+  --full                      - output definitions (not declarations) for module functions
+  --fullkernel                - output definitions (not declarations) for kernel functions
   --asmodule                  - recombine sources to a kernel module
   -r|--remove-fields          - remove unused constants from enum definitions
 
@@ -310,6 +311,7 @@ GetOptions(
    'double'           => sub {$config{double} = 1; $config{single} = 0;},
    'merge!'           => \$config{merge},
    'full'             => \$config{full},
+   'fullkernel'       => \$config{fullkernel},
    'asmodule'         => \$config{asmodule},
    'remove-fields|r!' => \$config{'remove-fields'},
    'output-file|o=s'  => \$config{'output-file'},
