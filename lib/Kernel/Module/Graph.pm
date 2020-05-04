@@ -790,7 +790,8 @@ sub output_sources_graph
      module_macro
      /;
 
-   my %vertices = map {($_ => 0)} $graph->vertices;
+   #my %debug;
+   my %vertices = map {$_ => 1} $graph->vertices;
 
    while ($graph->has_a_cycle) {
       resolve($graph, $graph->find_a_cycle);
@@ -806,9 +807,12 @@ sub output_sources_graph
 
       die("Cycle in graph") unless @zv;
 
-      foreach (@zv) {
-         --$vd{$_->[1]} foreach $graph->edges_from($_);
-         delete $vertices{$_};
+      foreach my $v (@zv) {
+         foreach my $e ($graph->edges_from($v)) {
+            --$vd{$e->[1]};
+            #push @{$debug{$v}}, $graph->get_vertex_attribute($e->[1], 'object')->name;
+         }
+         delete $vertices{$v};
       }
 
       my %i = map {
@@ -870,6 +874,7 @@ sub output_sources_graph
       my %ids = map {$_ => undef} @$ids;
       foreach (keys %out) {
          foreach (@{$out{$_}}) {
+            #my $id = $_->id;
             if ($_->area eq 'kernel') {
                $_ = $_->to_string($c, $remove_fields, $fullkernel);
             } else {
@@ -879,6 +884,7 @@ sub output_sources_graph
                   $_ = $_->to_string($c, 0, 1);
                }
             }
+            #$_ = "// " . (join(" ", sort @{$debug{$id} || []})) . "\n" . $_
          }
       }
 
