@@ -121,6 +121,7 @@ sub action
 
    my %overwrite = %{$self->{overwrite}};
    my %rewrite   = %{$self->{rewrite}};
+   my %list      = map {$_ => 1} (keys %overwrite, keys %rewrite);
 
    my $g = $opts->{'graph'};
 
@@ -131,17 +132,17 @@ sub action
       if ($overwrite{$name}) {
          print "plugin: rewrite: overwriting $name\n";
          $o->code($overwrite{$name});
-         delete $overwrite{$name};
+         delete $list{$name};
       }
 
       if ($rewrite{$name}) {
          print "plugin: rewrite: rewriting $name\n";
          $o->code($rewrite{$name});
          $g->delete_edges($g->all_predecessors($id));
-         delete $rewrite{$name};
+         delete $list{$name};
       }
    }
-   foreach (sort (keys %overwrite, keys %rewrite)) {
+   foreach (keys %list) {
       warn "plugin: rewrite: vertex $_ doesn't exist in graph\n";
    }
 
