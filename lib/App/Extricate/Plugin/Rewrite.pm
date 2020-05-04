@@ -45,7 +45,7 @@ sub process_options
 {
    my ($self, $config) = @_;
    my @rewrite;
-   my $help = 0;
+   my $help    = 0;
    my $reduced = @{$config->{functions}} > 1 || $config->{all} ? 0 : 1;
 
    GetOptions(
@@ -74,7 +74,7 @@ sub process_options
    my %rewrite;
    foreach (@rewrite) {
       chomp;
-      if (m/\A$varname\^(.*)\Z/) {
+      if (m/\A($varname)\^(.*)\Z/) {
          $rewrite{$1} = $2;
       } else {
          die "Can't parse rewrite id '$_'\n";
