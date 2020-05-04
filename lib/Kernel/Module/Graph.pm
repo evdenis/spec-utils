@@ -823,8 +823,9 @@ sub output_sources_graph
       } @zv;
 
       my $sort_sub = sub {
-         $sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}}
-           or $i{$a}->{object}->name cmp $i{$b}->{object}->name;
+         ($sp{$i{$a}->{type}} <=> $sp{$i{$b}->{type}})
+           || ($i{$a}->{object}->name cmp $i{$b}->{object}->name)
+           || (($i{$a}->{object}->get_code_ids())[0] cmp($i{$b}->{object}->get_code_ids())[0]);
       };
 
       foreach (sort $sort_sub keys %i) {
