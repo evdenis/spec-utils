@@ -88,7 +88,7 @@ sub merge_headers ($;$)
       push @order, @zv;
    }
 
-   my $h_code;
+   my $h_code = '';
    foreach (@order) {
       $h_code .= ${$h{$_}{file}};
    }
