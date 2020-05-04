@@ -98,19 +98,22 @@ sub action
    return undef
      unless exists $opts->{'graph'};
 
+   my %overwrite = %{$self->{overwrite}};
+
    my $g = $opts->{'graph'};
 
- NEXT: foreach my $id (keys %{$self->{overwrite}}) {
-      print "plugin: rewrite: rewriting $id\n";
+   foreach ($g->vertices) {
+      my $o    = $g->get_vertex_attribute($_, 'object');
+      my $name = $o->name;
 
-      foreach ($g->vertices) {
-         if ($g->get_vertex_attribute($_, 'object')->name eq $id) {
-            $g->get_vertex_attribute($_, 'object')->code($self->{overwrite}{$id});
-            next NEXT;
-         }
+      if ($overwrite{$name}) {
+         print "plugin: rewrite: rewriting $name\n";
+         $o->code($overwrite{$name});
+         delete $overwrite{$name};
       }
-
-      warn "plugin: rewrite: vertex $id doesn't exist in graph\n";
+   }
+   foreach (sort keys %overwrite) {
+      warn "plugin: rewrite: vertex $_ doesn't exist in graph\n";
    }
 
    undef;
