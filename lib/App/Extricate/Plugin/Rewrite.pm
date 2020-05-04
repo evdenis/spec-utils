@@ -34,8 +34,8 @@ is that all deps are detached from the node.
 =item B<--[no-]plugin-rewrite-reduced>
 
 Defines the plugin level of operating. The plugin will run either on a full
-graph of sources or a reduced one for a particular function. The plugin
-works with a full graph by default then there is more than one function in
+graph of sources or on a reduced one for a particular function. The plugin
+works with a full graph by default when there is more than one function in
 the --functions argument, on a reduced graph otherwise. The option affects
 performance only.
 
