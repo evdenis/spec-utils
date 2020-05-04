@@ -23,7 +23,7 @@ Plugin::Rewrite - rewrite definitions of structures, functions, macro, etc
 =item B<--plugin-rewrite-id string>
 
 Overwrite definition of an entity from the argument "string". The argument should
-be of the format 'entity_name^new_entity_definition'.
+be of the format 'name^new_definition'.
 
 =item B<--[no-]plugin-rewrite-reduced>
 
