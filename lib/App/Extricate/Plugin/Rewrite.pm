@@ -22,7 +22,7 @@ Plugin::Rewrite - rewrite definitions of structures, functions, macro, etc
 
 =item B<--plugin-rewrite-id string>
 
-Rewrite definition of an entity from the argument "string". The argument should
+Overwrite definition of an entity from the argument "string". The argument should
 be of the format 'entity_name^new_entity_definition'.
 
 =item B<--[no-]plugin-rewrite-reduced>
@@ -44,12 +44,12 @@ Display this information.
 sub process_options
 {
    my ($self, $config) = @_;
-   my @rewrite;
+   my @overwrite;
    my $help    = 0;
    my $reduced = @{$config->{functions}} > 1 || $config->{all} ? 0 : 1;
 
    GetOptions(
-      'plugin-rewrite-id=s'     => \@rewrite,
+      'plugin-rewrite-id=s'     => \@overwrite,
       'plugin-rewrite-reduced!' => \$reduced,
       'plugin-rewrite-help'     => \$help,
    ) or die("Error in command line arguments\n");
@@ -69,21 +69,21 @@ sub process_options
          -msg     => "Option --plugin-rewrite-id should be provided.\n",
          -exitval => 1
       }
-   ) unless @rewrite;
+   ) unless @overwrite;
 
-   my %rewrite;
-   foreach (@rewrite) {
+   my %overwrite;
+   foreach (@overwrite) {
       chomp;
       if (m/\A($varname)\^(.*)\Z/) {
-         $rewrite{$1} = $2;
+         $overwrite{$1} = $2;
       } else {
          die "Can't parse rewrite id '$_'\n";
       }
    }
 
-   $config->{'rewrite'} = \%rewrite;
+   $config->{'overwrite'} = \%overwrite;
 
-   bless {rewrite => \%rewrite, reduced => $reduced}, $self;
+   bless {overwrite => \%overwrite, reduced => $reduced}, $self;
 }
 
 sub level
@@ -100,12 +100,12 @@ sub action
 
    my $g = $opts->{'graph'};
 
- NEXT: foreach my $id (keys %{$self->{rewrite}}) {
+ NEXT: foreach my $id (keys %{$self->{overwrite}}) {
       print "plugin: rewrite: rewriting $id\n";
 
       foreach ($g->vertices) {
          if ($g->get_vertex_attribute($_, 'object')->name eq $id) {
-            $g->get_vertex_attribute($_, 'object')->code($self->{rewrite}{$id});
+            $g->get_vertex_attribute($_, 'object')->code($self->{overwrite}{$id});
             next NEXT;
          }
       }
