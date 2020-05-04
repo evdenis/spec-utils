@@ -138,7 +138,7 @@ sub action
       if ($rewrite{$name}) {
          print "plugin: rewrite: rewriting $name\n";
          $o->code($rewrite{$name});
-         $g->delete_edges($g->all_predecessors($id));
+         $g->delete_edges(map {@{$_}} $g->edges_to($id));
          delete $list{$name};
       }
    }
