@@ -197,7 +197,7 @@ sub attach_declaration
             $remove_comments = qr/$remove_comments/;
 
             $contract =~ s/$remove_comments//g;
-            $code =~ s/$remove_comments//g;
+            $code     =~ s/$remove_comments//g;
 
             $code       = ltrim $code;
             $contract   = rtrim $contract;
@@ -222,7 +222,7 @@ sub to_string
    my @cmnt = $code =~ m/$comment_t{pattern}/g;
 
    #crop to first spec comment
-   my $prior = index($code, '{');
+   # my $prior = index($code, '{');
    #foreach (@cmnt) {
    #   if (is_acsl_spec($comments->[$_])) {
    #      my $pos = index($code, $comment_t{L} . $_ . $comment_t{R});
@@ -239,7 +239,7 @@ sub to_string
    # FW_DECL:
 
    unless ($full) {
-      $prior = rindex(substr($code, 0, index($code, '{')), ')') + 1;
+      my $prior = rindex(substr($code, 0, index($code, '{')), ')') + 1;
       $code = (substr($code, 0, $prior) =~ s/\s++\Z//r) . ';';
    } else {
       my $fw_decl = $_[0]->forward_declaration;
