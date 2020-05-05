@@ -155,12 +155,18 @@ sub remove_attributes
 {
    generic_remove(
       $_[0], qr/
-	__pure|
-	__weak|
-	__attribute_const__|
-	__acquires|
-	__releases|
-	__attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/x,
+        __pure|
+        __weak|
+        __packed|
+        ____cacheline_aligned|
+        __attribute_const__|
+        __acquires|
+        __releases|
+        __initdata|
+        __initconst|
+        __exitdata|
+        __read_mostly|
+        __attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/x,
       \%attribute_t, save => $_[1]
    );
 }
