@@ -98,7 +98,7 @@ sub __get_module_folder_c_contents
          unless ($upd_code) {
             $upd_code = merge_all_files($f);
          }
-	 $code .= $upd_code;
+         $code .= $upd_code;
       }
    }
 
@@ -221,7 +221,7 @@ sub _generic_handle_sources
     NEXT:
       foreach my $file (@$o) {
          foreach my $i (@sorted_includes) {
-            if (index($file, $i) != -1) {
+            if (index($file, $i) == 0) {
                push @mo, $file;
                next NEXT;
             }
