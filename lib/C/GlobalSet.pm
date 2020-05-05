@@ -85,7 +85,8 @@ sub parse
    )/x;
    my $common_typedef =
      qr/(?>bool|size_t|u?int(?:8|16|32|64)_t|u(?:8|16|32|64)|uchar\b|ushort\b|uint\b|ulong\b|spinlock_t|atomic_t)/;
-   my $simple_type = qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data))*${s}*+${ptr})/;
+   my $simple_type =
+     qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data|____cacheline_aligned))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
    my $optional_init  = qr/(?:\h*+__(?:initdata|lsm_ro_after_init))?${init}?/;
    my $optional_ainit = qr/${array}?${optional_init}/;
@@ -198,7 +199,7 @@ sub parse
                type     => $_->{type},
                modifier => $_->{modifier},
                area     => $area
-              )
+            )
          } @globals
       ]
    );
