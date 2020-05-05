@@ -24,6 +24,16 @@ sub find_all ($$;$)
       $dirs = [$dirs];
    }
 
+   my @only_dirs;
+   foreach (@$dirs) {
+      if (-d $_) {
+         push @only_dirs, $_;
+      } else {
+         push @files, $_;
+      }
+   }
+   $dirs = \@only_dirs;
+
    $rec = recursive_search()
      unless defined $rec;
 
@@ -32,9 +42,7 @@ sub find_all ($$;$)
          {
             wanted => sub {push @files, realpath($File::Find::name) if m/${mask}/}
          },
-         map {
-            realpath $_
-         } @$dirs
+         map {realpath $_ } @$dirs
       );
    } else {
       foreach my $path (@$dirs) {
