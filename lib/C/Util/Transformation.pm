@@ -151,8 +151,16 @@ qr!(?<other>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n))|"(?:\
 
 sub remove_attributes
 {
-   generic_remove($_[0], qr/__attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/,
-      \%attribute_t, save => $_[1]);
+   generic_remove(
+      $_[0], qr/
+	__pure|
+	__weak|
+	__attribute_const__|
+	__acquires|
+	__releases|
+	__attribute(?:__)?\s*(?>(?<attr>\((?:(?>[^\(\)]+)|(?&attr))*\)))/x,
+      \%attribute_t, save => $_[1]
+   );
 }
 
 sub remove_macro
