@@ -26,20 +26,22 @@ our @EXPORT_OK = qw(
   %attribute_t
   %string_t
   %macro_t
+  %linemarker_t
 
   $s $h
 );
-our %EXPORT_TAGS = (TYPES => [qw(%comment_t %attribute_t %string_t %macro_t)], RE => [qw($s $h)]);
+our %EXPORT_TAGS = (TYPES => [qw(%comment_t %attribute_t %string_t %macro_t %linemarker_t)], RE => [qw($s $h)]);
 
 #TODO: md5 hash
 
-our %comment_t   = (L => '$', R => '$');
-our %attribute_t = (L => '$', R => '`');
-our %string_t    = (L => '$', R => '#');
-our %macro_t     = (L => '$', R => '@');
+our %comment_t    = (L => '$', R => '$');
+our %attribute_t  = (L => '$', R => '`');
+our %string_t     = (L => '$', R => '^');
+our %macro_t      = (L => '$', R => '@');
+our %linemarker_t = (L => '$', R => '!');
 
 {
-   foreach my $i (\%comment_t, \%attribute_t, \%string_t, \%macro_t) {
+   foreach my $i (\%comment_t, \%attribute_t, \%string_t, \%macro_t, \%linemarker_t) {
       $i->{pattern} = qr/\Q$i->{L}\E(\d++)\Q$i->{R}\E/;
    }
 }
@@ -50,7 +52,7 @@ our ($s, $h, $replacement, $special_symbols) = (undef, undef, undef, '');
    my @left;
    my @right;
 
-   foreach (\%comment_t, \%attribute_t, \%string_t, \%macro_t) {
+   foreach (\%comment_t, \%attribute_t, \%string_t, \%macro_t, \%linemarker_t) {
       push @left,  $_->{L};
       push @right, $_->{R};
    }
@@ -132,12 +134,12 @@ qr!(?<other>/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//(?:[^\\]|[^\n][\n]?)*?(?=\n))|"(?:\
       $sub = sub {
          if   (defined $_[1]->{other}) {${^MATCH}}
          else                          {push @{$_[0]}, ${^MATCH}; "$string_t{L}$#{$_[0]}$string_t{R}"}
-        }
+      }
    } else {
       $sub = sub {
          if   (defined $_[0]->{other}) {${^MATCH}}
          else                          {''}
-        }
+      }
    }
 
    generic_remove(
@@ -206,6 +208,11 @@ sub remove_macro
    );
 }
 
+sub remove_linemarkers
+{
+   generic_remove($_[0], qr/^#\h++\d++\h++.++$/, \%linemarker_t, save => $_[1]);
+}
+
 sub adapt
 {
    my $opts = (ref $_[1] eq 'HASH') ? $_[1] : {@_[1 .. $#_]};
@@ -213,7 +220,7 @@ sub adapt
    return undef
      unless $_[0];
 
-   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
+   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments|linemarkers/} keys %$opts;
 
    my $tmpl = sub {
       if ($_[0]) {
@@ -225,10 +232,11 @@ sub adapt
       }
    };
 
-   $tmpl->($opts->{comments},   \&remove_comments,   $_[0]);
-   $tmpl->($opts->{strings},    \&remove_strings,    $_[0]);
-   $tmpl->($opts->{macro},      \&remove_macro,      $_[0]);
-   $tmpl->($opts->{attributes}, \&remove_attributes, $_[0]);
+   $tmpl->($opts->{comments},    \&remove_comments,    $_[0]);
+   $tmpl->($opts->{strings},     \&remove_strings,     $_[0]);
+   $tmpl->($opts->{macro},       \&remove_macro,       $_[0]);
+   $tmpl->($opts->{attributes},  \&remove_attributes,  $_[0]);
+   $tmpl->($opts->{linemarkers}, \&remove_linemarkers, $_[0]);
 
    undef;
 }
@@ -266,6 +274,11 @@ sub restore_macro
    generic_restore(@_, $macro_t{pattern});
 }
 
+sub restore_linemarkers
+{
+   generic_restore(@_, $linemarker_t{pattern});
+}
+
 sub restore
 {
    my $opts = (ref $_[1] eq 'HASH') ? $_[1] : {@_[1 .. $#_]};
@@ -273,13 +286,14 @@ sub restore
    return undef
      unless $_[0];
 
-   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments/} keys %$opts;
+   croak("Wrong arguments\n") if grep {!/attributes|macro|strings|comments|linemarkers/} keys %$opts;
 
    #The order matters.
-   restore_attributes($_[0], $opts->{attributes}) if $opts->{attributes};
-   restore_macro($_[0], $opts->{macro}) if $opts->{macro};
-   restore_strings($_[0], $opts->{strings}) if $opts->{strings};
-   restore_comments($_[0], $opts->{comments}) if $opts->{comments};
+   restore_attributes($_[0], $opts->{attributes})   if $opts->{attributes};
+   restore_macro($_[0], $opts->{macro})             if $opts->{macro};
+   restore_strings($_[0], $opts->{strings})         if $opts->{strings};
+   restore_comments($_[0], $opts->{comments})       if $opts->{comments};
+   restore_linemarkers($_[0], $opts->{linemarkers}) if $opts->{linemarkers};
 
    undef;
 }
