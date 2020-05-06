@@ -2,11 +2,9 @@ package C::Entity;
 use Moose;
 
 use Moose::Util::TypeConstraints;
-use Local::List::Util qw(difference);
 use C::Keywords qw(prepare_tags);
 use namespace::autoclean;
 
-use feature qw(state);
 use re '/aa';
 
 has 'id' => (

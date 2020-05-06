@@ -6,13 +6,12 @@ use warnings;
 use re '/aa';
 
 use Exporter qw(import);
-use File::Spec::Functions qw(splitpath catfile);
-use File::Slurp qw(read_file);
+use File::Spec::Functions qw(catfile);
 use File::Basename qw(dirname);
 use Cwd qw(realpath);
 use Carp qw(croak);
 
-use File::C::Merge qw(merge_headers merge_sources merge_all_files find_headers);
+use File::C::Merge qw(merge_headers merge_sources merge_all_files);
 use File::Merge qw(merge);
 use C::Util::Transformation qw(adapt);
 use Local::List::Util qw(uniq);

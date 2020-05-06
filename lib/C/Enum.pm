@@ -3,7 +3,6 @@ use Moose;
 
 use RE::Common qw($varname);
 use C::Util::Transformation qw(:RE);
-use Local::String::Util qw(normalize);
 use C::Keywords qw(prepare_tags);
 use Local::String::Util qw(trim);
 use Clone qw(clone);
@@ -81,7 +80,7 @@ sub BUILD
       next if /\A${s}++\z/;
 
       if (m/\A${s}*+(${varname})(${s}*+=${s}*+)?/g) {
-         my $f = $1;
+         my $f     = $1;
          my $field = [0, $_];
 
          my $arr = [];

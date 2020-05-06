@@ -11,9 +11,8 @@ use Graph::Directed;
 use Graph::Reader::Dot;
 use Scalar::Util qw(blessed);
 use File::Slurp qw(write_file);
-use Storable qw(store retrieve dclone);
+use Storable qw(store retrieve);
 use File::Spec::Functions qw(catfile);
-use List::Util qw(min);
 
 use Local::List::Util qw(any);
 use Local::String::Util qw(eq_spaces);

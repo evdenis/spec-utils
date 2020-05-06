@@ -6,7 +6,6 @@ use strict;
 use re '/aa';
 
 use RE::Common qw($varname);
-use Local::String::Util qw(normalize);
 use File::Slurp qw(read_file);
 use File::Spec::Functions qw(catfile splitpath catdir);
 use Cwd qw(realpath);

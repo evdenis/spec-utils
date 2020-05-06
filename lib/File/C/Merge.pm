@@ -13,7 +13,6 @@ use Cwd qw(realpath);
 use File::Spec::Functions qw(catfile splitpath);
 
 use File::Merge qw(find_all merge);
-use Local::List::Util qw(intersection difference);
 
 our @EXPORT_OK =
   qw(find_headers find_sources find_all_files merge_headers merge_sources merge_all_files_simple merge_all_files);

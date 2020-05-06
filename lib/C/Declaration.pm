@@ -5,7 +5,6 @@ use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup filter_comments);
 use ACSL::Common qw(is_acsl_spec is_contract);
-use Local::List::Util qw(difference);
 use namespace::autoclean;
 
 use re '/aa';

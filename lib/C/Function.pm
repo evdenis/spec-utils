@@ -4,7 +4,6 @@ use Moose;
 use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup restore_comments norm);
-use Local::List::Util qw(difference);
 use Local::String::Util qw(ltrim rtrim);
 use ACSL::Common qw(is_acsl_spec is_contract);
 

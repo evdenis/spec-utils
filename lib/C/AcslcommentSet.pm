@@ -1,7 +1,6 @@
 package C::AcslcommentSet;
 use Moose;
 
-use RE::Common qw($varname);
 use Carp;
 use C::Acslcomment;
 use ACSL::Common qw(is_acsl_spec);

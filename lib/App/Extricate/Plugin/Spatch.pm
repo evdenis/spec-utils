@@ -4,7 +4,6 @@ use Pod::Usage;
 use Pod::Find qw(pod_where);
 use warnings;
 use strict;
-use RE::Common qw($varname);
 use File::Which;
 use Hash::Ordered;
 

@@ -9,7 +9,6 @@ use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 use Kernel::Module::Graph;
 use File::Slurp qw(read_file);
 use File::Basename;
-use Cwd qw(abs_path);
 
 =encoding utf8
 

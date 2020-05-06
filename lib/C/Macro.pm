@@ -2,7 +2,6 @@ package C::Macro;
 use Moose;
 
 use C::Keywords qw(prepare_tags);
-use Local::List::Util qw(difference);
 use namespace::autoclean;
 
 extends 'C::Entity';

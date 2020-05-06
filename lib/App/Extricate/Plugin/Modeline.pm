@@ -8,7 +8,6 @@ use Pod::Find qw(pod_where);
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 use Kernel::Module::Graph;
 use File::Basename;
-use Cwd qw(abs_path);
 
 =encoding utf8
 
