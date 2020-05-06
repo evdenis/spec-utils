@@ -260,21 +260,21 @@ if ($config_exists) {
    open(my $conf, '<', $config_file);
    while (<$conf>) {
       chomp;
-      next if m/\A\h*+#/;
-      next if m/\A\h*+\Z/;
+      next if m/^\h*+#/;
+      next if m/^\h*+$/;
 
-      if (m/\A([\w-]++)\h*+=\h*+(.*?)\h*\Z/) {
-         if (exists $config{$1}) {
-            if (ref $config{$1} eq 'ARRAY') {
-               push @{$config{$1}}, $2;
+      if (m/^\h*+(?<key>\w[\w-]*+)\h*+(=\h*+(?<value>.*?)\h*)?$/) {
+         my $key   = $+{key};
+         my $value = $+{value};
+         if (exists $config{$key}) {
+            if (ref($config{$key}) eq 'ARRAY') {
+               push @{$config{$key}}, $value // '';
             } else {
-               $config{$1} = $2;
+               $config{$key} = $value // 1;
             }
          } else {
-            unshift @ARGV, "--$1=$2";
+            unshift @ARGV, (defined $value ? "--$key=$value" : "--$key");
          }
-      } elsif (m/\A([\w-]++)\h*+\Z/) {
-         unshift @ARGV, "--$1";
       } else {
          warn "Wrong config format in line $.: '$_'\n";
       }
