@@ -21,7 +21,7 @@ Plugin::Spatch - run spatch on an extricated function
 
 =over 8
 
-=item B<--plugin-spatch function^patch>
+=item B<--plugin-spatch-file function^patch>
 
 Apply a patch "patch" to an extricated function "function". If the
 "function^" part will be omitted then patch will be applied to any
@@ -50,9 +50,9 @@ sub process_options
    my $wait = 1;
 
    GetOptions(
-      'plugin-spatch=s'     => \@files,
-      'plugin-spatch-wait!' => \$wait,
-      'plugin-spatch-help'  => \$help,
+      'plugin-spatch-file=s' => \@files,
+      'plugin-spatch-wait!'  => \$wait,
+      'plugin-spatch-help'   => \$help,
    ) or die("Error in command line arguments\n");
 
    my $input = pod_where({-inc => 1}, __PACKAGE__);
@@ -67,7 +67,7 @@ sub process_options
    pod2usage(
       {
          -input   => $input,
-         -msg     => "Option --plugin-spatch should be provided.\n",
+         -msg     => "Option --plugin-spatch-file should be provided.\n",
          -exitval => 1
       }
    ) unless @files;
