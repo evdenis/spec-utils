@@ -6,4 +6,4 @@ plugin=inline
 plugin-inline-text=begin^1^#define KERNRELEASE "TEST"
 
 plugin=exec
-plugin-exec-file=scripts/test_compile
+plugin-exec-file=../scripts/test_compile

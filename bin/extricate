@@ -27,7 +27,7 @@ use re '/aa';
 use Pod::Usage;
 use List::Util qw(any);
 use Getopt::Long qw(:config gnu_compat no_getopt_compat pass_through);
-use File::Spec::Functions qw(catfile catdir splitpath);
+use File::Spec::Functions qw(catfile catdir splitpath rel2abs);
 use File::Which;
 use Storable;
 use POSIX qw(setsid);
@@ -219,6 +219,7 @@ my $cache                = 0;
 my $renew_cache_and_exit = 0;
 my @cache_dir            = (catdir($ENV{HOME}, '.cache', 'extricate'), catdir($FindBin::Bin, '.cache'));
 my @cache_file           = (undef, 'kernel.cache', 'kernel_module.cache');
+my $configdir;
 
 my %config;
 my $config_file;
@@ -257,6 +258,8 @@ if (!$config_file || !-r $config_file) {
 
 if ($config_exists) {
    ### CONFIG FILE: $config_file
+
+   $configdir = (splitpath($config_file))[1];
    open(my $conf, '<', $config_file);
    while (<$conf>) {
       chomp;
@@ -273,7 +276,16 @@ if ($config_exists) {
                $config{$key} = $value // 1;
             }
          } else {
-            unshift @ARGV, (defined $value ? "--$key=$value" : "--$key");
+            unless (defined $value) {
+               unshift @ARGV, "--$key";
+            } else {
+               if ($key =~ m/plugin-.*-file/) {
+                  my @value = split /\^/, $value;
+                  $value[$#value] = rel2abs($value[$#value], $configdir);
+                  $value = join('^', @value);
+               }
+               unshift @ARGV, "--$key=$value";
+            }
          }
       } else {
          warn "Wrong config format in line $.: '$_'\n";
@@ -281,6 +293,14 @@ if ($config_exists) {
    }
    close($conf);
 }
+
+# Make relative paths from .config file absolute
+foreach my $c (qw(kernel done)) {
+   if ($config{$c}) {
+      $config{$c} = rel2abs($config{$c}, $configdir);
+   }
+}
+$config{module} = [map {rel2abs($_, $configdir)} @{$config{module}}];
 
 unless (@{$config{module}}) {
    $config{module} = [$ENV{CURRENT_PROJECT} // '.'];
