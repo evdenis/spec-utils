@@ -165,7 +165,7 @@ sub attach_declaration
             my $norm_decl_specs = norm($decl_specs);
 
             return
-              if !$norm_decl_specs;
+              if !$norm_decl_specs || !is_contract($norm_decl_specs);
 
             restore_comments($defn_specs, $specs);
             $defn_specs =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
@@ -173,7 +173,7 @@ sub attach_declaration
 
             @comment_ids = sort {$a <=> $b} @comment_ids;
 
-            if ($norm_defn_specs && $norm_decl_specs) {
+            if ($norm_defn_specs && $norm_decl_specs && is_contract($norm_defn_specs)) {
                if ($norm_defn_specs ne $norm_decl_specs) {
                   warn "Function "
                     . $self->name
