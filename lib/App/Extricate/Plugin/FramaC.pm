@@ -5,6 +5,7 @@ use Pod::Find qw(pod_where);
 use warnings;
 use strict;
 use File::Slurp qw(write_file);
+use File::Spec::Functions qw(rel2abs);
 use File::Which;
 use Hash::Ordered;
 
@@ -84,6 +85,9 @@ sub process_options
    die "Please, install Frama-C package.\n"
      unless which('frama-c');
 
+   if (defined($config->{configdir})) {
+      @configs = map {s/\$CONFIGDIR\b/$config->{configdir}/gr} @configs;
+   }
    @configs = reverse @configs;
 
    my $framac = Hash::Ordered->new();
