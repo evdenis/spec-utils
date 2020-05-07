@@ -145,41 +145,41 @@ sub detach_specification
 sub attach_declaration
 {
    my ($self, $decl, $specs) = @_;
-   my $contract_re = qr/\A\s*+(?<contract>${s}*)/;
+   my $spec_re = qr/\A\s*+(?<spec>${s}*)/;
 
-   if ($decl->code =~ $contract_re) {
-      my $decl_contract = $+{contract};
-      my $code          = $self->code();
-      my $contract      = $decl_contract;
-      my $defn_start    = 0;
+   if ($decl->code =~ $spec_re) {
+      my $decl_specs = $+{spec};
+      my $code       = $self->code();
+      my $contract   = $decl_specs;
+      my $defn_start = 0;
       my @comment_ids;
 
-      if ($code =~ $contract_re) {
-         my $defn_contract = $+{contract};
+      if ($code =~ $spec_re) {
+         my $defn_specs = $+{spec};
          $defn_start = $-[0];
          my $defn_end = $+[0];
 
-         if ($defn_contract) {
-            restore_comments($decl_contract, $specs);
-            $decl_contract =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
-            my $norm_decl_contract = norm($decl_contract);
+         if ($defn_specs) {
+            restore_comments($decl_specs, $specs);
+            $decl_specs =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
+            my $norm_decl_specs = norm($decl_specs);
 
             return
-              if !$norm_decl_contract;
+              if !$norm_decl_specs;
 
-            restore_comments($defn_contract, $specs);
-            $defn_contract =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
-            my $norm_defn_contract = norm($defn_contract);
+            restore_comments($defn_specs, $specs);
+            $defn_specs =~ s/$comment_t{pattern}/push @comment_ids, $1; ''/ge;
+            my $norm_defn_specs = norm($defn_specs);
 
             @comment_ids = sort {$a <=> $b} @comment_ids;
 
-            if ($norm_defn_contract && $norm_decl_contract) {
-               if ($norm_defn_contract ne $norm_decl_contract) {
+            if ($norm_defn_specs && $norm_decl_specs) {
+               if ($norm_defn_specs ne $norm_decl_specs) {
                   warn "Function "
                     . $self->name
                     . " has the decl contract and the defn contract that differs: \n"
-                    . "Declaration:\n$decl_contract"
-                    . "Definition:\n$defn_contract"
+                    . "Declaration:\n$decl_specs"
+                    . "Definition:\n$defn_specs"
                     . "The definition contract will be used.\n";
                   return;
                } else {
