@@ -202,6 +202,8 @@ sub process_output
       } else {
          return '';    # ERROR
       }
+   } elsif ($output =~ m/All goals are proved/) {
+      $result .= "PROVED\n";
    } else {
       return '';       # ERROR
    }
