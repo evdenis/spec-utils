@@ -230,6 +230,7 @@ sub action_run_framac
    }
 
    my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
+   my $is_deductive = ($cli_args =~ m/-(?:wp|jessie|av)\b/);
 
    $cli_args .= " $cfile";
    print "FRAMA-C: frama-c $cli_args\n";
@@ -238,10 +239,11 @@ sub action_run_framac
 
    if ($?) {
       $VERDICT{$func} = {status => 'INSTRUMENT FAIL'};
+      print "VERDICT: $func INSTRUMENT FAIL\n" if $is_deductive;
       die "FRAMA-C: failed to run with code $?: $!\n" . ($output // '');
    }
 
-   if ($cli_args =~ m/-(?:wp|jessie|av)\b/) {
+   if ($is_deductive) {
       my $result = process_output($output, $func, $verbose);
       if ($verbose || !$result) {
          print $output;
