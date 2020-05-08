@@ -791,6 +791,11 @@ sub output_sources_graph
 
    #my %debug;
    my %vertices = map {$_ => 1} $graph->vertices;
+   #foreach my $v ($graph->vertices) {
+   #   foreach my $e ($graph->edges_to($v)) {
+   #      push @{$debug{$v}}, $graph->get_vertex_attribute($e->[0], 'object')->name;
+   #   }
+   #}
 
    while ($graph->has_a_cycle) {
       resolve($graph, $graph->find_a_cycle);
@@ -883,7 +888,7 @@ sub output_sources_graph
                   $_ = $_->to_string($c, 0, 1);
                }
             }
-            #$_ = "// " . (join(" ", sort @{$debug{$id} || []})) . "\n" . $_
+            #$_ = "// " . (join(" ", sort @{$debug{$id} || []})) . "\n" . $_ if $_;
          }
       }
 
