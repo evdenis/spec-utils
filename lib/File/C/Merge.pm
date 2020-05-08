@@ -33,7 +33,7 @@ sub find_sources ($;$)
 
 sub find_all_files ($;$)
 {
-   find_all($_[0], qr/\.(?:c|h|spec)]$/, $_[1]);
+   find_all($_[0], qr/\.(?:c|h|spec)$/, $_[1]);
 }
 
 sub merge_headers ($;$)
