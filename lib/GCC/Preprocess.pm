@@ -34,7 +34,7 @@ sub call_gcc
 {
    my ($gcc_args, $code, $wantarray) = @_;
    my @res;
-   my $res;
+   my $res = '';
 
    my $pid = open2(\*GCC_OUT, \*GCC_IN, "gcc $gcc_args -");
    print GCC_IN $$code;
