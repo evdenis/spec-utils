@@ -458,15 +458,13 @@ sub build_sources_graph
 
    my %specs;
    my %spec_index;
-   if ($sources->{module}{acslcomment}) {
-      %spec_index = $sources->{module}{acslcomment}->map(
-         sub {
-            my $id = $_->replacement_id;
-            $specs{$id} = $_->code;
-            return ($id => $_);
-         }
-      );
-   }
+   %spec_index = $sources->{module}{acslcomment}->map(
+      sub {
+         my $id = $_->replacement_id;
+         $specs{$id} = $_->code;
+         return ($id => $_);
+      }
+   );
    $index = _update_ids_index($index, _dependencies_graph_iterator_module($sources), \%specs);
 
    my $graph = Graph::Directed->new();
@@ -477,8 +475,8 @@ sub build_sources_graph
 
    $graph = _form_graph($graph, $index, _dependencies_graph_iterator_module($sources));
 
-   # ACSL handling specs to functions edge
-   if ($sources->{module}{acslcomment}) {
+   if (%specs) {
+      # ACSL handling specs to functions edge
       foreach (@{$sources->{module}{function}->set}, @{$sources->{module}{declaration}->set}) {
          foreach my $id (@{$_->spec_ids}) {
             if (exists $spec_index{$id}) {
@@ -491,21 +489,20 @@ sub build_sources_graph
             }
          }
       }
-   }
 
-   #FIXME: check for $sources->{module}{acslcomment} existance?
-   # functions dependence by specs
-   foreach ($graph->edges) {
-      my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
-      my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
+      # functions dependence by specs
+      foreach ($graph->edges) {
+         my $v1 = $graph->get_vertex_attribute($_->[0], 'object');
+         my $v2 = $graph->get_vertex_attribute($_->[1], 'object');
 
-      if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
-         if ($v1->function_spec && $v2->function_spec) {
-            $graph->delete_edge($v1->id, $v2->id);
-            my @fids = ($v1->function_spec, $v2->function_spec);
-            if (!$graph->has_edge(@fids)) {
-               $graph->add_edge(@fids);
-               $graph->set_edge_attribute(@fids, spec_edge => 1);
+         if (blessed($v1) eq 'C::Acslcomment' && blessed($v2) eq 'C::Acslcomment') {
+            if ($v1->function_spec && $v2->function_spec) {
+               $graph->delete_edge($v1->id, $v2->id);
+               my @fids = ($v1->function_spec, $v2->function_spec);
+               if (!$graph->has_edge(@fids)) {
+                  $graph->add_edge(@fids);
+                  $graph->set_edge_attribute(@fids, spec_edge => 1);
+               }
             }
          }
       }

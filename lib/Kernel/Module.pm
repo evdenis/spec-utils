@@ -293,8 +293,7 @@ sub _parse_module_part
    $module{macro} = \@module_macro
      if @module_macro;
 
-   $module{acslcomment} = \@comments
-     if @comments;
+   $module{acslcomment} = \@comments;
 
    __generic_parse(\%module, 'module');
 
