@@ -290,9 +290,7 @@ sub _parse_module_part
    %module = map {$_ => $module_code} qw(typedef enum structure global declaration function)
      if $$module_code;
 
-   $module{macro} = \@module_macro
-     if @module_macro;
-
+   $module{macro}       = \@module_macro;
    $module{acslcomment} = \@comments;
 
    __generic_parse(\%module, 'module');
@@ -326,8 +324,7 @@ sub _parse_kernel_part
       %kernel = map {$_ => $kernel_code} @types;
    }
 
-   $kernel{macro} = $kernel_macro
-     if @$kernel_macro;
+   $kernel{macro} = $kernel_macro;
 
    __generic_parse(\%kernel, 'kernel');
 
