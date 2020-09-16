@@ -233,8 +233,10 @@ sub action_run_framac
       }
    }
 
-   my $cfile = (grep {m/\.c$/} @{$opts->{'file'}})[0];
+   my $cfile        = (grep {m/\.c$/} @{$opts->{'file'}})[0];
    my $is_deductive = ($cli_args =~ m/-(?:wp|jessie|av)\b/);
+
+   $cli_args =~ s/\$FUNCTION\b/$func/g;
 
    $cli_args .= " $cfile";
    print "FRAMA-C: frama-c $cli_args\n";
