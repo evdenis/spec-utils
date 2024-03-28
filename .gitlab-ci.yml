@@ -1,0 +1,20 @@
+test:
+  stage: test
+  image: perl:latest
+  coverage: '/^Total.* (\d+.\d+)$/'
+  before_script:
+    - cpanm Devel::Cover Devel::Cover::Report::Cobertura
+    - cpanm --notest --installdeps .
+  script:
+    - cover -delete
+    - make KERNEL_VERSION=5.1.1 MODULE_TO_TEST=fs/exportfs test
+    - cover
+    - cover -report cobertura
+  artifacts:
+    paths:
+      - cover_db
+    reports:
+      junit: junit_output.xml
+      coverage_report:
+        path: cover_db/cobertura.xml
+        coverage_format: cobertura
