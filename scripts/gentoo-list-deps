@@ -19,6 +19,6 @@ foreach (qx(cpanfile-dump $cpanfile_dump_args $cpanfile)) {
    chomp;
    my $package = 'dev-perl/' . ($_ =~ s/::/-/gr);
    push @deps, $package
-     if -d '/usr/portage/' . $package;
+     if -d '/var/db/repos/gentoo/' . $package;
 }
 print join("\n", sort @deps) . "\n";
