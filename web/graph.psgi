@@ -201,7 +201,15 @@ my $image = sub {
       }
    }
    if ($req->param('func')) {
-      $config{functions} = [split(/,/, $req->param('func'))];
+      my @funcs = split(/,/, $req->param('func'));
+      # Validate that all function names are valid C identifiers
+      foreach my $func (@funcs) {
+         unless ($func =~ /^[a-zA-Z_][a-zA-Z0-9_]*$/) {
+            warn "Invalid function name: $func\n";
+            return return_403;
+         }
+      }
+      $config{functions} = \@funcs;
    }
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level');
@@ -493,7 +501,15 @@ HTML
       }
    }
    if ($req->param('func')) {
-      $config{functions} = [split(/,/, $req->param('func'))];
+      my @funcs = split(/,/, $req->param('func'));
+      # Validate that all function names are valid C identifiers
+      foreach my $func (@funcs) {
+         unless ($func =~ /^[a-zA-Z_][a-zA-Z0-9_]*$/) {
+            warn "Invalid function name: $func\n";
+            return return_403;
+         }
+      }
+      $config{functions} = \@funcs;
    }
    if ($req->param('level') && looks_like_number($req->param('level'))) {
       $config{level} = $req->param('level');
