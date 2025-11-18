@@ -93,10 +93,18 @@ sub BUILD
                   push @$arr, 0;
                }
             }
-            my $val = eval "{ use integer; no warnings; $str }";
-            unless ($@) {
-               push @$field, ('value', $val);
+            # Validate that the expression only contains safe characters for arithmetic
+            # Allow: digits, whitespace, operators (+, -, *, /, %, <<, >>), parentheses, and identifiers
+            if ($str =~ /^[\w\s\+\-\*\/\%\(\)\<\>]+$/) {
+               my $val = eval "{ use integer; no warnings; $str }";
+               unless ($@) {
+                  push @$field, ('value', $val);
+               } else {
+                  $last_expr_dep = $arr;
+                  push @$field, ('expr', $str);
+               }
             } else {
+               # Expression contains unsafe characters, treat as non-evaluable
                $last_expr_dep = $arr;
                push @$field, ('expr', $str);
             }
