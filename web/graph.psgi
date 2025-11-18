@@ -198,7 +198,7 @@ my $image = sub {
    my $req = Plack::Request->new($env);
 
    if ($req->param('fmt')) {
-      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
+      if ($req->param('fmt') =~ m/^(png|svg|jpg|jpeg)$/) {
          $config{format} = $req->param('fmt');
       } else {
          return return_403;
@@ -490,7 +490,7 @@ HTML
    my $res = $req->new_response(200);
 
    if ($req->param('fmt')) {
-      if ($config{format} =~ m/(png)|(svg)|(jpg)|(jpeg)/) {
+      if ($req->param('fmt') =~ m/^(png|svg|jpg|jpeg)$/) {
          $config{format} = $req->param('fmt');
       } else {
          return return_403;
