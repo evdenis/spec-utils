@@ -45,7 +45,7 @@ sub parse
       my $code = ${^MATCH};
       my $type = $1;
 
-      warn("Repeated defenition of structure $name\n")
+      warn("Repeated definition of structure $name\n")
         if (exists $structures{$name} && (norm($structures{$name}{code}) ne norm($code)));
 
       $structures{$name} = C::Structure->new(
