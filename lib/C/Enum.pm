@@ -219,7 +219,7 @@ sub to_string
            if $ENV{DEBUG};
          return undef;
       } else {
-         warn "There is no explotable constants in Enum " . $self->name . ". Stub will be used.\n"
+         warn "There is no exploitable constants in Enum " . $self->name . ". Stub will be used.\n"
            if $ENV{DEBUG};
          push @body, "\n__STUB__" . uc($self->name);
       }
