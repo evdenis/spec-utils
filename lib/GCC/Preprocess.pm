@@ -48,7 +48,14 @@ sub call_gcc
 
    close GCC_OUT;
    waitpid($pid, 0);
-   die("GCC fails with error.\n") if $?;
+   if ($?) {
+      my $exit_code = $? >> 8;
+      my $signal = $? & 127;
+      my $error_msg = "GCC preprocessing failed";
+      $error_msg .= " with exit code $exit_code" if $exit_code;
+      $error_msg .= " (signal $signal)" if $signal;
+      die("$error_msg.\n");
+   }
 
    return $wantarray ? \@res : \$res;
 }
