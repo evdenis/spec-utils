@@ -134,7 +134,7 @@ sub _get_kernel_data
    my $code  = preprocess_as_kernel_module_simpl($dir, \$includes);
    my $macro = preprocess_as_kernel_module_get_macro_simpl($dir, \$includes, 1);
 
-   @$macro = grep !/\A#define __STDC_(HOSTED_)?_\N+\Z/, @$macro;
+   @$macro = grep !/\A#define __STDC_(HOSTED_)?_\N*\Z/, @$macro;
 
    ($code, $macro);
 }
