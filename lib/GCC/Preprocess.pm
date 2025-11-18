@@ -48,7 +48,7 @@ sub call_gcc
 
    close GCC_OUT;
    waitpid($pid, 0);
-   die("GCC falls with error.\n") if $?;
+   die("GCC fails with error.\n") if $?;
 
    return $wantarray ? \@res : \$res;
 }
