@@ -43,23 +43,19 @@ sub read_config
    close $fh;
 }
 
-my $ppid        = getppid();
 my $config_file = $ENV{GRAPH_CONFIG} // '.config';
 read_config catfile $FindBin::Bin, $config_file;
 my $priority = load_config $config{priority_config_file};
 unless ($priority) {
-   warn "Can't read priority config file.\n";
-   kill "SIGKILL", $ppid;
+   die "Can't read priority config file.\n";
 }
 my $status = load_config $config{status_config_file};
 unless ($status) {
-   warn "Can't read status config file.\n";
-   kill "SIGKILL", $ppid;
+   die "Can't read status config file.\n";
 }
 
 if (!check_status_format($status) || !check_priority_format($priority)) {
-   warn "Wrong file format.\n";
-   kill "SIGKILL", $ppid;
+   die "Wrong file format.\n";
 }
 merge_config_keys $config{config}, $priority;
 merge_config_keys $config{config}, $status;
