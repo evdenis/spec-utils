@@ -47,9 +47,9 @@ sub parse
 
       if ($functions{$name}) {
          if (norm($functions{$name}{code}) ne norm($code)) {
-            warn "Repeated defenition of function $name\n";
+            warn "Repeated definition of function $name\n";
          } else {
-            warn "Repeated defenition of function $name. Missing header guard?\n";
+            warn "Repeated definition of function $name. Missing header guard?\n";
          }
       }
 
