@@ -1,7 +1,6 @@
 # Tools for style-preserving C-code transformations
 [![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
 [![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
-[![Kritika Analysis Status](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/status.svg)](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/)
 
 ---
 ![ext2 callgraph](doc/ext2_callgraph_banner.png)
@@ -110,7 +109,6 @@ http://localhost:8889/graph/image?func={node_name}
 
 # How to Contribute
 
-* The easiest thing is to start fixing the warnings [kritika.io](https://kritika.io/users/evdenis/repos/9148422910107407/)
 * Remove all experimental constructions
 * Get rid of smart-matching
 * Minimize use of lib/Local functions, replace them with functions from other libraries (List::Utils, List::MoreUtils)
