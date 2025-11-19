@@ -66,7 +66,7 @@ jobs:
           cpanm --local-lib=~/perl5 local::lib
           eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
           cpanm --quiet --notest --installdeps --with-all-features .
-          cpanm --quiet --notest Devel::Cover::Report::Coveralls Devel::Cover::Report::Kritika
+          cpanm --quiet --notest Devel::Cover::Report::Coveralls
 
       - name: Run tests with coverage
         run: |
@@ -80,11 +80,3 @@ jobs:
         run: |
           eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
           cover -ignore_re=^/ -ignore_re=^t -report coveralls || true
-
-      - name: Upload coverage to Kritika
-        if: success()
-        env:
-          KRITIKA_TOKEN: ${{ secrets.KRITIKA_TOKEN }}
-        run: |
-          eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
-          cover -ignore_re=^/ -ignore_re=^t -report kritika || true
