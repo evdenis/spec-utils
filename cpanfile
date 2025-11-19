@@ -1,3 +1,5 @@
+requires 'perl', '5.22.0';
+
 requires 'Clone';
 requires 'Color::Library';
 requires 'File::Modified';
@@ -18,7 +20,6 @@ requires 'Moose::Util::TypeConstraints';
 requires 'Pod::Find';
 requires 'Try::Tiny';
 requires 'YAML';
-requires 'common::sense';
 requires 'lib::abs';
 requires 'namespace::autoclean';
 requires 'utf8::all';
