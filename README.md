@@ -11,7 +11,7 @@ The repository contains a number of tools for analyzing Linux kernel code.
 
 ## Requirements
 
-* **Perl 5.22 or later** (tested with Perl 5.22-5.28, compatible with modern versions including 5.38+)
+* **Perl 5.22 or later** (CI tested with modern versions: 5.38.5, 5.40.3, 5.42.0)
 * External Perl modules (see cpanfile)
 * GCC (for preprocessing)
 * Other external dependencies described on the page [doc/EXTERNAL_DEPS.md](doc/EXTERNAL_DEPS.md)
@@ -121,6 +121,7 @@ Contributions are welcome! Here are some areas for improvement:
 **Completed:**
 * ✅ Remove all experimental constructions (no experimental features in use)
 * ✅ Get rid of smart-matching (not used anywhere in the codebase)
+* ✅ Expand CI testing to modern Perl versions (5.38.5, 5.40.3, 5.42.0)
 
 **TODO:**
 * Minimize use of lib/Local functions, replace them with functions from other libraries (List::Utils, List::MoreUtils)
@@ -128,5 +129,4 @@ Contributions are welcome! Here are some areas for improvement:
 * Use Dist::Zilla or another system and upload the source code to CPAN
 * Add `--help` to describe tool parameters where needed
 * Simplify the customization of regular expressions from `*Set.pm` modules (add the ability to configure them based on the selection of standard constructions and macro use patterns)
-* Expand CI testing to modern Perl versions (5.30, 5.32, 5.34, 5.36, 5.38, 5.40+)
 * ...
