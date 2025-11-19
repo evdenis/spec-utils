@@ -1,5 +1,5 @@
 # Tools for style-preserving C-code transformations
-[![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
+[![CI](https://github.com/evdenis/spec-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/evdenis/spec-utils/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
 
 ---
