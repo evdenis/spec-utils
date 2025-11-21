@@ -1,7 +1,6 @@
 # Инструменты для трансформации кода с сохранением стиля
 [![Build Status](https://travis-ci.org/evdenis/spec-utils.svg?branch=devel)](https://travis-ci.org/evdenis/spec-utils)
 [![Coverage Status](https://coveralls.io/repos/github/evdenis/spec-utils/badge.svg?branch=devel)](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
-[![Kritika Analysis Status](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/status.svg)](https://kritika.io/users/evdenis/repos/9148422910107407/heads/devel/)
 
 ---
 ![ext2 callgraph](ext2_callgraph_banner.png)

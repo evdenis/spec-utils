@@ -56,5 +56,4 @@ on 'develop' => sub {
   recommends 'Devel::NYTProf';
   recommends 'Smart::Comments';
   suggests 'Devel::Cover::Report::Coveralls';
-  suggests 'Devel::Cover::Report::Kritika';
 };

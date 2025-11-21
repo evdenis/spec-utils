@@ -499,7 +499,6 @@ Configured in `.travis.yml`:
 
 **Coverage Reporting:**
 - Coveralls.io
-- Kritika.io
 
 **Caching:**
 - `$HOME/perl5` - Perl modules
@@ -1331,7 +1330,6 @@ my $colors = $config->{priority}{colors};
 - **Example Configs:** `config/*.conf.sample`
 - **CI Status:** [Travis CI](https://travis-ci.org/evdenis/spec-utils)
 - **Coverage:** [Coveralls](https://coveralls.io/github/evdenis/spec-utils?branch=devel)
-- **Code Quality:** [Kritika](https://kritika.io/users/evdenis/repos/9148422910107407/)
 
 ---
 
