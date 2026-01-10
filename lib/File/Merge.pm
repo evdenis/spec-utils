@@ -2,6 +2,7 @@ package File::Merge;
 
 use strict;
 use warnings;
+use utf8::all;
 
 use File::Find;
 use File::Slurp qw(read_file);

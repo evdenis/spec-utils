@@ -1,5 +1,6 @@
 package C::AcslcommentSet;
 use Moose;
+use utf8::all;
 
 use Carp;
 use C::Acslcomment;

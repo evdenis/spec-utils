@@ -1,5 +1,6 @@
 package C::DeclarationSet;
 use Moose;
+use utf8::all;
 use Hash::Ordered;
 
 use RE::Common qw($varname);

@@ -1,5 +1,6 @@
 package C::Function;
 use Moose;
+use utf8::all;
 
 use C::Util::Parsing qw(_argname_exists parse_calls);
 use C::Keywords qw(prepare_tags);

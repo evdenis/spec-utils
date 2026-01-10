@@ -1,5 +1,6 @@
 package C::Entity;
 use Moose;
+use utf8::all;
 
 use Moose::Util::TypeConstraints;
 use C::Keywords qw(prepare_tags);

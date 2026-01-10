@@ -2,6 +2,7 @@ package Local::Terminal;
 
 use warnings;
 use strict;
+use utf8::all;
 
 use Exporter qw(import);
 

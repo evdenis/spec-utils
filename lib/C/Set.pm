@@ -1,5 +1,6 @@
 package C::Set;
 use Moose;
+use utf8::all;
 use namespace::autoclean;
 
 has 'set' => (

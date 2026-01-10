@@ -2,6 +2,7 @@ package Configuration;
 
 use strict;
 use warnings;
+use utf8::all;
 
 use Exporter qw(import);
 

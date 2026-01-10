@@ -2,6 +2,7 @@ package App::Extricate::Plugin::Filter;
 
 use warnings;
 use strict;
+use utf8::all;
 
 use Pod::Usage;
 use Pod::Find qw(pod_where);

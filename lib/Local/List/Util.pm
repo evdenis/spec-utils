@@ -4,6 +4,7 @@ use Exporter qw(import);
 
 use strict;
 use warnings;
+use utf8::all;
 
 our @EXPORT_OK = qw(any uniq intersection union difference_symmetric difference str_to_list);
 

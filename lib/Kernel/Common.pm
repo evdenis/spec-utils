@@ -2,6 +2,7 @@ package Kernel::Common;
 
 use strict;
 use warnings;
+use utf8::all;
 
 use feature qw(state);
 use Local::List::Util qw(any);

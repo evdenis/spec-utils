@@ -1,5 +1,6 @@
 package C::MacroSet;
 use Moose;
+use utf8::all;
 
 use RE::Common qw($varname);
 use C::Macro;

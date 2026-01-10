@@ -1,5 +1,6 @@
 package C::Global;
 use Moose;
+use utf8::all;
 use C::Util::Transformation qw(:RE);
 use Local::String::Util qw(trim);
 use namespace::autoclean;

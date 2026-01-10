@@ -5,6 +5,7 @@ use Pod::Find qw(pod_where);
 use Test::More;
 use warnings;
 use strict;
+use utf8::all;
 
 use Getopt::Long qw(:config gnu_compat permute no_getopt_compat pass_through);
 

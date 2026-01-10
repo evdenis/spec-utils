@@ -1,5 +1,6 @@
 package C::Declaration;
 use Moose;
+use utf8::all;
 
 use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);

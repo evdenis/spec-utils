@@ -2,6 +2,7 @@ package C::Util::Parsing;
 
 use warnings;
 use strict;
+use utf8::all;
 
 use re '/aa';
 

@@ -4,6 +4,7 @@ use Pod::Usage;
 use Pod::Find qw(pod_where);
 use warnings;
 use strict;
+use utf8::all;
 use File::Slurp qw(write_file);
 use File::Spec::Functions qw(rel2abs);
 use File::Which;

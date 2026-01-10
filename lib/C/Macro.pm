@@ -1,5 +1,6 @@
 package C::Macro;
 use Moose;
+use utf8::all;
 
 use C::Keywords qw(prepare_tags);
 use namespace::autoclean;

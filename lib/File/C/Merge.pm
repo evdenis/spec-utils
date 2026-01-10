@@ -2,6 +2,7 @@ package File::C::Merge;
 
 use strict;
 use warnings;
+use utf8::all;
 
 use re '/aa';
 

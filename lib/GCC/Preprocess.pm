@@ -2,6 +2,7 @@ package GCC::Preprocess;
 
 use strict;
 use warnings;
+use utf8::all;
 
 use re '/aa';
 

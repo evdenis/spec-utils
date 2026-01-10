@@ -1,5 +1,6 @@
 package C::Acslcomment;
 use Moose;
+use utf8::all;
 
 use Moose::Util::TypeConstraints;
 use ACSL::Common qw(prepare_tags);

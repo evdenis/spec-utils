@@ -1,5 +1,6 @@
 package C::Structure;
 use Moose;
+use utf8::all;
 
 use Moose::Util::TypeConstraints;
 use C::Util::Parsing qw(_get_structure_wo_field_names);

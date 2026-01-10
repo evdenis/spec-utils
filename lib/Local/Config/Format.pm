@@ -1,6 +1,7 @@
 package Local::Config::Format;
 use strict;
 use warnings;
+use utf8::all;
 
 use Exporter qw(import);
 use Carp;

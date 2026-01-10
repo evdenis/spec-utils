@@ -1,5 +1,6 @@
 package C::Typedef;
 use Moose;
+use utf8::all;
 
 use Moose::Util::TypeConstraints;
 use RE::Common qw($varname);

@@ -4,6 +4,7 @@ use Pod::Usage;
 use Pod::Find qw(pod_where);
 use warnings;
 use strict;
+use utf8::all;
 use File::Which;
 use Hash::Ordered;
 
