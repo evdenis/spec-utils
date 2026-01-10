@@ -20,8 +20,7 @@
 use warnings;
 use strict;
 
-use feature qw(switch say);
-no if $] >= 5.018, warnings => "experimental::smartmatch";
+use feature qw(say);
 use re '/aa';
 
 use Pod::Usage;
@@ -566,8 +565,9 @@ sub call_plugins
          try {
             $plugin->action(\%opts);
          } catch {
-            when (/^FAIL:/) {die $_}
-            default {
+            if (/^FAIL:/) {
+               die $_;
+            } else {
                $res = 1;
                $exit_code += 1;
                warn "plugin " . (ref $plugin) . " fails at level $opts{level} with message:\n$_\n";
