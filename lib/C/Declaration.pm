@@ -2,6 +2,7 @@ package C::Declaration;
 use Moose;
 use utf8::all;
 
+use RE::Common qw($varname);
 use C::Util::Parsing qw(_argname);
 use C::Keywords qw(prepare_tags);
 use C::Util::Transformation qw(:RE %comment_t filter_comments_dup filter_comments);
@@ -34,11 +35,19 @@ sub get_code_tags
    $code = substr($code, $begin, $end - $begin);
 
    my @args;
-   foreach (split(/,/, $code)) {
-      next if m/\A${s}*+\z/;
-      my @names = _argname($_);
+   foreach my $param (split(/,/, $code)) {
+      next if $param =~ m/\A${s}*+\z/;
+      my @names = _argname($param);
 
-      push @args, @names if @names;
+      foreach my $name (@names) {
+         # Count how many times this identifier appears in the parameter.
+         # If it appears more than once (e.g., "initxattrs initxattrs"),
+         # one occurrence is the type and one is the parameter name.
+         # Don't filter such identifiers to preserve type dependencies.
+         my @all_ids = $param =~ m/\b($varname)\b/g;
+         my $count = grep { $_ eq $name } @all_ids;
+         push @args, $name if $count == 1;
+      }
    }
 
    my $filter = $self->get_code_ids();
