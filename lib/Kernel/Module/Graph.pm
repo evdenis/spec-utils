@@ -19,6 +19,7 @@ use Local::List::Util qw(any);
 use Local::String::Util qw(eq_spaces);
 use C::Util::Transformation qw(restore);
 use C::Util::Cycle qw(resolve);
+use C::Structure;
 
 use constant HASH  => ref {};
 use constant ARRAY => ref [];
@@ -280,6 +281,14 @@ sub __to_edge
    return ($_[0]->area . '_' . $___to_vertex{$v1}, $_[1]->area . '_' . $___to_vertex{$v2});
 }
 
+# Like __to_edge but takes type names and area directly (for synthetic entities)
+sub __to_edge_by_type
+{
+   my ($type1, $type2, $area2) = @_;
+   my $area1 = 'kernel';    # synthetic forward declarations are kernel area
+   return ($area1 . '_' . $___to_vertex{$type1}, $area2 . '_' . $___to_vertex{$type2});
+}
+
 #label type
 sub _allow
 {
@@ -421,7 +430,25 @@ sub _form_graph
                   }
                }
             } else {
-               warn "Can't bind tag: $tag\n" if $ENV{DEBUG};
+               # Auto-generate forward declaration for struct/union types
+               if ($label && ($label eq 'struct' || $label eq 'union')) {
+                  my $to = $set->get_from_index($i);
+                  if ($dg->has_edge(__to_edge_by_type('C::Structure', blessed($to), $to->area))) {
+                     my $forward_decl = C::Structure->new(
+                        name => $tag,
+                        code => "$label $tag;",
+                        type => $label,
+                        area => 'kernel'
+                     );
+                     $index->{$tag}{'C::Structure'} = $forward_decl;
+                     $graph->add_vertex($forward_decl->$vname);
+                     $graph->set_vertex_attribute($forward_decl->$vname, 'object', $forward_decl);
+                     __add_edge($graph, $forward_decl, $to, $tag);
+                     warn "Auto-generated forward declaration: $label $tag\n" if $ENV{DEBUG};
+                  }
+               } else {
+                  warn "Can't bind tag: $tag\n" if $ENV{DEBUG};
+               }
             }
          }
       }
@@ -940,6 +967,9 @@ digraph g
       kernel_structure -> kernel_global;
 
       kernel_declaration -> kernel_macro;
+      kernel_declaration -> kernel_structure;
+      kernel_declaration -> kernel_typedef;
+      kernel_declaration -> kernel_enum;
       kernel_declaration -> kernel_global;
       kernel_declaration -> kernel_function;
 
@@ -1023,6 +1053,9 @@ digraph g
       module_function -> module_function;
       //
       kernel_declaration -> module_macro;
+      kernel_declaration -> module_structure;
+      kernel_declaration -> module_typedef;
+      kernel_declaration -> module_enum;
       kernel_declaration -> module_global;
       kernel_declaration -> module_function;
       //
@@ -1031,10 +1064,16 @@ digraph g
       kernel_function -> module_function;
 
       module_declaration -> module_macro;
+      module_declaration -> module_structure;
+      module_declaration -> module_typedef;
+      module_declaration -> module_enum;
       module_declaration -> module_global;
       module_declaration -> module_function;
 
       module_declaration -> kernel_macro;
+      module_declaration -> kernel_structure;
+      module_declaration -> kernel_typedef;
+      module_declaration -> kernel_enum;
       module_declaration -> kernel_global;
       module_declaration -> kernel_function;
 
