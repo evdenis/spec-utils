@@ -224,7 +224,8 @@ sub _update_ids_index
                      } else {
                         if ($old->initialized && $new->initialized) {
                            if ($old->initializer ne $new->initializer) {
-                              die "Globals duplicate with different initialization: $_\n";
+                              warn "Globals duplicate with different initialization: $_\n";
+                              $index{$_}{$tn} = $n if ($old->area eq 'kernel') && ($new->area eq 'module');
                            }
                         }
                         if (  ($new->initialized && !$old->initialized)
