@@ -89,7 +89,7 @@ sub parse
    my $simple_type =
      qr/(?>(?:$standard_type|$common_typedef)(?:\h+(?:volatile|__jiffy_data|____cacheline_aligned))*${s}*+${ptr})/;
    #my $mandatory_init = qr/${array}?${init}/;
-   my $optional_init  = qr/(?:\h*+__(?:initdata|lsm_ro_after_init))?${init}?/;
+   my $optional_init  = qr/(?:\h*+__(?:initdata|(?:lsm_)?ro_after_init))?${init}?/;
    my $optional_ainit = qr/${array}?${optional_init}/;
    my $type           = qr/\b(?!PARSEC_PACKED)${varname}\b${ptr}/;
    my $complex_type   = qr/(?>struct|union|enum)(*SKIP)${s}++${type}/;
