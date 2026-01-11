@@ -1,5 +1,5 @@
-kernel_dir   = /spec-utils/linux-4.17/
-module_dir   = /spec-utils/linux-4.17/fs/ext2/
+kernel_dir   = /spec-utils/linux-6.12.64/
+module_dir   = /spec-utils/linux-6.12.64/fs/ext2/
 cache        = 1
 cache_file   = /spec-utils/web/_web.graph.cache
 out          = /spec-utils/web/
