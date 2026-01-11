@@ -22,7 +22,7 @@ $(KERNEL_ARCHIVE):
 $(MODULE): $(KERNEL_ARCHIVE)
 	tar xf $(KERNEL).tar.xz
 
-prepare_kernel:
+prepare_kernel: $(MODULE)
 	cd $(KERNEL)      \
 	&& make defconfig \
 	&& make modules_prepare
