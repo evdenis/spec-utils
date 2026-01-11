@@ -3,7 +3,7 @@ default:
 prove:
 	prove --jobs 1 --shuffle --lib --recurse t/
 
-export KERNEL_VERSION?=4.19.42
+export KERNEL_VERSION?=6.12.64
 export KERNEL=linux-$(KERNEL_VERSION)
 export KERNEL_ARCHIVE=$(KERNEL).tar.xz
 
