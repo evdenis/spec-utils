@@ -235,6 +235,17 @@ sub resolve_global_function
    1;
 }
 
+sub resolve_global_global ($$$)
+{
+   my ($graph, @obj) = @_;
+
+   # Globals declared together (e.g., "type a, b, c;") may form cycles
+   # since they share the same code block. Break the cycle by removing the edge.
+   $graph->delete_edge($obj[0]->id, $obj[1]->id);
+
+   1;
+}
+
 sub resolve
 {
    my ($graph, @cycle) = @_;

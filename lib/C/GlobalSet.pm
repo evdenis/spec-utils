@@ -116,7 +116,7 @@ sub parse
                            (?>
                               (?<typeof>__typeof__${s}*+\(${s}*+)?+
                               (?<type>${simple_type}|${complex_type})
-                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?:${s}*+(?:__initdata|__initconst|__exitdata|__read_mostly))?${optional_asm}${optional_ainit}
+                                      ${decl}?(?(<typeof>)\))${s}*+(?:__packed(*SKIP)(*FAIL)|${name})(?<extra_names>(?:${s}*+,${s}*+${varname})*)(?:${s}*+(?:__initdata|__initconst|__exitdata|__read_mostly))?${optional_asm}${optional_ainit}
                               |
                               (?<type>(?>${simple_type}|${complex_type})\(${s}*+\*${s}*+${name}${array}?${s}*+\)${s}*+${fargs})(*SKIP)${optional_asm}${optional_init}
                               |
@@ -138,7 +138,7 @@ sub parse
                               |
                               (?:\b(?:(?<special_declare>DECLARE)|DEFINE)_PER_CPU\b${s}*+\(${s}*+(?<type>[^,]++),${s}*+${name}${s}*+\))
                               |
-                              (?<type>${type})${s}*+${name}${optional_asm}${optional_ainit}
+                              (?<type>${type})${s}*+${name}(?<extra_names>(?:${s}*+,${s}*+${varname})*)${optional_asm}${optional_ainit}
                            )
                         )(*SKIP)
                         ${s}*+;
@@ -188,6 +188,21 @@ sub parse
             type     => $mtype,
             modifier => $mmodifier
            };
+
+         # Handle comma-separated additional variable names (e.g., "type a, b, c;")
+         my $extra_names = $+{extra_names} // '';
+         if ($extra_names) {
+            my @extra = $extra_names =~ m/($varname)/g;
+            foreach my $ename (@extra) {
+               push @globals,
+                 {
+                  name     => $ename,
+                  code     => $mcode,
+                  type     => $mtype,
+                  modifier => $mmodifier
+                 };
+            }
+         }
       }
    }
 
