@@ -459,13 +459,15 @@ sub build_sources_graph
 
    my %specs;
    my %spec_index;
-   %spec_index = $sources->{module}{acslcomment}->map(
-      sub {
-         my $id = $_->replacement_id;
-         $specs{$id} = $_->code;
-         return ($id => $_);
-      }
-   );
+   if ($sources->{module}{acslcomment}) {
+      %spec_index = $sources->{module}{acslcomment}->map(
+         sub {
+            my $id = $_->replacement_id;
+            $specs{$id} = $_->code;
+            return ($id => $_);
+         }
+      );
+   }
    $index = _update_ids_index($index, _dependencies_graph_iterator_module($sources), \%specs);
 
    my $graph = Graph::Directed->new();
